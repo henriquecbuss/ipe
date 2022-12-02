@@ -14,9 +14,11 @@ spec :: Spec
 spec = do
   moduleNameSpec
   lexemeSpec
+  hlexemeSpec
   symbolSpec
   symbolWithNoBlockCommentsSpec
   spaceSpec
+  hspaceSpec
   spaceWithNoBlockCommentsSpec
   docCommentSpec
 
@@ -85,6 +87,49 @@ lexemeSpec =
         let s = T.pack (stringS :: String)
          in Parsec.Common.parse
               (Ipe.Parser.lexeme (Parsec.Char.string s))
+              ""
+              s
+              `shouldParse` s
+
+hlexemeSpec :: Spec
+hlexemeSpec =
+  describe "the hlexeme parser" $ do
+    it "should parse a lexeme" $
+      Parsec.Common.parse
+        (Ipe.Parser.hlexeme (Parsec.Char.string "abc"))
+        ""
+        "abc"
+        `shouldParse` "abc"
+
+    it "should parse a lexeme with whitespace after" $
+      Parsec.Common.runParser'
+        (Ipe.Parser.hlexeme (Parsec.Char.string "abc"))
+        (initialState "abc /* a block comment */  \t\t // a line comment  ")
+        `succeedsLeaving` ""
+
+    it "should not consume anything after a line break" $
+      Parsec.Common.runParser'
+        (Ipe.Parser.hlexeme (Parsec.Char.string "abc"))
+        (initialState "abc /* a block comment */  \n\t // a line comment  ")
+        `succeedsLeaving` "\n\t // a line comment  "
+
+    it "should not consume anything after a line break inside a block comment" $
+      Parsec.Common.runParser'
+        (Ipe.Parser.hlexeme (Parsec.Char.string "abc"))
+        (initialState "abc /* a block comment with\na line break */  \n\t // a line comment  ")
+        `succeedsLeaving` "a line break */  \n\t // a line comment  "
+
+    it "should not consume any other input" $
+      Parsec.Common.runParser'
+        (Ipe.Parser.hlexeme (Parsec.Char.string "abc"))
+        (initialState "abcdef  \n\t\t   ")
+        `succeedsLeaving` "def  \n\t\t   "
+
+    prop "should parse any lexeme" $ do
+      \stringS ->
+        let s = T.pack (stringS :: String)
+         in Parsec.Common.parse
+              (Ipe.Parser.hlexeme (Parsec.Char.string s))
               ""
               s
               `shouldParse` s
@@ -169,6 +214,39 @@ spaceSpec =
     it "should succeed but not consume any input" $
       Parsec.Common.runParser'
         Ipe.Parser.space
+        (initialState "abc \n\t \t\t")
+        `succeedsLeaving` "abc \n\t \t\t"
+
+hspaceSpec :: Spec
+hspaceSpec =
+  describe "the hspace parser" $ do
+    it "should consume a bunch of whitespace" $
+      Parsec.Common.runParser'
+        Ipe.Parser.hspace
+        (initialState " \t \t\t")
+        `succeedsLeaving` ""
+
+    it "should stop consuming on line breaks" $
+      Parsec.Common.runParser'
+        Ipe.Parser.hspace
+        (initialState " \t \n\t\t")
+        `succeedsLeaving` "\n\t\t"
+
+    it "should consume comments" $
+      Parsec.Common.runParser'
+        Ipe.Parser.hspace
+        (initialState " \t // some comment \t\t/* some block comment */  \t")
+        `succeedsLeaving` ""
+
+    it "should consume comments and stop on line breaks inside block comments" $
+      Parsec.Common.runParser'
+        Ipe.Parser.hspace
+        (initialState " \t // some comment \t\t/* some block\n comment */  \t")
+        `succeedsLeaving` "\n comment */  \t"
+
+    it "should succeed but not consume any input" $
+      Parsec.Common.runParser'
+        Ipe.Parser.hspace
         (initialState "abc \n\t \t\t")
         `succeedsLeaving` "abc \n\t \t\t"
 

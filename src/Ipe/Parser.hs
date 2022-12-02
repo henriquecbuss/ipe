@@ -4,9 +4,11 @@ module Ipe.Parser
   ( Parser,
     moduleName,
     lexeme,
+    hlexeme,
     symbol,
     symbolWithNoBlockComments,
     space,
+    hspace,
     spaceWithNoBlockComments,
     docComment,
   )
@@ -18,7 +20,7 @@ import qualified Data.List
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Void (Void)
-import Text.Megaparsec ((<?>))
+import Text.Megaparsec ((<?>), (<|>))
 import qualified Text.Megaparsec as Parsec.Common
 import qualified Text.Megaparsec.Char as Parsec.Char
 import qualified Text.Megaparsec.Char.Lexer as Parsec.Lexer
@@ -54,6 +56,11 @@ moduleName = do
 lexeme :: Parser a -> Parser a
 lexeme = Parsec.Lexer.lexeme space
 
+-- | Consume all whitespace, line comments and block comments right after a parser,
+-- but not line breaks
+hlexeme :: Parser a -> Parser a
+hlexeme = Parsec.Lexer.lexeme hspace
+
 -- | Consume all whitespace, line comments and block comments right after a text
 symbol :: Text -> Parser Text
 symbol = Parsec.Lexer.symbol space
@@ -70,6 +77,14 @@ space =
     (Parsec.Lexer.skipLineComment singleLineCommentStart)
     (Parsec.Lexer.skipBlockComment blockCommentStart blockCommentEnd)
 
+-- | Consume all whitespace, line comments and block comments, but not line breaks
+hspace :: Parser ()
+hspace =
+  Parsec.Lexer.space
+    Parsec.Char.hspace1
+    (Parsec.Lexer.skipLineComment singleLineCommentStart)
+    (hSkipBlockComment blockCommentStart blockCommentEnd)
+
 -- | Consume all whitespace and line comments
 spaceWithNoBlockComments :: Parser ()
 spaceWithNoBlockComments =
@@ -77,6 +92,16 @@ spaceWithNoBlockComments =
     Parsec.Char.space1
     (Parsec.Lexer.skipLineComment singleLineCommentStart)
     Control.Applicative.empty
+
+-- | Consume block comments, but stop on line breaks
+hSkipBlockComment :: Text -> Text -> Parser ()
+hSkipBlockComment start end = do
+  Control.Monad.void (Parsec.Char.string start)
+
+  Control.Monad.void $
+    Parsec.Common.manyTill
+      Parsec.Common.anySingle
+      (Parsec.Char.eol <|> Parsec.Char.string end)
 
 -- | Consume a doc comment and retrieve it's text
 docComment :: Parser Text
