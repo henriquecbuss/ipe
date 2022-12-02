@@ -2,6 +2,7 @@
 
 module Ipe.Parser
   ( Parser,
+    moduleName,
     lexeme,
     symbol,
     symbolWithNoBlockComments,
@@ -13,6 +14,7 @@ where
 
 import qualified Control.Applicative
 import qualified Control.Monad
+import qualified Data.List
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Void (Void)
@@ -24,15 +26,43 @@ import qualified Text.Megaparsec.Char.Lexer as Parsec.Lexer
 -- | The main parser type for Ipe
 type Parser = Parsec.Common.Parsec Void Text
 
+-- | Parse a module name. Module names start with an upper case letter, and
+-- contain only letters, numbers, `.` or `_`. Letters after a `.` must be upper
+-- case as well
+moduleName :: Parser Text
+moduleName = do
+  firstChar <- Parsec.Char.upperChar
+  rest <-
+    Parsec.Common.many
+      ( Parsec.Common.choice
+          [ Parsec.Char.alphaNumChar,
+            Parsec.Char.char '_'
+          ]
+          <?> "the rest of the module name, which can be any combination of letters, numbers, `.` or `_`"
+      )
+
+  nestedModules <- Parsec.Common.many (Parsec.Char.char '.' *> moduleName)
+
+  return $
+    T.concat
+      ( Data.List.intersperse
+          "."
+          (T.pack (firstChar : rest) : nestedModules)
+      )
+
+-- | Consume all whitespace, line comments and block comments right after a parser
 lexeme :: Parser a -> Parser a
 lexeme = Parsec.Lexer.lexeme space
 
+-- | Consume all whitespace, line comments and block comments right after a text
 symbol :: Text -> Parser Text
 symbol = Parsec.Lexer.symbol space
 
+-- | Consume all whitespace and line comments right after a text
 symbolWithNoBlockComments :: Text -> Parser Text
 symbolWithNoBlockComments = Parsec.Lexer.symbol spaceWithNoBlockComments
 
+-- | Consume all whitespace, line comments and block comments
 space :: Parser ()
 space =
   Parsec.Lexer.space
@@ -40,6 +70,7 @@ space =
     (Parsec.Lexer.skipLineComment singleLineCommentStart)
     (Parsec.Lexer.skipBlockComment blockCommentStart blockCommentEnd)
 
+-- | Consume all whitespace and line comments
 spaceWithNoBlockComments :: Parser ()
 spaceWithNoBlockComments =
   Parsec.Lexer.space
@@ -47,6 +78,7 @@ spaceWithNoBlockComments =
     (Parsec.Lexer.skipLineComment singleLineCommentStart)
     Control.Applicative.empty
 
+-- | Consume a doc comment and retrieve it's text
 docComment :: Parser Text
 docComment = do
   Control.Monad.void (symbol docCommentStart)

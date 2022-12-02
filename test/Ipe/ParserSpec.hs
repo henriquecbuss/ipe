@@ -5,19 +5,58 @@ module Ipe.ParserSpec (spec) where
 import qualified Data.Text as T
 import qualified Ipe.Parser
 import Test.Hspec
-import Test.Hspec.Megaparsec (err, etoks, initialState, shouldFailWith, shouldParse, succeedsLeaving, utoks)
+import Test.Hspec.Megaparsec (elabel, err, etoks, initialState, shouldFailWith, shouldParse, succeedsLeaving, utok, utoks)
 import Test.Hspec.QuickCheck
 import qualified Text.Megaparsec as Parsec.Common
 import qualified Text.Megaparsec.Char as Parsec.Char
 
 spec :: Spec
 spec = do
+  moduleNameSpec
   lexemeSpec
   symbolSpec
   symbolWithNoBlockCommentsSpec
   spaceSpec
   spaceWithNoBlockCommentsSpec
   docCommentSpec
+
+moduleNameSpec :: Spec
+moduleNameSpec =
+  describe "the moduleName parser" $ do
+    it "should parse a valid module name" $
+      Parsec.Common.parse
+        Ipe.Parser.moduleName
+        ""
+        "SomeModule"
+        `shouldParse` "SomeModule"
+
+    it "should parse a module name with dots" $
+      Parsec.Common.parse
+        Ipe.Parser.moduleName
+        ""
+        "Some.Module"
+        `shouldParse` "Some.Module"
+
+    it "should fail on a module that starts with a lower case letter" $
+      Parsec.Common.parse
+        Ipe.Parser.moduleName
+        ""
+        "someModule"
+        `shouldFailWith` err 0 (utok 's' <> elabel "uppercase letter")
+
+    it "should fail with a lower case letter after a dot" $
+      Parsec.Common.parse
+        Ipe.Parser.moduleName
+        ""
+        "Some.module"
+        `shouldFailWith` err 5 (utok 'm' <> elabel "uppercase letter")
+
+    it "should fail with a lower case letter after many dots" $
+      Parsec.Common.parse
+        Ipe.Parser.moduleName
+        ""
+        "Some.Very.Very.Very.Very.Deeply.nested.Module"
+        `shouldFailWith` err 32 (utok 'n' <> elabel "uppercase letter")
 
 lexemeSpec :: Spec
 lexemeSpec =
