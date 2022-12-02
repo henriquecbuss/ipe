@@ -1,0 +1,74 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.35.0.
+--
+-- see: https://github.com/sol/hpack
+
+name:           ipe
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/henriquecbuss/ipe-compiler#readme>
+homepage:       https://github.com/henriquecbuss/ipe-compiler#readme
+bug-reports:    https://github.com/henriquecbuss/ipe-compiler/issues
+author:         Henrique da Cunha Buss
+maintainer:     henriquebusss@gmail.com
+copyright:      2022 Henrique da Cunha Buss
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    CHANGELOG.md
+
+source-repository head
+  type: git
+  location: https://github.com/henriquecbuss/ipe-compiler
+
+library
+  exposed-modules:
+      Ipe
+      Ipe.Generator
+      Ipe.Grammar
+      Ipe.Parser
+      Ipe.Parser.Expression
+      Ipe.Parser.ModuleDefinition
+  other-modules:
+      Paths_ipe
+  hs-source-dirs:
+      src
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
+  build-depends:
+      base >=4.7 && <5
+    , megaparsec >=9.3.0 && <10
+    , text >=2.0.1 && <3
+  default-language: Haskell2010
+
+executable ipe-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_ipe
+  hs-source-dirs:
+      app
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , ipe
+  default-language: Haskell2010
+
+test-suite ipe-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Ipe.Parser.ModuleDefinitionSpec
+      Ipe.ParserSpec
+      Paths_ipe
+  hs-source-dirs:
+      test
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , hspec
+    , hspec-megaparsec >=2.2.0 && <3
+    , ipe
+    , megaparsec >=9.3.0 && <10
+    , text >=2.0.1 && <3
+  default-language: Haskell2010
