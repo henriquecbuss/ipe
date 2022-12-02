@@ -29,7 +29,6 @@ library
       Ipe.Generator
       Ipe.Grammar
       Ipe.Parser
-      Ipe.Parser.Expression
       Ipe.Parser.ModuleDefinition
   other-modules:
       Paths_ipe

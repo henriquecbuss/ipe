@@ -1,6 +1,4 @@
-module Ipe.Generator (expression) where
+module Ipe.Generator (generate) where
 
-import qualified Ipe.Grammar
-
-expression :: Ipe.Grammar.Expression -> String
-expression _ = "TODO"
+generate :: String -> String
+generate = id

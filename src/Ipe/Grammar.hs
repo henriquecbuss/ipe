@@ -1,6 +1,5 @@
 module Ipe.Grammar
   ( ModuleDefinition (..),
-    Expression (..),
   )
 where
 
@@ -12,5 +11,3 @@ data ModuleDefinition = ModuleDefinition
     moduleDocComment :: Maybe Text
   }
   deriving (Eq, Show)
-
-data Expression = Expression

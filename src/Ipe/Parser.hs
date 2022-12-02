@@ -8,8 +8,6 @@ module Ipe.Parser
     space,
     spaceWithNoBlockComments,
     docComment,
-    -- expression,
-    -- assign,
   )
 where
 
