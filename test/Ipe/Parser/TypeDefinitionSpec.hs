@@ -6,7 +6,7 @@ import qualified Data.Map.Strict as Map
 import qualified Ipe.Grammar
 import qualified Ipe.Parser.TypeDefinition
 import Test.Hspec
-import Test.Hspec.Megaparsec (elabel, err, etoks, failsLeaving, initialState, shouldFailOn, shouldFailWith, shouldFailWithM, shouldParse, ueof, utok, utoks)
+import Test.Hspec.Megaparsec (elabel, err, etoks, failsLeaving, initialState, shouldFailWith, shouldParse, ueof, utok, utoks)
 import qualified Text.Megaparsec as Parsec.Common
 
 spec :: Spec
@@ -17,6 +17,8 @@ parserSpec :: Spec
 parserSpec =
   describe "the type definition parser" $ do
     typeAlias
+    typeUnion
+    typeOpaque
 
 typeAlias :: Spec
 typeAlias =
@@ -31,19 +33,32 @@ typeAlias =
           Ipe.Parser.TypeDefinition.parser
           ""
           "type alas SomeType = Number"
-          `shouldFailWith` err 5 (utoks "alas " <> etoks "alias")
+          `shouldFailWith` err 5 (utoks "alas S" <> etoks "alias" <> etoks "opaque" <> etoks "union")
 
       it "should fail with a dot in the name" $ do
         Parsec.Common.parse
           Ipe.Parser.TypeDefinition.parser
+          ""
           "type alias Some.Type = Number"
-          `shouldFailOn` "."
+          `shouldFailWith` err
+            15
+            ( utok '.'
+                <> elabel "a type definition parameter, which must start with a lowercase letter, and followed by any combination of numbers, letters or `_`"
+                <> elabel "an `=`, followed by the actual type definition"
+                <> elabel "the rest of the type definition name, which can be any combination of letters, numbers or `_`"
+            )
 
       it "should fail with no `=`" $ do
         Parsec.Common.parse
           Ipe.Parser.TypeDefinition.parser
+          ""
           "type alias SomeType Number"
-          `shouldFailOn` "N"
+          `shouldFailWith` err
+            20
+            ( utok 'N'
+                <> elabel "a type definition parameter, which must start with a lowercase letter, and followed by any combination of numbers, letters or `_`"
+                <> elabel "an `=`, followed by the actual type definition"
+            )
 
       it "should fail with lowercase names" $ do
         Parsec.Common.parse
@@ -55,8 +70,15 @@ typeAlias =
       it "should fail with invalid character in the middle of name" $ do
         Parsec.Common.parse
           Ipe.Parser.TypeDefinition.parser
+          ""
           "type alias S!omeType = Number"
-          `shouldFailOn` "!"
+          `shouldFailWith` err
+            12
+            ( utok '!'
+                <> elabel "a type definition parameter, which must start with a lowercase letter, and followed by any combination of numbers, letters or `_`"
+                <> elabel "an `=`, followed by the actual type definition"
+                <> elabel "the rest of the type definition name, which can be any combination of letters, numbers or `_`"
+            )
 
       it "should fail with invalid type" $ do
         Parsec.Common.parse
@@ -258,3 +280,429 @@ typeAliasWithRecord =
                       ]
                   )
             }
+
+typeUnion :: Spec
+typeUnion =
+  context "when parsing a type union" $ do
+    it "should parse a single constructor" $ do
+      Parsec.Common.parse
+        Ipe.Parser.TypeDefinition.parser
+        ""
+        "type union SomeType = | Constructor"
+        `shouldParse` Ipe.Grammar.TypeUnionDefinition
+          { Ipe.Grammar.typeUnionDefinitionName = "SomeType",
+            Ipe.Grammar.typeUnionDefinitionParameters = [],
+            Ipe.Grammar.typeUnionDefinitionDocComment = Nothing,
+            Ipe.Grammar.typeUnionDefinitionConstructors =
+              [ Ipe.Grammar.CustomTypeConstructor
+                  { Ipe.Grammar.customTypeConstructorName = "Constructor",
+                    Ipe.Grammar.customTypeConstructorDocComment = Nothing,
+                    Ipe.Grammar.customTypeConstructorArgs = []
+                  }
+              ]
+          }
+
+    it "should parse a single with a simple argument" $ do
+      Parsec.Common.parse
+        Ipe.Parser.TypeDefinition.parser
+        ""
+        "type union SomeType = | Constructor Number"
+        `shouldParse` Ipe.Grammar.TypeUnionDefinition
+          { Ipe.Grammar.typeUnionDefinitionName = "SomeType",
+            Ipe.Grammar.typeUnionDefinitionParameters = [],
+            Ipe.Grammar.typeUnionDefinitionDocComment = Nothing,
+            Ipe.Grammar.typeUnionDefinitionConstructors =
+              [ Ipe.Grammar.CustomTypeConstructor
+                  { Ipe.Grammar.customTypeConstructorName = "Constructor",
+                    Ipe.Grammar.customTypeConstructorDocComment = Nothing,
+                    Ipe.Grammar.customTypeConstructorArgs =
+                      [ Ipe.Grammar.ConcreteType "Number" []
+                      ]
+                  }
+              ]
+          }
+
+    it "should parse a single with a complex argument" $ do
+      Parsec.Common.parse
+        Ipe.Parser.TypeDefinition.parser
+        ""
+        "type union SomeType =\n\
+        \  | Constructor \n\
+        \      Number\n\
+        \      (OneOf\n\
+        \        a\n\
+        \        { someType : String\n\
+        \        , someOtherType : b\n\
+        \        , anEmptyRecord : {}\n\
+        \        }\n\
+        \        String\n\
+        \      )\n\
+        \      c"
+        `shouldParse` Ipe.Grammar.TypeUnionDefinition
+          { Ipe.Grammar.typeUnionDefinitionName = "SomeType",
+            Ipe.Grammar.typeUnionDefinitionParameters = [],
+            Ipe.Grammar.typeUnionDefinitionDocComment = Nothing,
+            Ipe.Grammar.typeUnionDefinitionConstructors =
+              [ Ipe.Grammar.CustomTypeConstructor
+                  { Ipe.Grammar.customTypeConstructorName = "Constructor",
+                    Ipe.Grammar.customTypeConstructorDocComment = Nothing,
+                    Ipe.Grammar.customTypeConstructorArgs =
+                      [ Ipe.Grammar.ConcreteType "Number" [],
+                        Ipe.Grammar.ConcreteType
+                          "OneOf"
+                          [ Ipe.Grammar.ParameterType "a",
+                            Ipe.Grammar.RecordType
+                              ( Map.fromList
+                                  [ ("someType", Ipe.Grammar.ConcreteType "String" []),
+                                    ("someOtherType", Ipe.Grammar.ParameterType "b"),
+                                    ("anEmptyRecord", Ipe.Grammar.RecordType Map.empty)
+                                  ]
+                              ),
+                            Ipe.Grammar.ConcreteType
+                              "String"
+                              []
+                          ],
+                        Ipe.Grammar.ParameterType "c"
+                      ]
+                  }
+              ]
+          }
+
+    it "should parse when there are many constructors" $ do
+      Parsec.Common.parse
+        Ipe.Parser.TypeDefinition.parser
+        ""
+        "type union SomeType =\n\
+        \  | Constructor Number\n\
+        \  | AnotherConstructor a {}\n\
+        \  | YetAnotherConstructor (Maybe (List String))"
+        `shouldParse` Ipe.Grammar.TypeUnionDefinition
+          { Ipe.Grammar.typeUnionDefinitionName = "SomeType",
+            Ipe.Grammar.typeUnionDefinitionParameters = [],
+            Ipe.Grammar.typeUnionDefinitionDocComment = Nothing,
+            Ipe.Grammar.typeUnionDefinitionConstructors =
+              [ Ipe.Grammar.CustomTypeConstructor
+                  { Ipe.Grammar.customTypeConstructorName = "Constructor",
+                    Ipe.Grammar.customTypeConstructorDocComment = Nothing,
+                    Ipe.Grammar.customTypeConstructorArgs =
+                      [ Ipe.Grammar.ConcreteType "Number" []
+                      ]
+                  },
+                Ipe.Grammar.CustomTypeConstructor
+                  { Ipe.Grammar.customTypeConstructorName = "AnotherConstructor",
+                    Ipe.Grammar.customTypeConstructorDocComment = Nothing,
+                    Ipe.Grammar.customTypeConstructorArgs =
+                      [ Ipe.Grammar.ParameterType "a",
+                        Ipe.Grammar.RecordType Map.empty
+                      ]
+                  },
+                Ipe.Grammar.CustomTypeConstructor
+                  { Ipe.Grammar.customTypeConstructorName = "YetAnotherConstructor",
+                    Ipe.Grammar.customTypeConstructorDocComment = Nothing,
+                    Ipe.Grammar.customTypeConstructorArgs =
+                      [ Ipe.Grammar.ConcreteType
+                          "Maybe"
+                          [ Ipe.Grammar.ConcreteType "List" [Ipe.Grammar.ConcreteType "String" []]
+                          ]
+                      ]
+                  }
+              ]
+          }
+
+    it "should fail when missing `|` with a single constructor" $ do
+      Parsec.Common.parse
+        Ipe.Parser.TypeDefinition.parser
+        ""
+        "type union SomeType = Constructor Number"
+        `shouldFailWith` err
+          22
+          ( utok 'C'
+              <> elabel "a `|`, followed by a constructor name"
+              <> elabel "a doc comment, starting with `/*|` and ending with `*/`"
+          )
+
+    it "should fail when there are no constructors" $ do
+      Parsec.Common.parse
+        Ipe.Parser.TypeDefinition.parser
+        ""
+        "type union SomeType = | "
+        `shouldFailWith` err 24 (ueof <> elabel "a type constructor name, which must start with an uppercase letter, and followed by any combination of numbers, letters or `_`")
+
+    it "should fail with a lowercase constructor name" $ do
+      Parsec.Common.parse
+        Ipe.Parser.TypeDefinition.parser
+        ""
+        "type union SomeType = | constructor Number"
+        `shouldFailWith` err 24 (utok 'c' <> elabel "a type constructor name, which must start with an uppercase letter, and followed by any combination of numbers, letters or `_`")
+
+    it "should fail with typo in union" $ do
+      Parsec.Common.parse
+        Ipe.Parser.TypeDefinition.parser
+        ""
+        "type unon SomeType = | Constructor Number"
+        `shouldFailWith` err 5 (utoks "unon S" <> etoks "alias" <> etoks "opaque" <> etoks "union")
+
+    it "should fail with a dot in the name" $ do
+      Parsec.Common.parse
+        Ipe.Parser.TypeDefinition.parser
+        ""
+        "type union Some.Type = | Constructor Number"
+        `shouldFailWith` err
+          15
+          ( utok '.'
+              <> elabel "a type definition parameter, which must start with a lowercase letter, and followed by any combination of numbers, letters or `_`"
+              <> elabel "the actual type definition"
+              <> elabel "the rest of the type definition name, which can be any combination of letters, numbers or `_`"
+          )
+
+    it "should fail with no `=`" $ do
+      Parsec.Common.parse
+        Ipe.Parser.TypeDefinition.parser
+        ""
+        "type union SomeType | Constructor Number"
+        `shouldFailWith` err
+          20
+          ( utok '|'
+              <> elabel "a type definition parameter, which must start with a lowercase letter, and followed by any combination of numbers, letters or `_`"
+              <> elabel "the actual type definition"
+          )
+
+    it "should fail with lowercase names" $ do
+      Parsec.Common.parse
+        Ipe.Parser.TypeDefinition.parser
+        ""
+        "type union someType = | Constructor Number"
+        `shouldFailWith` err 11 (utok 's' <> elabel "a type definition name, which must start with an uppercase letter, and followed by any combination of numbers, letters or `_`")
+
+    it "should fail with invalid character in the middle of name" $ do
+      Parsec.Common.parse
+        Ipe.Parser.TypeDefinition.parser
+        ""
+        "type union S!omeType = | Constructor Number"
+        `shouldFailWith` err
+          12
+          ( utok '!'
+              <> elabel "a type definition parameter, which must start with a lowercase letter, and followed by any combination of numbers, letters or `_`"
+              <> elabel "the actual type definition"
+              <> elabel "the rest of the type definition name, which can be any combination of letters, numbers or `_`"
+          )
+
+    it "should fail with invalid type" $ do
+      Parsec.Common.parse
+        Ipe.Parser.TypeDefinition.parser
+        ""
+        "type union SomeType = | !Constructor Number"
+        `shouldFailWith` err 24 (utok '!' <> elabel "a type constructor name, which must start with an uppercase letter, and followed by any combination of numbers, letters or `_`")
+
+typeOpaque :: Spec
+typeOpaque =
+  context "when parsing a type opaque" $ do
+    it "should parse a single constructor" $ do
+      Parsec.Common.parse
+        Ipe.Parser.TypeDefinition.parser
+        ""
+        "type opaque SomeType = | Constructor"
+        `shouldParse` Ipe.Grammar.TypeOpaqueDefinition
+          { Ipe.Grammar.typeOpaqueDefinitionName = "SomeType",
+            Ipe.Grammar.typeOpaqueDefinitionParameters = [],
+            Ipe.Grammar.typeOpaqueDefinitionDocComment = Nothing,
+            Ipe.Grammar.typeOpaqueDefinitionConstructors =
+              [ Ipe.Grammar.CustomTypeConstructor
+                  { Ipe.Grammar.customTypeConstructorName = "Constructor",
+                    Ipe.Grammar.customTypeConstructorDocComment = Nothing,
+                    Ipe.Grammar.customTypeConstructorArgs = []
+                  }
+              ]
+          }
+
+    it "should parse a single with a simple argument" $ do
+      Parsec.Common.parse
+        Ipe.Parser.TypeDefinition.parser
+        ""
+        "type opaque SomeType = | Constructor Number"
+        `shouldParse` Ipe.Grammar.TypeOpaqueDefinition
+          { Ipe.Grammar.typeOpaqueDefinitionName = "SomeType",
+            Ipe.Grammar.typeOpaqueDefinitionParameters = [],
+            Ipe.Grammar.typeOpaqueDefinitionDocComment = Nothing,
+            Ipe.Grammar.typeOpaqueDefinitionConstructors =
+              [ Ipe.Grammar.CustomTypeConstructor
+                  { Ipe.Grammar.customTypeConstructorName = "Constructor",
+                    Ipe.Grammar.customTypeConstructorDocComment = Nothing,
+                    Ipe.Grammar.customTypeConstructorArgs =
+                      [ Ipe.Grammar.ConcreteType "Number" []
+                      ]
+                  }
+              ]
+          }
+
+    it "should parse a single with a complex argument" $ do
+      Parsec.Common.parse
+        Ipe.Parser.TypeDefinition.parser
+        ""
+        "type opaque SomeType =\n\
+        \  | Constructor \n\
+        \      Number\n\
+        \      (OneOf\n\
+        \        a\n\
+        \        { someType : String\n\
+        \        , someOtherType : b\n\
+        \        , anEmptyRecord : {}\n\
+        \        }\n\
+        \        String\n\
+        \      )\n\
+        \      c"
+        `shouldParse` Ipe.Grammar.TypeOpaqueDefinition
+          { Ipe.Grammar.typeOpaqueDefinitionName = "SomeType",
+            Ipe.Grammar.typeOpaqueDefinitionParameters = [],
+            Ipe.Grammar.typeOpaqueDefinitionDocComment = Nothing,
+            Ipe.Grammar.typeOpaqueDefinitionConstructors =
+              [ Ipe.Grammar.CustomTypeConstructor
+                  { Ipe.Grammar.customTypeConstructorName = "Constructor",
+                    Ipe.Grammar.customTypeConstructorDocComment = Nothing,
+                    Ipe.Grammar.customTypeConstructorArgs =
+                      [ Ipe.Grammar.ConcreteType "Number" [],
+                        Ipe.Grammar.ConcreteType
+                          "OneOf"
+                          [ Ipe.Grammar.ParameterType "a",
+                            Ipe.Grammar.RecordType
+                              ( Map.fromList
+                                  [ ("someType", Ipe.Grammar.ConcreteType "String" []),
+                                    ("someOtherType", Ipe.Grammar.ParameterType "b"),
+                                    ("anEmptyRecord", Ipe.Grammar.RecordType Map.empty)
+                                  ]
+                              ),
+                            Ipe.Grammar.ConcreteType
+                              "String"
+                              []
+                          ],
+                        Ipe.Grammar.ParameterType "c"
+                      ]
+                  }
+              ]
+          }
+
+    it "should parse when there are many constructors" $ do
+      Parsec.Common.parse
+        Ipe.Parser.TypeDefinition.parser
+        ""
+        "type opaque SomeType =\n\
+        \  | Constructor Number\n\
+        \  | AnotherConstructor a {}\n\
+        \  | YetAnotherConstructor (Maybe (List String))"
+        `shouldParse` Ipe.Grammar.TypeOpaqueDefinition
+          { Ipe.Grammar.typeOpaqueDefinitionName = "SomeType",
+            Ipe.Grammar.typeOpaqueDefinitionParameters = [],
+            Ipe.Grammar.typeOpaqueDefinitionDocComment = Nothing,
+            Ipe.Grammar.typeOpaqueDefinitionConstructors =
+              [ Ipe.Grammar.CustomTypeConstructor
+                  { Ipe.Grammar.customTypeConstructorName = "Constructor",
+                    Ipe.Grammar.customTypeConstructorDocComment = Nothing,
+                    Ipe.Grammar.customTypeConstructorArgs =
+                      [ Ipe.Grammar.ConcreteType "Number" []
+                      ]
+                  },
+                Ipe.Grammar.CustomTypeConstructor
+                  { Ipe.Grammar.customTypeConstructorName = "AnotherConstructor",
+                    Ipe.Grammar.customTypeConstructorDocComment = Nothing,
+                    Ipe.Grammar.customTypeConstructorArgs =
+                      [ Ipe.Grammar.ParameterType "a",
+                        Ipe.Grammar.RecordType Map.empty
+                      ]
+                  },
+                Ipe.Grammar.CustomTypeConstructor
+                  { Ipe.Grammar.customTypeConstructorName = "YetAnotherConstructor",
+                    Ipe.Grammar.customTypeConstructorDocComment = Nothing,
+                    Ipe.Grammar.customTypeConstructorArgs =
+                      [ Ipe.Grammar.ConcreteType
+                          "Maybe"
+                          [ Ipe.Grammar.ConcreteType "List" [Ipe.Grammar.ConcreteType "String" []]
+                          ]
+                      ]
+                  }
+              ]
+          }
+
+    it "should fail when missing `|` with a single constructor" $ do
+      Parsec.Common.parse
+        Ipe.Parser.TypeDefinition.parser
+        ""
+        "type opaque SomeType = Constructor Number"
+        `shouldFailWith` err
+          23
+          ( utok 'C'
+              <> elabel "a `|`, followed by a constructor name"
+              <> elabel "a doc comment, starting with `/*|` and ending with `*/`"
+          )
+
+    it "should fail when there are no constructors" $ do
+      Parsec.Common.parse
+        Ipe.Parser.TypeDefinition.parser
+        ""
+        "type opaque SomeType = | "
+        `shouldFailWith` err 25 (ueof <> elabel "a type constructor name, which must start with an uppercase letter, and followed by any combination of numbers, letters or `_`")
+
+    it "should fail with a lowercase constructor name" $ do
+      Parsec.Common.parse
+        Ipe.Parser.TypeDefinition.parser
+        ""
+        "type opaque SomeType = | constructor Number"
+        `shouldFailWith` err 25 (utok 'c' <> elabel "a type constructor name, which must start with an uppercase letter, and followed by any combination of numbers, letters or `_`")
+
+    it "should fail with typo in opaque" $ do
+      Parsec.Common.parse
+        Ipe.Parser.TypeDefinition.parser
+        ""
+        "type opaqe SomeType = | Constructor Number"
+        `shouldFailWith` err 5 (utoks "opaqe " <> etoks "alias" <> etoks "opaque" <> etoks "union")
+
+    it "should fail with a dot in the name" $ do
+      Parsec.Common.parse
+        Ipe.Parser.TypeDefinition.parser
+        ""
+        "type opaque Some.Type = | Constructor Number"
+        `shouldFailWith` err
+          16
+          ( utok '.'
+              <> elabel "a type definition parameter, which must start with a lowercase letter, and followed by any combination of numbers, letters or `_`"
+              <> elabel "the actual type definition"
+              <> elabel "the rest of the type definition name, which can be any combination of letters, numbers or `_`"
+          )
+
+    it "should fail with no `=`" $ do
+      Parsec.Common.parse
+        Ipe.Parser.TypeDefinition.parser
+        ""
+        "type opaque SomeType | Constructor Number"
+        `shouldFailWith` err
+          21
+          ( utok '|'
+              <> elabel "a type definition parameter, which must start with a lowercase letter, and followed by any combination of numbers, letters or `_`"
+              <> elabel "the actual type definition"
+          )
+
+    it "should fail with lowercase names" $ do
+      Parsec.Common.parse
+        Ipe.Parser.TypeDefinition.parser
+        ""
+        "type opaque someType = | Constructor Number"
+        `shouldFailWith` err 12 (utok 's' <> elabel "a type definition name, which must start with an uppercase letter, and followed by any combination of numbers, letters or `_`")
+
+    it "should fail with invalid character in the middle of name" $ do
+      Parsec.Common.parse
+        Ipe.Parser.TypeDefinition.parser
+        ""
+        "type opaque S!omeType = | Constructor Number"
+        `shouldFailWith` err
+          13
+          ( utok '!'
+              <> elabel "a type definition parameter, which must start with a lowercase letter, and followed by any combination of numbers, letters or `_`"
+              <> elabel "the actual type definition"
+              <> elabel "the rest of the type definition name, which can be any combination of letters, numbers or `_`"
+          )
+
+    it "should fail with invalid type" $ do
+      Parsec.Common.parse
+        Ipe.Parser.TypeDefinition.parser
+        ""
+        "type opaque SomeType = | !Constructor Number"
+        `shouldFailWith` err 25 (utok '!' <> elabel "a type constructor name, which must start with an uppercase letter, and followed by any combination of numbers, letters or `_`")

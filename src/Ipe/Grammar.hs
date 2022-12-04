@@ -3,6 +3,7 @@ module Ipe.Grammar
     ImportList,
     ImportExpression (..),
     TypeDefinition (..),
+    CustomTypeConstructor (..),
     IpeType (..),
   )
 where

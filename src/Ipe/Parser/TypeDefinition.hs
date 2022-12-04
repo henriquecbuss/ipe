@@ -4,36 +4,36 @@ module Ipe.Parser.TypeDefinition (parser) where
 
 import qualified Control.Monad
 import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Ipe.Grammar
 import Ipe.Parser (Parser)
 import qualified Ipe.Parser
-import Text.Megaparsec ((<?>), (<|>))
+import Text.Megaparsec ((<?>))
 import qualified Text.Megaparsec as Parsec.Common
 import qualified Text.Megaparsec.Char as Parsec.Char
 
 parser :: Parser Ipe.Grammar.TypeDefinition
-parser =
-  Parsec.Common.choice
-    [ typeAlias,
-      typeUnion,
-      typeOpaque
-    ]
-
-typeAlias :: Parser Ipe.Grammar.TypeDefinition
-typeAlias = do
+parser = do
   docComment <- Parsec.Common.optional Ipe.Parser.docComment
 
   Control.Monad.void (Ipe.Parser.symbol "type")
+
+  Parsec.Common.choice
+    [ typeAlias docComment,
+      typeUnion docComment,
+      typeOpaque docComment
+    ]
+
+typeAlias :: Maybe Text -> Parser Ipe.Grammar.TypeDefinition
+typeAlias docComment = do
   Control.Monad.void (Ipe.Parser.symbol "alias")
 
   typeAliasName <- Ipe.Parser.lexeme typeDefinitionName
 
   typeAliasParameters <- Parsec.Common.many (Ipe.Parser.lexeme typeDefinitionParameter)
 
-  Control.Monad.void (Ipe.Parser.symbol "=") <?> "the actual type definition"
+  Control.Monad.void (Ipe.Parser.symbol "=") <?> "an `=`, followed by the actual type definition"
 
   typeAliasType <- ipeType True
 
@@ -45,11 +45,36 @@ typeAlias = do
         Ipe.Grammar.typeAliasType = typeAliasType
       }
 
-typeUnion :: Parser Ipe.Grammar.TypeDefinition
-typeUnion = Parsec.Common.hidden $ Parsec.Common.failure Nothing Set.empty
+typeUnion :: Maybe Text -> Parser Ipe.Grammar.TypeDefinition
+typeUnion docComment =
+  customTypeWithConstructors "union" docComment Ipe.Grammar.TypeUnionDefinition
 
-typeOpaque :: Parser Ipe.Grammar.TypeDefinition
-typeOpaque = Parsec.Common.hidden $ Parsec.Common.failure Nothing Set.empty
+typeOpaque :: Maybe Text -> Parser Ipe.Grammar.TypeDefinition
+typeOpaque docComment =
+  customTypeWithConstructors "opaque" docComment Ipe.Grammar.TypeOpaqueDefinition
+
+customTypeWithConstructors ::
+  Text ->
+  Maybe Text ->
+  ( Text ->
+    [Text] ->
+    Maybe Text ->
+    [Ipe.Grammar.CustomTypeConstructor] ->
+    Ipe.Grammar.TypeDefinition
+  ) ->
+  Parser Ipe.Grammar.TypeDefinition
+customTypeWithConstructors typeName docComment buildType = do
+  Control.Monad.void (Ipe.Parser.symbol typeName)
+
+  name <- Ipe.Parser.lexeme typeDefinitionName
+
+  parameters <- Parsec.Common.many (Ipe.Parser.lexeme typeDefinitionParameter)
+
+  Control.Monad.void (Ipe.Parser.symbol "=") <?> "the actual type definition"
+
+  constructors <- Parsec.Common.some customTypeConstructor
+
+  return $ buildType name parameters docComment constructors
 
 typeDefinitionName :: Parser Text
 typeDefinitionName = do
@@ -85,10 +110,10 @@ typeDefinitionParameter = do
 ipeType :: Bool -> Parser Ipe.Grammar.IpeType
 ipeType acceptArgs =
   Parsec.Common.choice
-    [ Ipe.Parser.symbol "(" *> ipeType True <* (Ipe.Parser.symbol ")" <?> "a closing parenthesis (`)`)"),
-      parameterType,
-      concreteType acceptArgs,
-      recordType
+    [ Ipe.Parser.symbol "(" *> Ipe.Parser.lexeme (ipeType True) <* (Ipe.Parser.symbol ")" <?> "a closing parenthesis (`)`)"),
+      Ipe.Parser.lexeme parameterType,
+      Ipe.Parser.lexeme $ concreteType acceptArgs,
+      Ipe.Parser.lexeme recordType
     ]
     <?> "a type, which can start with an uppercase or lowercase letter, or a record, with fields inside curly brackets (`{` and `}`)"
 
@@ -170,3 +195,20 @@ recordItem = do
   itemType <- ipeType True
 
   return (itemName, itemType)
+
+customTypeConstructor :: Parser Ipe.Grammar.CustomTypeConstructor
+customTypeConstructor = do
+  docComment <- Parsec.Common.optional Ipe.Parser.docComment <?> "a doc comment, starting with `/*|` and ending with `*/`"
+
+  Control.Monad.void (Ipe.Parser.symbol "|" <?> "a `|`, followed by a constructor name")
+
+  name <- Ipe.Parser.lexeme typeDefinitionName <?> "a type constructor name, which must start with an uppercase letter, and followed by any combination of numbers, letters or `_`"
+
+  customTypeArgs <- Parsec.Common.many $ ipeType False
+
+  return $
+    Ipe.Grammar.CustomTypeConstructor
+      { Ipe.Grammar.customTypeConstructorName = name,
+        Ipe.Grammar.customTypeConstructorDocComment = docComment,
+        Ipe.Grammar.customTypeConstructorArgs = customTypeArgs
+      }
