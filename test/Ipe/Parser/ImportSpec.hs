@@ -5,7 +5,7 @@ module Ipe.Parser.ImportSpec (spec) where
 import qualified Ipe.Grammar
 import qualified Ipe.Parser.Import
 import Test.Hspec
-import Test.Hspec.Megaparsec (elabel, err, etoks, shouldFailWith, shouldParse, ueof, utok, utoks)
+import Test.Hspec.Megaparsec (elabel, err, shouldFailWith, shouldParse, ueof, utok)
 import qualified Text.Megaparsec as Parsec.Common
 
 spec :: Spec

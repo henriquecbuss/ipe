@@ -5,6 +5,8 @@ module Ipe.Grammar
     TypeDefinition (..),
     CustomTypeConstructor (..),
     IpeType (..),
+    Expression (..),
+    IpeBinaryOperator (..),
   )
 where
 
@@ -74,4 +76,22 @@ data IpeType
   = ParameterType Text
   | ConcreteType Text [IpeType]
   | RecordType (Map Text IpeType)
+  deriving (Eq, Show)
+
+data Expression
+  = IpeBinaryOperation IpeBinaryOperator Expression Expression
+  | IpeNumber Float
+  | IpeString Text
+  | -- TODO - Should this be something like { importedFrom :: Text, name :: Text }?
+    IpeFunctionCallOrValue Text [Expression]
+  deriving (Eq, Show)
+
+data IpeBinaryOperator
+  = Add
+  | Subtract
+  | Divide
+  | Multiply
+  | Exponentiation
+  | PipeRight
+  | PipeLeft
   deriving (Eq, Show)

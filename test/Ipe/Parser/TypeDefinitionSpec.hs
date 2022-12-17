@@ -494,6 +494,44 @@ typeUnion =
         "type union SomeType = | !Constructor Number"
         `shouldFailWith` err 24 (utok '!' <> elabel "a type constructor name, which must start with an uppercase letter, and followed by any combination of numbers, letters or `_`")
 
+    it "should parse imported types" $ do
+      Parsec.Common.parse
+        Ipe.Parser.TypeDefinition.parser
+        ""
+        "type union SomeType = | Constructor Some.Other.Type"
+        `shouldParse` Ipe.Grammar.TypeUnionDefinition
+          { Ipe.Grammar.typeUnionDefinitionName = "SomeType",
+            Ipe.Grammar.typeUnionDefinitionParameters = [],
+            Ipe.Grammar.typeUnionDefinitionDocComment = Nothing,
+            Ipe.Grammar.typeUnionDefinitionConstructors =
+              [ Ipe.Grammar.CustomTypeConstructor
+                  { Ipe.Grammar.customTypeConstructorName = "Constructor",
+                    Ipe.Grammar.customTypeConstructorDocComment = Nothing,
+                    Ipe.Grammar.customTypeConstructorArgs =
+                      [ Ipe.Grammar.ConcreteType "Some.Other.Type" []
+                      ]
+                  }
+              ]
+          }
+
+    it "shouldn't allow dots in the constructor name" $ do
+      Parsec.Common.parse
+        Ipe.Parser.TypeDefinition.parser
+        ""
+        "type union SomeType = | Some.Constructor Number"
+        `shouldParse` Ipe.Grammar.TypeUnionDefinition
+          { Ipe.Grammar.typeUnionDefinitionName = "SomeType",
+            Ipe.Grammar.typeUnionDefinitionParameters = [],
+            Ipe.Grammar.typeUnionDefinitionDocComment = Nothing,
+            Ipe.Grammar.typeUnionDefinitionConstructors =
+              [ Ipe.Grammar.CustomTypeConstructor
+                  { Ipe.Grammar.customTypeConstructorName = "Some",
+                    Ipe.Grammar.customTypeConstructorDocComment = Nothing,
+                    Ipe.Grammar.customTypeConstructorArgs = []
+                  }
+              ]
+          }
+
 typeOpaque :: Spec
 typeOpaque =
   context "when parsing a type opaque" $ do
@@ -706,3 +744,41 @@ typeOpaque =
         ""
         "type opaque SomeType = | !Constructor Number"
         `shouldFailWith` err 25 (utok '!' <> elabel "a type constructor name, which must start with an uppercase letter, and followed by any combination of numbers, letters or `_`")
+
+    it "should parse imported types" $ do
+      Parsec.Common.parse
+        Ipe.Parser.TypeDefinition.parser
+        ""
+        "type opaque SomeType = | Constructor Some.Other.Type"
+        `shouldParse` Ipe.Grammar.TypeOpaqueDefinition
+          { Ipe.Grammar.typeOpaqueDefinitionName = "SomeType",
+            Ipe.Grammar.typeOpaqueDefinitionParameters = [],
+            Ipe.Grammar.typeOpaqueDefinitionDocComment = Nothing,
+            Ipe.Grammar.typeOpaqueDefinitionConstructors =
+              [ Ipe.Grammar.CustomTypeConstructor
+                  { Ipe.Grammar.customTypeConstructorName = "Constructor",
+                    Ipe.Grammar.customTypeConstructorDocComment = Nothing,
+                    Ipe.Grammar.customTypeConstructorArgs =
+                      [ Ipe.Grammar.ConcreteType "Some.Other.Type" []
+                      ]
+                  }
+              ]
+          }
+
+    it "shouldn't allow dots in the constructor name" $ do
+      Parsec.Common.parse
+        Ipe.Parser.TypeDefinition.parser
+        ""
+        "type opaque SomeType = | Some.Constructor Number"
+        `shouldParse` Ipe.Grammar.TypeOpaqueDefinition
+          { Ipe.Grammar.typeOpaqueDefinitionName = "SomeType",
+            Ipe.Grammar.typeOpaqueDefinitionParameters = [],
+            Ipe.Grammar.typeOpaqueDefinitionDocComment = Nothing,
+            Ipe.Grammar.typeOpaqueDefinitionConstructors =
+              [ Ipe.Grammar.CustomTypeConstructor
+                  { Ipe.Grammar.customTypeConstructorName = "Some",
+                    Ipe.Grammar.customTypeConstructorDocComment = Nothing,
+                    Ipe.Grammar.customTypeConstructorArgs = []
+                  }
+              ]
+          }

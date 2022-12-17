@@ -3,8 +3,6 @@
 module Ipe.Parser.Import (singleParser, listParser) where
 
 import qualified Control.Monad
-import Data.Text (Text)
-import qualified Data.Text as T
 import qualified Ipe.Grammar
 import Ipe.Parser (Parser)
 import qualified Ipe.Parser
