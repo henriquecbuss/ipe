@@ -1,5 +1,7 @@
 module Ipe.Grammar
   ( ModuleDefinition (..),
+    IpeFunction (..),
+    IpeFunctionBody (..),
     ImportList,
     ImportExpression (..),
     TypeDefinition (..),
@@ -7,6 +9,9 @@ module Ipe.Grammar
     IpeType (..),
     Expression (..),
     IpeBinaryOperator (..),
+    TypeAlias (..),
+    TypeUnion (..),
+    TypeOpaque (..),
   )
 where
 
@@ -38,24 +43,33 @@ data ImportExpression = ImportExpression
 -- - Type unions are a collection of CustomTypeConstructors
 -- - Opaque types  are a collection of CustomTypeConstructors
 data TypeDefinition
-  = TypeAliasDefinition
-      { typeAliasDefinitionName :: Text,
-        typeAliasDefinitionParameters :: [Text],
-        typeAliasDefinitionDocComment :: Maybe Text,
-        typeAliasType :: IpeType
-      }
-  | TypeUnionDefinition
-      { typeUnionDefinitionName :: Text,
-        typeUnionDefinitionParameters :: [Text],
-        typeUnionDefinitionDocComment :: Maybe Text,
-        typeUnionDefinitionConstructors :: [CustomTypeConstructor]
-      }
-  | TypeOpaqueDefinition
-      { typeOpaqueDefinitionName :: Text,
-        typeOpaqueDefinitionParameters :: [Text],
-        typeOpaqueDefinitionDocComment :: Maybe Text,
-        typeOpaqueDefinitionConstructors :: [CustomTypeConstructor]
-      }
+  = TypeAliasDefinition TypeAlias
+  | TypeUnionDefinition TypeUnion
+  | TypeOpaqueDefinition TypeOpaque
+  deriving (Eq, Show)
+
+data TypeAlias = TypeAlias
+  { typeAliasDefinitionName :: Text,
+    typeAliasDefinitionParameters :: [Text],
+    typeAliasDefinitionDocComment :: Maybe Text,
+    typeAliasType :: IpeType
+  }
+  deriving (Eq, Show)
+
+data TypeUnion = TypeUnion
+  { typeUnionDefinitionName :: Text,
+    typeUnionDefinitionParameters :: [Text],
+    typeUnionDefinitionDocComment :: Maybe Text,
+    typeUnionDefinitionConstructors :: [CustomTypeConstructor]
+  }
+  deriving (Eq, Show)
+
+data TypeOpaque = TypeOpaque
+  { typeOpaqueDefinitionName :: Text,
+    typeOpaqueDefinitionParameters :: [Text],
+    typeOpaqueDefinitionDocComment :: Maybe Text,
+    typeOpaqueDefinitionConstructors :: [CustomTypeConstructor]
+  }
   deriving (Eq, Show)
 
 -- | A custom type constructor used in union types and opaque types.
@@ -78,11 +92,35 @@ data IpeType
   | RecordType (Map Text IpeType)
   deriving (Eq, Show)
 
+-- | A function definition, with a list of named arguments and a function body
+data IpeFunction = IpeFunction
+  { arguments :: [Text],
+    functionBody :: IpeFunctionBody
+  }
+  deriving (Eq, Show)
+
+-- | A function body, which allows any amount of attributions, like
+-- `x = 1 + 1`, and a return expression
+data IpeFunctionBody = IpeFunctionBody
+  { attributions :: [(Text, Expression)],
+    functionReturn :: Expression
+  }
+  deriving (Eq, Show)
+
+-- | An expression, which can be:
+-- - A binary operation, with an operator and two expressions
+-- - A number
+-- - A string
+-- - A function call or value, with a name and a list of arguments
+-- - A match expression
 data Expression
   = IpeBinaryOperation IpeBinaryOperator Expression Expression
   | IpeNumber Float
-  | IpeString Text
-  | -- TODO - Should this be something like { importedFrom :: Text, name :: Text }?
+  | -- TODO - Add `match` expressions
+    -- IpeMatch Expression [(IpeMatchPattern, IpeFunctionBody)]
+    IpeString Text
+  | -- TODO - Support record accessors
+    -- TODO - Should this be something like { importedFrom :: Text, name :: Text }?
     IpeFunctionCallOrValue Text [Expression]
   deriving (Eq, Show)
 

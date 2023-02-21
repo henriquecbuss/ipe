@@ -39,19 +39,33 @@ typeAlias docComment = do
 
   return $
     Ipe.Grammar.TypeAliasDefinition
-      { Ipe.Grammar.typeAliasDefinitionName = typeAliasName,
-        Ipe.Grammar.typeAliasDefinitionParameters = typeAliasParameters,
-        Ipe.Grammar.typeAliasDefinitionDocComment = docComment,
-        Ipe.Grammar.typeAliasType = typeAliasType
-      }
+      ( Ipe.Grammar.TypeAlias
+          { Ipe.Grammar.typeAliasDefinitionName = typeAliasName,
+            Ipe.Grammar.typeAliasDefinitionParameters = typeAliasParameters,
+            Ipe.Grammar.typeAliasDefinitionDocComment = docComment,
+            Ipe.Grammar.typeAliasType = typeAliasType
+          }
+      )
 
 typeUnion :: Maybe Text -> Parser Ipe.Grammar.TypeDefinition
 typeUnion docComment =
-  customTypeWithConstructors "union" docComment Ipe.Grammar.TypeUnionDefinition
+  customTypeWithConstructors
+    "union"
+    docComment
+    ( \name params doc type_ ->
+        Ipe.Grammar.TypeUnionDefinition $
+          Ipe.Grammar.TypeUnion name params doc type_
+    )
 
 typeOpaque :: Maybe Text -> Parser Ipe.Grammar.TypeDefinition
 typeOpaque docComment =
-  customTypeWithConstructors "opaque" docComment Ipe.Grammar.TypeOpaqueDefinition
+  customTypeWithConstructors
+    "opaque"
+    docComment
+    ( \name params doc type_ ->
+        Ipe.Grammar.TypeOpaqueDefinition $
+          Ipe.Grammar.TypeOpaque name params doc type_
+    )
 
 customTypeWithConstructors ::
   Text ->
