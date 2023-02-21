@@ -33,6 +33,7 @@ library
       Ipe.Parser.Function
       Ipe.Parser.Import
       Ipe.Parser.ModuleDefinition
+      Ipe.Parser.TopLevelDefinition
       Ipe.Parser.TypeDefinition
   other-modules:
       Paths_ipe
@@ -67,6 +68,7 @@ test-suite ipe-test
       Ipe.Parser.FunctionSpec
       Ipe.Parser.ImportSpec
       Ipe.Parser.ModuleDefinitionSpec
+      Ipe.Parser.TopLevelDefinitionSpec
       Ipe.Parser.TypeDefinitionSpec
       Ipe.ParserSpec
       Paths_ipe

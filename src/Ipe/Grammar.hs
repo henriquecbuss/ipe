@@ -1,5 +1,7 @@
 module Ipe.Grammar
   ( ModuleDefinition (..),
+    TopLevelDefinitionValue (..),
+    TopLevelDefinition (..),
     IpeFunction (..),
     IpeFunctionBody (..),
     ImportList,
@@ -107,6 +109,18 @@ data IpeFunctionBody = IpeFunctionBody
   }
   deriving (Eq, Show)
 
+-- | A top level definition, which can be an expression or a function, with a name, and optional doc comment and type annotation
+data TopLevelDefinition = TopLevelDefinition
+  { topLevelDefinitionName :: Text,
+    topLevelDefinitionDocComment :: Maybe Text,
+    topLevelDefinitionValue :: TopLevelDefinitionValue
+    -- TODO - Add type annotations
+  }
+  deriving (Eq, Show)
+
+data TopLevelDefinitionValue = TopLevelExpression Expression | TopLevelFunction IpeFunction
+  deriving (Eq, Show)
+
 -- | An expression, which can be:
 -- - A binary operation, with an operator and two expressions
 -- - A number
@@ -118,6 +132,7 @@ data Expression
   | IpeNumber Float
   | -- TODO - Add `match` expressions
     -- IpeMatch Expression [(IpeMatchPattern, IpeFunctionBody)]
+    -- TODO - Add lambda functions
     IpeString Text
   | -- TODO - Support record accessors
     -- TODO - Should this be something like { importedFrom :: Text, name :: Text }?
