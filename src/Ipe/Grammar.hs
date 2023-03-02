@@ -9,6 +9,7 @@ module Ipe.Grammar
     TypeDefinition (..),
     CustomTypeConstructor (..),
     IpeType (..),
+    TypeAnnotation (..),
     Expression (..),
     IpeBinaryOperator (..),
     TypeAlias (..),
@@ -113,12 +114,21 @@ data IpeFunctionBody = IpeFunctionBody
 data TopLevelDefinition = TopLevelDefinition
   { topLevelDefinitionName :: Text,
     topLevelDefinitionDocComment :: Maybe Text,
-    topLevelDefinitionValue :: TopLevelDefinitionValue
-    -- TODO - Add type annotations
+    topLevelDefinitionValue :: TopLevelDefinitionValue,
+    topLevelDefinitionTypeAnnotation :: Maybe TypeAnnotation
   }
   deriving (Eq, Show)
 
-data TopLevelDefinitionValue = TopLevelExpression Expression | TopLevelFunction IpeFunction
+data TopLevelDefinitionValue
+  = TopLevelExpression Expression
+  | TopLevelFunction IpeFunction
+  deriving (Eq, Show)
+
+data TypeAnnotation = TypeAnnotation
+  { typeAnnotationName :: Text,
+    typeAnnotationArguments :: [IpeType],
+    typeAnnotationReturnType :: IpeType
+  }
   deriving (Eq, Show)
 
 -- | An expression, which can be:

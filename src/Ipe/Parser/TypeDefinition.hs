@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Ipe.Parser.TypeDefinition (parser) where
+module Ipe.Parser.TypeDefinition (parser, ipeType) where
 
 import qualified Control.Monad
 import qualified Data.Map.Strict as Map
