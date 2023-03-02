@@ -1,8 +1,6 @@
 module Ipe.Grammar
   ( ModuleDefinition (..),
-    TopLevelDefinitionValue (..),
     TopLevelDefinition (..),
-    IpeFunction (..),
     IpeFunctionBody (..),
     ImportList,
     ImportExpression (..),
@@ -95,13 +93,6 @@ data IpeType
   | RecordType (Map Text IpeType)
   deriving (Eq, Show)
 
--- | A function definition, with a list of named arguments and a function body
-data IpeFunction = IpeFunction
-  { arguments :: [Text],
-    functionBody :: IpeFunctionBody
-  }
-  deriving (Eq, Show)
-
 -- | A function body, which allows any amount of attributions, like
 -- `x = 1 + 1`, and a return expression
 data IpeFunctionBody = IpeFunctionBody
@@ -114,14 +105,9 @@ data IpeFunctionBody = IpeFunctionBody
 data TopLevelDefinition = TopLevelDefinition
   { topLevelDefinitionName :: Text,
     topLevelDefinitionDocComment :: Maybe Text,
-    topLevelDefinitionValue :: TopLevelDefinitionValue,
+    topLevelDefinitionValue :: Expression,
     topLevelDefinitionTypeAnnotation :: Maybe TypeAnnotation
   }
-  deriving (Eq, Show)
-
-data TopLevelDefinitionValue
-  = TopLevelExpression Expression
-  | TopLevelFunction IpeFunction
   deriving (Eq, Show)
 
 data TypeAnnotation = TypeAnnotation
@@ -137,16 +123,17 @@ data TypeAnnotation = TypeAnnotation
 -- - A string
 -- - A function call or value, with a name and a list of arguments
 -- - A match expression
+-- - A function definition, with a list of arguments and a function definition body
 data Expression
   = IpeBinaryOperation IpeBinaryOperator Expression Expression
   | IpeNumber Float
   | -- TODO - Add `match` expressions
     -- IpeMatch Expression [(IpeMatchPattern, IpeFunctionBody)]
-    -- TODO - Add lambda functions
     IpeString Text
   | -- TODO - Support record accessors
     -- TODO - Should this be something like { importedFrom :: Text, name :: Text }?
     IpeFunctionCallOrValue Text [Expression]
+  | IpeFunction [Text] IpeFunctionBody
   deriving (Eq, Show)
 
 data IpeBinaryOperator

@@ -20,18 +20,15 @@ spec = describe "the top level definition parser" $ do
         { Ipe.Grammar.topLevelDefinitionName = "topLevelFunction",
           Ipe.Grammar.topLevelDefinitionDocComment = Nothing,
           Ipe.Grammar.topLevelDefinitionValue =
-            Ipe.Grammar.TopLevelFunction
-              ( Ipe.Grammar.IpeFunction
-                  { Ipe.Grammar.arguments = ["x"],
-                    Ipe.Grammar.functionBody =
-                      Ipe.Grammar.IpeFunctionBody
-                        { Ipe.Grammar.attributions = [],
-                          Ipe.Grammar.functionReturn =
-                            Ipe.Grammar.IpeBinaryOperation
-                              Ipe.Grammar.Add
-                              (Ipe.Grammar.IpeFunctionCallOrValue "x" [])
-                              (Ipe.Grammar.IpeNumber 1)
-                        }
+            Ipe.Grammar.IpeFunction
+              ["x"]
+              ( Ipe.Grammar.IpeFunctionBody
+                  { Ipe.Grammar.attributions = [],
+                    Ipe.Grammar.functionReturn =
+                      Ipe.Grammar.IpeBinaryOperation
+                        Ipe.Grammar.Add
+                        (Ipe.Grammar.IpeFunctionCallOrValue "x" [])
+                        (Ipe.Grammar.IpeNumber 1)
                   }
               ),
           Ipe.Grammar.topLevelDefinitionTypeAnnotation = Nothing
@@ -46,18 +43,15 @@ spec = describe "the top level definition parser" $ do
         { Ipe.Grammar.topLevelDefinitionName = "topLevelFunction",
           Ipe.Grammar.topLevelDefinitionDocComment = Nothing,
           Ipe.Grammar.topLevelDefinitionValue =
-            Ipe.Grammar.TopLevelFunction
-              ( Ipe.Grammar.IpeFunction
-                  { Ipe.Grammar.arguments = ["x", "y"],
-                    Ipe.Grammar.functionBody =
-                      Ipe.Grammar.IpeFunctionBody
-                        { Ipe.Grammar.attributions = [],
-                          Ipe.Grammar.functionReturn =
-                            Ipe.Grammar.IpeBinaryOperation
-                              Ipe.Grammar.Add
-                              (Ipe.Grammar.IpeFunctionCallOrValue "x" [])
-                              (Ipe.Grammar.IpeFunctionCallOrValue "y" [])
-                        }
+            Ipe.Grammar.IpeFunction
+              ["x", "y"]
+              ( Ipe.Grammar.IpeFunctionBody
+                  { Ipe.Grammar.attributions = [],
+                    Ipe.Grammar.functionReturn =
+                      Ipe.Grammar.IpeBinaryOperation
+                        Ipe.Grammar.Add
+                        (Ipe.Grammar.IpeFunctionCallOrValue "x" [])
+                        (Ipe.Grammar.IpeFunctionCallOrValue "y" [])
                   }
               ),
           Ipe.Grammar.topLevelDefinitionTypeAnnotation = Nothing
@@ -72,12 +66,10 @@ spec = describe "the top level definition parser" $ do
         { Ipe.Grammar.topLevelDefinitionName = "topLevelExpression",
           Ipe.Grammar.topLevelDefinitionDocComment = Nothing,
           Ipe.Grammar.topLevelDefinitionValue =
-            Ipe.Grammar.TopLevelExpression
-              ( Ipe.Grammar.IpeBinaryOperation
-                  Ipe.Grammar.Add
-                  (Ipe.Grammar.IpeFunctionCallOrValue "x" [])
-                  (Ipe.Grammar.IpeNumber 1)
-              ),
+            Ipe.Grammar.IpeBinaryOperation
+              Ipe.Grammar.Add
+              (Ipe.Grammar.IpeFunctionCallOrValue "x" [])
+              (Ipe.Grammar.IpeNumber 1),
           Ipe.Grammar.topLevelDefinitionTypeAnnotation = Nothing
         }
 
@@ -91,18 +83,15 @@ spec = describe "the top level definition parser" $ do
         { Ipe.Grammar.topLevelDefinitionName = "topLevelFunction",
           Ipe.Grammar.topLevelDefinitionDocComment = Just "A top level function that adds 1 to its argument ",
           Ipe.Grammar.topLevelDefinitionValue =
-            Ipe.Grammar.TopLevelFunction
-              ( Ipe.Grammar.IpeFunction
-                  { Ipe.Grammar.arguments = ["x"],
-                    Ipe.Grammar.functionBody =
-                      Ipe.Grammar.IpeFunctionBody
-                        { Ipe.Grammar.attributions = [],
-                          Ipe.Grammar.functionReturn =
-                            Ipe.Grammar.IpeBinaryOperation
-                              Ipe.Grammar.Add
-                              (Ipe.Grammar.IpeFunctionCallOrValue "x" [])
-                              (Ipe.Grammar.IpeNumber 1)
-                        }
+            Ipe.Grammar.IpeFunction
+              ["x"]
+              ( Ipe.Grammar.IpeFunctionBody
+                  { Ipe.Grammar.attributions = [],
+                    Ipe.Grammar.functionReturn =
+                      Ipe.Grammar.IpeBinaryOperation
+                        Ipe.Grammar.Add
+                        (Ipe.Grammar.IpeFunctionCallOrValue "x" [])
+                        (Ipe.Grammar.IpeNumber 1)
                   }
               ),
           Ipe.Grammar.topLevelDefinitionTypeAnnotation = Nothing
@@ -118,12 +107,10 @@ spec = describe "the top level definition parser" $ do
         { Ipe.Grammar.topLevelDefinitionName = "topLevelExpression",
           Ipe.Grammar.topLevelDefinitionDocComment = Just "A top level expression that equals x + 1 ",
           Ipe.Grammar.topLevelDefinitionValue =
-            Ipe.Grammar.TopLevelExpression
-              ( Ipe.Grammar.IpeBinaryOperation
-                  Ipe.Grammar.Add
-                  (Ipe.Grammar.IpeFunctionCallOrValue "x" [])
-                  (Ipe.Grammar.IpeNumber 1)
-              ),
+            Ipe.Grammar.IpeBinaryOperation
+              Ipe.Grammar.Add
+              (Ipe.Grammar.IpeFunctionCallOrValue "x" [])
+              (Ipe.Grammar.IpeNumber 1),
           Ipe.Grammar.topLevelDefinitionTypeAnnotation = Nothing
         }
 
@@ -137,18 +124,15 @@ spec = describe "the top level definition parser" $ do
         { Ipe.Grammar.topLevelDefinitionName = "topLevelFunction",
           Ipe.Grammar.topLevelDefinitionDocComment = Nothing,
           Ipe.Grammar.topLevelDefinitionValue =
-            Ipe.Grammar.TopLevelFunction
-              ( Ipe.Grammar.IpeFunction
-                  { Ipe.Grammar.arguments = ["x"],
-                    Ipe.Grammar.functionBody =
-                      Ipe.Grammar.IpeFunctionBody
-                        { Ipe.Grammar.attributions = [],
-                          Ipe.Grammar.functionReturn =
-                            Ipe.Grammar.IpeBinaryOperation
-                              Ipe.Grammar.Add
-                              (Ipe.Grammar.IpeFunctionCallOrValue "x" [])
-                              (Ipe.Grammar.IpeNumber 1)
-                        }
+            Ipe.Grammar.IpeFunction
+              ["x"]
+              ( Ipe.Grammar.IpeFunctionBody
+                  { Ipe.Grammar.attributions = [],
+                    Ipe.Grammar.functionReturn =
+                      Ipe.Grammar.IpeBinaryOperation
+                        Ipe.Grammar.Add
+                        (Ipe.Grammar.IpeFunctionCallOrValue "x" [])
+                        (Ipe.Grammar.IpeNumber 1)
                   }
               ),
           Ipe.Grammar.topLevelDefinitionTypeAnnotation =
@@ -171,18 +155,15 @@ spec = describe "the top level definition parser" $ do
         { Ipe.Grammar.topLevelDefinitionName = "topLevelFunction",
           Ipe.Grammar.topLevelDefinitionDocComment = Nothing,
           Ipe.Grammar.topLevelDefinitionValue =
-            Ipe.Grammar.TopLevelFunction
-              ( Ipe.Grammar.IpeFunction
-                  { Ipe.Grammar.arguments = ["x", "y"],
-                    Ipe.Grammar.functionBody =
-                      Ipe.Grammar.IpeFunctionBody
-                        { Ipe.Grammar.attributions = [],
-                          Ipe.Grammar.functionReturn =
-                            Ipe.Grammar.IpeBinaryOperation
-                              Ipe.Grammar.Add
-                              (Ipe.Grammar.IpeFunctionCallOrValue "x" [])
-                              (Ipe.Grammar.IpeFunctionCallOrValue "y" [])
-                        }
+            Ipe.Grammar.IpeFunction
+              ["x", "y"]
+              ( Ipe.Grammar.IpeFunctionBody
+                  { Ipe.Grammar.attributions = [],
+                    Ipe.Grammar.functionReturn =
+                      Ipe.Grammar.IpeBinaryOperation
+                        Ipe.Grammar.Add
+                        (Ipe.Grammar.IpeFunctionCallOrValue "x" [])
+                        (Ipe.Grammar.IpeFunctionCallOrValue "y" [])
                   }
               ),
           Ipe.Grammar.topLevelDefinitionTypeAnnotation =
@@ -208,12 +189,10 @@ spec = describe "the top level definition parser" $ do
         { Ipe.Grammar.topLevelDefinitionName = "topLevelExpression",
           Ipe.Grammar.topLevelDefinitionDocComment = Nothing,
           Ipe.Grammar.topLevelDefinitionValue =
-            Ipe.Grammar.TopLevelExpression
-              ( Ipe.Grammar.IpeBinaryOperation
-                  Ipe.Grammar.Add
-                  (Ipe.Grammar.IpeFunctionCallOrValue "x" [])
-                  (Ipe.Grammar.IpeNumber 1)
-              ),
+            Ipe.Grammar.IpeBinaryOperation
+              Ipe.Grammar.Add
+              (Ipe.Grammar.IpeFunctionCallOrValue "x" [])
+              (Ipe.Grammar.IpeNumber 1),
           Ipe.Grammar.topLevelDefinitionTypeAnnotation =
             Just
               ( Ipe.Grammar.TypeAnnotation
@@ -235,18 +214,15 @@ spec = describe "the top level definition parser" $ do
         { Ipe.Grammar.topLevelDefinitionName = "topLevelFunction",
           Ipe.Grammar.topLevelDefinitionDocComment = Just "A top level function that adds 1 to its argument ",
           Ipe.Grammar.topLevelDefinitionValue =
-            Ipe.Grammar.TopLevelFunction
-              ( Ipe.Grammar.IpeFunction
-                  { Ipe.Grammar.arguments = ["x"],
-                    Ipe.Grammar.functionBody =
-                      Ipe.Grammar.IpeFunctionBody
-                        { Ipe.Grammar.attributions = [],
-                          Ipe.Grammar.functionReturn =
-                            Ipe.Grammar.IpeBinaryOperation
-                              Ipe.Grammar.Add
-                              (Ipe.Grammar.IpeFunctionCallOrValue "x" [])
-                              (Ipe.Grammar.IpeNumber 1)
-                        }
+            Ipe.Grammar.IpeFunction
+              ["x"]
+              ( Ipe.Grammar.IpeFunctionBody
+                  { Ipe.Grammar.attributions = [],
+                    Ipe.Grammar.functionReturn =
+                      Ipe.Grammar.IpeBinaryOperation
+                        Ipe.Grammar.Add
+                        (Ipe.Grammar.IpeFunctionCallOrValue "x" [])
+                        (Ipe.Grammar.IpeNumber 1)
                   }
               ),
           Ipe.Grammar.topLevelDefinitionTypeAnnotation =
@@ -270,12 +246,10 @@ spec = describe "the top level definition parser" $ do
         { Ipe.Grammar.topLevelDefinitionName = "topLevelExpression",
           Ipe.Grammar.topLevelDefinitionDocComment = Just "A top level expression that equals x + 1 ",
           Ipe.Grammar.topLevelDefinitionValue =
-            Ipe.Grammar.TopLevelExpression
-              ( Ipe.Grammar.IpeBinaryOperation
-                  Ipe.Grammar.Add
-                  (Ipe.Grammar.IpeFunctionCallOrValue "x" [])
-                  (Ipe.Grammar.IpeNumber 1)
-              ),
+            Ipe.Grammar.IpeBinaryOperation
+              Ipe.Grammar.Add
+              (Ipe.Grammar.IpeFunctionCallOrValue "x" [])
+              (Ipe.Grammar.IpeNumber 1),
           Ipe.Grammar.topLevelDefinitionTypeAnnotation =
             Just
               ( Ipe.Grammar.TypeAnnotation
@@ -296,14 +270,11 @@ spec = describe "the top level definition parser" $ do
         { Ipe.Grammar.topLevelDefinitionName = "topLevelFunction",
           Ipe.Grammar.topLevelDefinitionDocComment = Nothing,
           Ipe.Grammar.topLevelDefinitionValue =
-            Ipe.Grammar.TopLevelFunction
-              ( Ipe.Grammar.IpeFunction
-                  { Ipe.Grammar.arguments = ["x", "y"],
-                    Ipe.Grammar.functionBody =
-                      Ipe.Grammar.IpeFunctionBody
-                        { Ipe.Grammar.attributions = [],
-                          Ipe.Grammar.functionReturn = Ipe.Grammar.IpeFunctionCallOrValue "x" []
-                        }
+            Ipe.Grammar.IpeFunction
+              ["x", "y"]
+              ( Ipe.Grammar.IpeFunctionBody
+                  { Ipe.Grammar.attributions = [],
+                    Ipe.Grammar.functionReturn = Ipe.Grammar.IpeFunctionCallOrValue "x" []
                   }
               ),
           Ipe.Grammar.topLevelDefinitionTypeAnnotation =
@@ -329,14 +300,11 @@ spec = describe "the top level definition parser" $ do
         { Ipe.Grammar.topLevelDefinitionName = "topLevelFunction",
           Ipe.Grammar.topLevelDefinitionDocComment = Nothing,
           Ipe.Grammar.topLevelDefinitionValue =
-            Ipe.Grammar.TopLevelFunction
-              ( Ipe.Grammar.IpeFunction
-                  { Ipe.Grammar.arguments = ["x", "y"],
-                    Ipe.Grammar.functionBody =
-                      Ipe.Grammar.IpeFunctionBody
-                        { Ipe.Grammar.attributions = [],
-                          Ipe.Grammar.functionReturn = Ipe.Grammar.IpeFunctionCallOrValue "y" []
-                        }
+            Ipe.Grammar.IpeFunction
+              ["x", "y"]
+              ( Ipe.Grammar.IpeFunctionBody
+                  { Ipe.Grammar.attributions = [],
+                    Ipe.Grammar.functionReturn = Ipe.Grammar.IpeFunctionCallOrValue "y" []
                   }
               ),
           Ipe.Grammar.topLevelDefinitionTypeAnnotation =

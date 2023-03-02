@@ -9,7 +9,6 @@ import qualified Ipe.Grammar
 import Ipe.Parser (Parser)
 import qualified Ipe.Parser
 import qualified Ipe.Parser.Expression
-import qualified Ipe.Parser.Function
 import qualified Ipe.Parser.TypeDefinition
 import qualified Text.Megaparsec as Parsec.Common
 import qualified Text.Megaparsec.Char as Parsec.Char
@@ -26,11 +25,7 @@ parser = do
 
   Control.Monad.void (Ipe.Parser.symbol "=")
 
-  value <-
-    Parsec.Common.choice
-      [ Ipe.Grammar.TopLevelExpression <$> Ipe.Parser.Expression.parser,
-        Ipe.Grammar.TopLevelFunction <$> Ipe.Parser.Function.parser
-      ]
+  value <- Ipe.Parser.Expression.parser
 
   return $
     Ipe.Grammar.TopLevelDefinition

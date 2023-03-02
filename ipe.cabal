@@ -30,7 +30,6 @@ library
       Ipe.Grammar
       Ipe.Parser
       Ipe.Parser.Expression
-      Ipe.Parser.Function
       Ipe.Parser.Import
       Ipe.Parser.ModuleDefinition
       Ipe.Parser.TopLevelDefinition
@@ -65,7 +64,6 @@ test-suite ipe-test
   main-is: Spec.hs
   other-modules:
       Ipe.Parser.ExpressionSpec
-      Ipe.Parser.FunctionSpec
       Ipe.Parser.ImportSpec
       Ipe.Parser.ModuleDefinitionSpec
       Ipe.Parser.TopLevelDefinitionSpec

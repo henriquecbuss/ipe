@@ -1,5 +1,4 @@
 import qualified Ipe.Parser.ExpressionSpec
-import qualified Ipe.Parser.FunctionSpec
 import qualified Ipe.Parser.ImportSpec
 import qualified Ipe.Parser.ModuleDefinitionSpec
 import qualified Ipe.Parser.TopLevelDefinitionSpec
@@ -15,5 +14,4 @@ main =
     Ipe.Parser.ImportSpec.spec
     Ipe.Parser.TypeDefinitionSpec.spec
     Ipe.Parser.ExpressionSpec.spec
-    Ipe.Parser.FunctionSpec.spec
     Ipe.Parser.TopLevelDefinitionSpec.spec

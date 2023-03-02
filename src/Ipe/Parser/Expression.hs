@@ -85,6 +85,7 @@ term acceptArgs =
     [ Parsec.Common.between (Ipe.Parser.symbol "(") (Ipe.Parser.symbol ")") parser,
       Ipe.Parser.lexeme number,
       Ipe.Parser.lexeme string,
+      Ipe.Parser.lexeme function,
       functionCallOrValue acceptArgs
     ]
 
@@ -108,3 +109,62 @@ binary ::
   Combinators.Expr.Operator Parser Ipe.Grammar.Expression
 binary name constructor =
   Combinators.Expr.InfixL (Ipe.Grammar.IpeBinaryOperation constructor <$ Ipe.Parser.symbol name)
+
+function :: Parser Ipe.Grammar.Expression
+function = do
+  Control.Monad.void $ Ipe.Parser.symbol "\\"
+
+  arguments <- Parsec.Common.some (Ipe.Parser.lexeme functionArg)
+
+  Control.Monad.void $ Ipe.Parser.symbol "->"
+
+  attributions <- Parsec.Common.many $ Parsec.Common.try functionAttribution
+
+  returnExpr <- Ipe.Parser.Expression.parser
+
+  return $
+    Ipe.Grammar.IpeFunction
+      arguments
+      ( Ipe.Grammar.IpeFunctionBody
+          { Ipe.Grammar.attributions = attributions,
+            Ipe.Grammar.functionReturn = returnExpr
+          }
+      )
+
+functionArg :: Parser Text
+functionArg = do
+  firstChar <- Parsec.Char.lowerChar
+  rest <-
+    Parsec.Common.many
+      ( Parsec.Common.choice
+          [ Parsec.Char.alphaNumChar,
+            Parsec.Char.char '_'
+          ]
+      )
+
+  return $ T.pack $ firstChar : rest
+
+functionAttributionName :: Parser Text
+functionAttributionName = do
+  firstChar <- Parsec.Char.lowerChar
+  rest <-
+    Parsec.Common.many
+      ( Parsec.Common.choice
+          [ Parsec.Char.alphaNumChar,
+            Parsec.Char.char '_'
+          ]
+      )
+
+  return $ T.pack $ firstChar : rest
+
+functionAttribution :: Parser (Text, Ipe.Grammar.Expression)
+functionAttribution = do
+  name <- Ipe.Parser.lexeme functionAttributionName
+
+  Control.Monad.void $ Ipe.Parser.symbol "="
+
+  expression <- Ipe.Parser.Expression.parser
+
+  Control.Monad.void $ Ipe.Parser.symbol ";"
+
+  return (name, expression)
