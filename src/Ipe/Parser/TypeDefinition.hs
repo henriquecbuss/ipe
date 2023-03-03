@@ -85,7 +85,7 @@ customTypeWithConstructors typeName docComment buildType = do
 
   Control.Monad.void (Ipe.Parser.symbol "=") <?> "the actual type definition"
 
-  constructors <- Parsec.Common.some customTypeConstructor
+  constructors <- Parsec.Common.some $ Parsec.Common.try customTypeConstructor
 
   return $ buildType name parameters docComment constructors
 
@@ -93,7 +93,7 @@ ipeType :: Bool -> Parser Ipe.Grammar.IpeType
 ipeType acceptArgs =
   Parsec.Common.choice
     [ Ipe.Parser.symbol "(" *> Ipe.Parser.lexeme (ipeType True) <* (Ipe.Parser.symbol ")" <?> "a closing parenthesis (`)`)"),
-      Ipe.Parser.lexeme $ Ipe.Grammar.ParameterType <$> Ipe.Parser.lowercaseIdentifier,
+      Ipe.Parser.lexeme . Parsec.Common.try $ Ipe.Grammar.ParameterType <$> Ipe.Parser.lowercaseIdentifier,
       Ipe.Parser.lexeme $ concreteType acceptArgs,
       Ipe.Parser.lexeme recordType
     ]

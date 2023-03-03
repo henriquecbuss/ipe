@@ -1,5 +1,6 @@
 module Ipe.Parser.Module (parser) where
 
+import qualified Control.Monad
 import qualified Ipe.Grammar
 import Ipe.Parser (Parser)
 import qualified Ipe.Parser
@@ -8,14 +9,17 @@ import qualified Ipe.Parser.ModuleDefinition
 import qualified Ipe.Parser.TopLevelDefinition
 import qualified Ipe.Parser.TypeDefinition
 import qualified Text.Megaparsec as Parsec.Common
+import qualified Text.Megaparsec.Char.Lexer as Parsec.Lexer
 
 parser :: Parser Ipe.Grammar.Module
 parser = do
   moduleDefinition <- Ipe.Parser.ModuleDefinition.parser
 
-  moduleImports <- Ipe.Parser.Import.listParser
+  moduleImports <- Ipe.Parser.lexeme Ipe.Parser.Import.listParser
 
   (typeDefinitions, topLevelDefinitions) <- splitModuleBody <$> moduleBody
+
+  Control.Monad.void Parsec.Common.eof
 
   return $
     Ipe.Grammar.Module
@@ -27,12 +31,11 @@ parser = do
 
 moduleBody :: Parser [TopLevelDefinitionKind]
 moduleBody =
-  Parsec.Common.many
-    ( Ipe.Parser.lexeme $
-        Parsec.Common.choice
-          [ TypeDefinition <$> Parsec.Common.try Ipe.Parser.TypeDefinition.parser,
-            TopLevelDefinition <$> Parsec.Common.try Ipe.Parser.TopLevelDefinition.parser
-          ]
+  Parsec.Common.some
+    ( Parsec.Common.choice
+        [ TypeDefinition <$> Parsec.Common.try (Parsec.Lexer.nonIndented Ipe.Parser.space Ipe.Parser.TypeDefinition.parser),
+          TopLevelDefinition <$> Parsec.Common.try (Parsec.Lexer.nonIndented Ipe.Parser.space Ipe.Parser.TopLevelDefinition.parser)
+        ]
     )
 
 splitModuleBody :: [TopLevelDefinitionKind] -> ([Ipe.Grammar.TypeDefinition], [Ipe.Grammar.TopLevelDefinition])

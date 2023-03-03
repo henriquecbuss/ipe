@@ -6,7 +6,7 @@ import qualified Data.Map.Strict as Map
 import qualified Ipe.Grammar
 import qualified Ipe.Parser.TypeDefinition
 import Test.Hspec
-import Test.Hspec.Megaparsec (elabel, err, etoks, failsLeaving, initialState, shouldFailWith, shouldParse, ueof, utok, utoks)
+import Test.Hspec.Megaparsec (elabel, err, etok, etoks, failsLeaving, initialState, shouldFailWith, shouldParse, ueof, utok, utoks)
 import qualified Text.Megaparsec as Parsec.Common
 
 spec :: Spec
@@ -43,9 +43,10 @@ typeAlias =
           `shouldFailWith` err
             15
             ( utok '.'
+                <> etok '_'
                 <> elabel "a type definition parameter, which must start with a lowercase letter, and followed by any combination of numbers, letters or `_`"
+                <> elabel "alphanumeric character"
                 <> elabel "an `=`, followed by the actual type definition"
-                <> elabel "the rest of the type definition name, which can be any combination of letters, numbers or `_`"
             )
 
       it "should fail with no `=`" $ do
@@ -75,9 +76,10 @@ typeAlias =
           `shouldFailWith` err
             12
             ( utok '!'
+                <> etok '_'
                 <> elabel "a type definition parameter, which must start with a lowercase letter, and followed by any combination of numbers, letters or `_`"
+                <> elabel "alphanumeric character"
                 <> elabel "an `=`, followed by the actual type definition"
-                <> elabel "the rest of the type definition name, which can be any combination of letters, numbers or `_`"
             )
 
       it "should fail with invalid type" $ do
@@ -487,9 +489,10 @@ typeUnion =
         `shouldFailWith` err
           15
           ( utok '.'
+              <> etok '_'
               <> elabel "a type definition parameter, which must start with a lowercase letter, and followed by any combination of numbers, letters or `_`"
+              <> elabel "alphanumeric character"
               <> elabel "the actual type definition"
-              <> elabel "the rest of the type definition name, which can be any combination of letters, numbers or `_`"
           )
 
     it "should fail with no `=`" $ do
@@ -519,9 +522,10 @@ typeUnion =
         `shouldFailWith` err
           12
           ( utok '!'
+              <> etok '_'
               <> elabel "a type definition parameter, which must start with a lowercase letter, and followed by any combination of numbers, letters or `_`"
+              <> elabel "alphanumeric character"
               <> elabel "the actual type definition"
-              <> elabel "the rest of the type definition name, which can be any combination of letters, numbers or `_`"
           )
 
     it "should fail with invalid type" $ do
@@ -753,9 +757,10 @@ typeOpaque =
         `shouldFailWith` err
           16
           ( utok '.'
+              <> etok '_'
               <> elabel "a type definition parameter, which must start with a lowercase letter, and followed by any combination of numbers, letters or `_`"
+              <> elabel "alphanumeric character"
               <> elabel "the actual type definition"
-              <> elabel "the rest of the type definition name, which can be any combination of letters, numbers or `_`"
           )
 
     it "should fail with no `=`" $ do
@@ -785,9 +790,10 @@ typeOpaque =
         `shouldFailWith` err
           13
           ( utok '!'
+              <> etok '_'
               <> elabel "a type definition parameter, which must start with a lowercase letter, and followed by any combination of numbers, letters or `_`"
+              <> elabel "alphanumeric character"
               <> elabel "the actual type definition"
-              <> elabel "the rest of the type definition name, which can be any combination of letters, numbers or `_`"
           )
 
     it "should fail with invalid type" $ do

@@ -74,7 +74,9 @@ term acceptArgs =
       Ipe.Parser.lexeme matchExpression,
       functionCallOrValue acceptArgs
     ]
-    <* Parsec.Common.notFollowedBy (Ipe.Parser.symbol "->")
+    <* Parsec.Common.notFollowedBy
+      ( Parsec.Common.choice $ fmap Ipe.Parser.symbol forbiddenSymbols
+      )
 
 operatorTable :: [[Combinators.Expr.Operator Parser Ipe.Grammar.Expression]]
 operatorTable =
@@ -193,3 +195,6 @@ customTypePattern acceptArgs = do
       customTypePath
       customTypeName
       args
+
+forbiddenSymbols :: [Text]
+forbiddenSymbols = [":"]

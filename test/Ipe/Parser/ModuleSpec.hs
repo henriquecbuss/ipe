@@ -298,7 +298,7 @@ parserSpec =
             Ipe.Grammar.topLevelDefinitions =
               [ Ipe.Grammar.TopLevelDefinition
                   { Ipe.Grammar.topLevelDefinitionName = "fromString",
-                    Ipe.Grammar.topLevelDefinitionDocComment = Just "Try to turn a String into an OpaqueType",
+                    Ipe.Grammar.topLevelDefinitionDocComment = Just "Try to turn a String into an OpaqueType ",
                     Ipe.Grammar.topLevelDefinitionValue =
                       Ipe.Grammar.IpeFunction
                         ["stringValue"]
@@ -559,11 +559,11 @@ parserSpec =
                   ( Ipe.Grammar.TypeOpaque
                       { Ipe.Grammar.typeOpaqueDefinitionName = "OpaqueType",
                         Ipe.Grammar.typeOpaqueDefinitionParameters = [],
-                        Ipe.Grammar.typeOpaqueDefinitionDocComment = Just "Some opaque type",
+                        Ipe.Grammar.typeOpaqueDefinitionDocComment = Just "Some opaque type ",
                         Ipe.Grammar.typeOpaqueDefinitionConstructors =
                           [ Ipe.Grammar.CustomTypeConstructor
                               { Ipe.Grammar.customTypeConstructorName = "OpaqueTypeConstructor",
-                                Ipe.Grammar.customTypeConstructorDocComment = Just "Some constructor",
+                                Ipe.Grammar.customTypeConstructorDocComment = Just "Some constructor ",
                                 Ipe.Grammar.customTypeConstructorArgs = [Ipe.Grammar.ConcreteType [] "Number" []]
                               },
                             Ipe.Grammar.CustomTypeConstructor
@@ -586,7 +586,7 @@ parserSpec =
             Ipe.Grammar.topLevelDefinitions =
               [ Ipe.Grammar.TopLevelDefinition
                   { Ipe.Grammar.topLevelDefinitionName = "fromString",
-                    Ipe.Grammar.topLevelDefinitionDocComment = Just "Try to turn a String into an OpaqueType",
+                    Ipe.Grammar.topLevelDefinitionDocComment = Just "Try to turn a String into an OpaqueType ",
                     Ipe.Grammar.topLevelDefinitionValue =
                       Ipe.Grammar.IpeFunction
                         ["stringValue"]
