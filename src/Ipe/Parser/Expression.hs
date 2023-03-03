@@ -16,7 +16,7 @@ import qualified Text.Megaparsec.Char.Lexer as Parsec.Lexer
 
 parser :: Parser Ipe.Grammar.Expression
 parser =
-  Combinators.Expr.makeExprParser (term True pos) operatorTable
+  Combinators.Expr.makeExprParser (term True) operatorTable
 
 literalNumber :: Parser Float
 literalNumber =
@@ -157,6 +157,8 @@ matchExpression = do
 
 matchCase :: Parser (Ipe.Grammar.IpeMatchPattern, Ipe.Grammar.Expression)
 matchCase = do
+  Control.Monad.void $ Ipe.Parser.symbol "|"
+
   pattern_ <- Ipe.Parser.lexeme $ matchPattern True
 
   Control.Monad.void $ Ipe.Parser.symbol "->"

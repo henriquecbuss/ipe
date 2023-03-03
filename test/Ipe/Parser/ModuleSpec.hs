@@ -28,10 +28,10 @@ parserSpec =
         \fromString =\n\
         \   \\stringValue ->\n\
         \       match Alias.Module.parseString stringValue with\n\
-        \           Just parsedString ->\n\
+        \           | Just parsedString ->\n\
         \               Just (OpaqueTypeConstructor2 parsedString)\n\
         \\n\
-        \           Nothing ->\n\
+        \           | Nothing ->\n\
         \               String.toNumber stringValue\n\
         \               |> Maybe.map OpaqueTypeConstructor\n\
         \\n\
@@ -191,10 +191,10 @@ parserSpec =
         \fromString =\n\
         \   \\stringValue ->\n\
         \       match Alias.Module.parseString stringValue with\n\
-        \           Just parsedString ->\n\
+        \           | Just parsedString ->\n\
         \               Just (OpaqueTypeConstructor2 parsedString)\n\
         \\n\
-        \           Nothing ->\n\
+        \           | Nothing ->\n\
         \               String.toNumber stringValue\n\
         \               |> Maybe.map OpaqueTypeConstructor\n\
         \\n\
@@ -203,10 +203,10 @@ parserSpec =
         \toString =\n\
         \   \\opaqueType ->\n\
         \       match opaqueType with\n\
-        \           OpaqueTypeConstructor number ->\n\
+        \           | OpaqueTypeConstructor number ->\n\
         \               String.fromNumber number\n\
         \\n\
-        \           OpaqueTypeConstructor2 rootModuleType ->\n\
+        \           | OpaqueTypeConstructor2 rootModuleType ->\n\
         \               Alias.Module.toString rootModuleType\n\
         \\n\
         \\n\

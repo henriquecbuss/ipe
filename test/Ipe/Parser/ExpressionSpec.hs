@@ -796,7 +796,7 @@ patternMatchSpec = do
         Ipe.Parser.Expression.parser
         ""
         "match x with\n\
-        \ _ -> 1"
+        \ | _ -> 1"
         `shouldParse` Ipe.Grammar.IpeMatch
           ( Ipe.Grammar.IpeFunctionCallOrValue
               ( Ipe.Grammar.FunctionCallOrValue
@@ -814,7 +814,7 @@ patternMatchSpec = do
         Ipe.Parser.Expression.parser
         ""
         "match x with\n\
-        \ y -> 1"
+        \ | y -> 1"
         `shouldParse` Ipe.Grammar.IpeMatch
           ( Ipe.Grammar.IpeFunctionCallOrValue
               ( Ipe.Grammar.FunctionCallOrValue
@@ -832,7 +832,7 @@ patternMatchSpec = do
         Ipe.Parser.Expression.parser
         ""
         "match x with\n\
-        \ SomeConstructor -> 1"
+        \ | SomeConstructor -> 1"
         `shouldParse` Ipe.Grammar.IpeMatch
           ( Ipe.Grammar.IpeFunctionCallOrValue
               ( Ipe.Grammar.FunctionCallOrValue
@@ -850,9 +850,9 @@ patternMatchSpec = do
         Ipe.Parser.Expression.parser
         ""
         "match x with\n\
-        \ SomeConstructor -> 1\n\
-        \ OtherConstructor -> 2\n\
-        \ ThirdConstructor -> 3"
+        \ | SomeConstructor -> 1\n\
+        \ | OtherConstructor -> 2\n\
+        \ | ThirdConstructor -> 3"
         `shouldParse` Ipe.Grammar.IpeMatch
           ( Ipe.Grammar.IpeFunctionCallOrValue
               ( Ipe.Grammar.FunctionCallOrValue
@@ -873,10 +873,10 @@ patternMatchSpec = do
         Ipe.Parser.Expression.parser
         ""
         "match x with\n\
-        \ SomeConstructor -> 1\n\
-        \ OtherConstructor -> 2\n\
-        \ ThirdConstructor -> Imported.function 5 y (z 2)\n\
-        \ x -> 4"
+        \ | SomeConstructor -> 1\n\
+        \ | OtherConstructor -> 2\n\
+        \ | ThirdConstructor -> Imported.function 5 y (z 2)\n\
+        \ | x -> 4"
         `shouldParse` Ipe.Grammar.IpeMatch
           ( Ipe.Grammar.IpeFunctionCallOrValue
               ( Ipe.Grammar.FunctionCallOrValue
@@ -925,10 +925,10 @@ patternMatchSpec = do
         Ipe.Parser.Expression.parser
         ""
         "match x with\n\
-        \ SomeConstructor -> 1\n\
-        \ OtherConstructor -> 2\n\
-        \ ThirdConstructor -> Imported.function 5 y (z 2)\n\
-        \ 1 -> 4"
+        \ | SomeConstructor -> 1\n\
+        \ | OtherConstructor -> 2\n\
+        \ | ThirdConstructor -> Imported.function 5 y (z 2)\n\
+        \ | 1 -> 4"
         `shouldParse` Ipe.Grammar.IpeMatch
           ( Ipe.Grammar.IpeFunctionCallOrValue
               ( Ipe.Grammar.FunctionCallOrValue
@@ -977,10 +977,10 @@ patternMatchSpec = do
         Ipe.Parser.Expression.parser
         ""
         "match x with\n\
-        \ SomeConstructor -> 1\n\
-        \ OtherConstructor -> 2\n\
-        \ ThirdConstructor -> Imported.function 5 y (z 2)\n\
-        \ 'string' -> 4"
+        \ | SomeConstructor -> 1\n\
+        \ | OtherConstructor -> 2\n\
+        \ | ThirdConstructor -> Imported.function 5 y (z 2)\n\
+        \ | 'string' -> 4"
         `shouldParse` Ipe.Grammar.IpeMatch
           ( Ipe.Grammar.IpeFunctionCallOrValue
               ( Ipe.Grammar.FunctionCallOrValue
@@ -1029,10 +1029,10 @@ patternMatchSpec = do
         Ipe.Parser.Expression.parser
         ""
         "match x with\n\
-        \ SomeConstructor -> 1\n\
-        \ OtherConstructor -> 2\n\
-        \ ThirdConstructor -> Imported.function 5 y (z 2)\n\
-        \ _ -> 4"
+        \ | SomeConstructor -> 1\n\
+        \ | OtherConstructor -> 2\n\
+        \ | ThirdConstructor -> Imported.function 5 y (z 2)\n\
+        \ | _ -> 4"
         `shouldParse` Ipe.Grammar.IpeMatch
           ( Ipe.Grammar.IpeFunctionCallOrValue
               ( Ipe.Grammar.FunctionCallOrValue
@@ -1081,8 +1081,10 @@ patternMatchSpec = do
         Ipe.Parser.Expression.parser
         ""
         "match x with\n\
-        \ SomeConstructor -> a\n\
-        \ OtherConstructor Arg -> 2"
+        \  | SomeConstructor ->\n\
+        \     a\n\
+        \  | OtherConstructor Arg ->\n\
+        \     2"
         `shouldParse` Ipe.Grammar.IpeMatch
           ( Ipe.Grammar.IpeFunctionCallOrValue
               ( Ipe.Grammar.FunctionCallOrValue
@@ -1116,11 +1118,10 @@ patternMatchSpec = do
       Parsec.Common.parse
         Ipe.Parser.Expression.parser
         ""
-        -- TODO - It's parsing as `a OtherConstructor (NestedConstructor 'abc') ->`
         "match x with\n\
-        \ SomeConstructor a 5 -> a\n\
-        \ OtherConstructor (NestedConstructor 'abc') -> 2\n\
-        \ Imported.ThirdConstructor (Level1 (Level2 x)) 5 'abc' -> 3 + x"
+        \ | SomeConstructor a 5 -> a\n\
+        \ | OtherConstructor (NestedConstructor 'abc') -> 2\n\
+        \ | Imported.ThirdConstructor (Level1 (Level2 x)) 5 'abc' -> 3 + x"
         `shouldParse` Ipe.Grammar.IpeMatch
           ( Ipe.Grammar.IpeFunctionCallOrValue
               ( Ipe.Grammar.FunctionCallOrValue
