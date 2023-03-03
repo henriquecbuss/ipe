@@ -17,54 +17,35 @@ parser :: Parser Ipe.Grammar.Expression
 parser =
   Combinators.Expr.makeExprParser (term True) operatorTable
 
-number :: Parser Ipe.Grammar.Expression
-number =
-  Ipe.Grammar.IpeNumber
-    <$> Parsec.Common.choice
-      [ (* (-1)) <$> Parsec.Common.try (Parsec.Char.char '-' *> Parsec.Lexer.float),
-        (* (-1)) <$> (Parsec.Char.char '-' *> Parsec.Lexer.decimal),
-        Parsec.Common.try Parsec.Lexer.float,
-        Parsec.Lexer.decimal
-      ]
+literalNumber :: Parser Float
+literalNumber =
+  Parsec.Common.choice
+    [ (* (-1)) <$> Parsec.Common.try (Parsec.Char.char '-' *> Parsec.Lexer.float),
+      (* (-1)) <$> (Parsec.Char.char '-' *> Parsec.Lexer.decimal),
+      Parsec.Common.try Parsec.Lexer.float,
+      Parsec.Lexer.decimal
+    ]
 
-string :: Parser Ipe.Grammar.Expression
-string =
-  Ipe.Grammar.IpeString . T.pack
+literalString :: Parser Text
+literalString =
+  T.pack
     <$> ( Parsec.Char.char '\''
             *> Parsec.Common.manyTill
               Parsec.Lexer.charLiteral
               (Parsec.Char.char '\'')
         )
 
+number :: Parser Ipe.Grammar.Expression
+number = Ipe.Grammar.IpeNumber <$> literalNumber
+
+string :: Parser Ipe.Grammar.Expression
+string = Ipe.Grammar.IpeString <$> literalString
+
 importedValue :: Parser Text
 importedValue = do
-  moduleNames <-
-    Parsec.Common.many
-      ( do
-          firstModuleChar <- Parsec.Char.upperChar
-          restOfModule <-
-            Parsec.Common.many
-              ( Parsec.Common.choice
-                  [ Parsec.Char.alphaNumChar,
-                    Parsec.Char.char '_'
-                  ]
-              )
+  moduleNames <- Parsec.Common.many (Ipe.Parser.uppercaseIdentifier <* Parsec.Char.char '.')
 
-          Control.Monad.void (Parsec.Char.char '.')
-          return $ T.pack (firstModuleChar : restOfModule)
-      )
-
-  functionName <- do
-    firstFunctionChar <- Parsec.Char.lowerChar
-    restOfFunction <-
-      Parsec.Common.many
-        ( Parsec.Common.choice
-            [ Parsec.Char.alphaNumChar,
-              Parsec.Char.char '_'
-            ]
-        )
-
-    return $ T.pack (firstFunctionChar : restOfFunction)
+  functionName <- Ipe.Parser.lowercaseIdentifier
 
   return $ T.intercalate "." (moduleNames ++ [functionName])
 
@@ -74,7 +55,7 @@ functionCallOrValue acceptArgs = do
 
   args <-
     if acceptArgs
-      then Parsec.Common.many $ Ipe.Parser.lexeme $ term False
+      then Parsec.Common.many . Parsec.Common.try . Ipe.Parser.lexeme $ term False
       else return []
 
   return $ Ipe.Grammar.IpeFunctionCallOrValue name args
@@ -86,6 +67,7 @@ term acceptArgs =
       Ipe.Parser.lexeme number,
       Ipe.Parser.lexeme string,
       Ipe.Parser.lexeme function,
+      Ipe.Parser.lexeme matchExpression,
       functionCallOrValue acceptArgs
     ]
 
@@ -114,7 +96,7 @@ function :: Parser Ipe.Grammar.Expression
 function = do
   Control.Monad.void $ Ipe.Parser.symbol "\\"
 
-  arguments <- Parsec.Common.some (Ipe.Parser.lexeme functionArg)
+  arguments <- Parsec.Common.some (Ipe.Parser.lexeme Ipe.Parser.lowercaseIdentifier)
 
   Control.Monad.void $ Ipe.Parser.symbol "->"
 
@@ -130,19 +112,6 @@ function = do
             Ipe.Grammar.functionReturn = returnExpr
           }
       )
-
-functionArg :: Parser Text
-functionArg = do
-  firstChar <- Parsec.Char.lowerChar
-  rest <-
-    Parsec.Common.many
-      ( Parsec.Common.choice
-          [ Parsec.Char.alphaNumChar,
-            Parsec.Char.char '_'
-          ]
-      )
-
-  return $ T.pack $ firstChar : rest
 
 functionAttributionName :: Parser Text
 functionAttributionName = do
@@ -168,3 +137,56 @@ functionAttribution = do
   Control.Monad.void $ Ipe.Parser.symbol ";"
 
   return (name, expression)
+
+matchExpression :: Parser Ipe.Grammar.Expression
+matchExpression = do
+  Control.Monad.void $ Ipe.Parser.symbol "match"
+
+  expression <- Ipe.Parser.Expression.parser
+
+  Control.Monad.void $ Ipe.Parser.symbol "with"
+
+  matchCases <- Parsec.Common.some matchCase
+
+  return $ Ipe.Grammar.IpeMatch expression matchCases
+
+matchCase :: Parser (Ipe.Grammar.IpeMatchPattern, Ipe.Grammar.Expression)
+matchCase = do
+  pattern_ <- Ipe.Parser.lexeme $ matchPattern True
+
+  Control.Monad.void $ Ipe.Parser.symbol "->"
+
+  expression <- Ipe.Parser.Expression.parser
+
+  return (pattern_, expression)
+
+matchPattern :: Bool -> Parser Ipe.Grammar.IpeMatchPattern
+matchPattern acceptArgs =
+  Parsec.Common.choice
+    [ Parsec.Common.between (Ipe.Parser.symbol "(") (Ipe.Parser.symbol ")") (matchPattern True),
+      customTypePattern acceptArgs,
+      Ipe.Grammar.IpeLiteralNumberPattern <$> literalNumber,
+      Ipe.Grammar.IpeLiteralStringPattern <$> literalString,
+      Ipe.Grammar.IpeVariablePattern <$> Ipe.Parser.lowercaseIdentifier,
+      Ipe.Grammar.IpeWildCardPattern <$ Parsec.Char.char '_'
+    ]
+
+customTypePattern :: Bool -> Parser Ipe.Grammar.IpeMatchPattern
+customTypePattern acceptArgs = do
+  customTypeName <-
+    Ipe.Parser.lexeme $
+      do
+        moduleNames <- Parsec.Common.many $ Parsec.Common.try (Ipe.Parser.uppercaseIdentifier <* Parsec.Char.char '.')
+        constructorName <- Ipe.Parser.uppercaseIdentifier
+
+        return (T.intercalate "." (moduleNames ++ [constructorName]))
+
+  args <-
+    if acceptArgs
+      then Parsec.Common.many . Parsec.Common.try . Ipe.Parser.lexeme $ matchPattern False
+      else return []
+
+  return $
+    Ipe.Grammar.IpeCustomTypePattern
+      customTypeName
+      args

@@ -9,6 +9,7 @@ module Ipe.Grammar
     IpeType (..),
     TypeAnnotation (..),
     Expression (..),
+    IpeMatchPattern (..),
     IpeBinaryOperator (..),
     TypeAlias (..),
     TypeUnion (..),
@@ -127,9 +128,8 @@ data TypeAnnotation = TypeAnnotation
 data Expression
   = IpeBinaryOperation IpeBinaryOperator Expression Expression
   | IpeNumber Float
-  | -- TODO - Add `match` expressions
-    -- IpeMatch Expression [(IpeMatchPattern, IpeFunctionBody)]
-    IpeString Text
+  | IpeMatch Expression [(IpeMatchPattern, Expression)]
+  | IpeString Text
   | -- TODO - Support record accessors
     -- TODO - Should this be something like { importedFrom :: Text, name :: Text }?
     IpeFunctionCallOrValue Text [Expression]
@@ -144,4 +144,12 @@ data IpeBinaryOperator
   | Exponentiation
   | PipeRight
   | PipeLeft
+  deriving (Eq, Show)
+
+data IpeMatchPattern
+  = IpeWildCardPattern
+  | IpeVariablePattern Text
+  | IpeCustomTypePattern Text [IpeMatchPattern]
+  | IpeLiteralNumberPattern Float
+  | IpeLiteralStringPattern Text
   deriving (Eq, Show)

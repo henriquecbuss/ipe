@@ -8,9 +8,12 @@ module Ipe.Parser
     symbol,
     symbolWithNoBlockComments,
     space,
+    lowercaseIdentifier,
+    uppercaseIdentifier,
     hspace,
     spaceWithNoBlockComments,
     docComment,
+    reservedWords,
   )
 where
 
@@ -68,6 +71,41 @@ symbol = Parsec.Lexer.symbol space
 -- | Consume all whitespace and line comments right after a text
 symbolWithNoBlockComments :: Text -> Parser Text
 symbolWithNoBlockComments = Parsec.Lexer.symbol spaceWithNoBlockComments
+
+-- | Parse an identifier that starts with a lowercase letter, making sure it's not a reserved keyword
+lowercaseIdentifier :: Parser Text
+lowercaseIdentifier = do
+  identifier <- do
+    lowercaseChar <- Parsec.Char.lowerChar
+    restOfIdentifier <-
+      Parsec.Common.many
+        ( Parsec.Common.choice
+            [ Parsec.Char.alphaNumChar,
+              Parsec.Char.char '_'
+            ]
+        )
+
+    return $ T.pack (lowercaseChar : restOfIdentifier)
+
+  Control.Monad.when (identifier `elem` Ipe.Parser.reservedWords) $
+    Control.Monad.fail $
+      "Keyword " <> T.unpack identifier <> " cannot be an identifier"
+
+  return identifier
+
+-- | Parse an identifier that starts with an uppercase letter
+uppercaseIdentifier :: Parser Text
+uppercaseIdentifier = do
+  uppercaseChar <- Parsec.Char.upperChar
+  restOfIdentifier <-
+    Parsec.Common.many
+      ( Parsec.Common.choice
+          [ Parsec.Char.alphaNumChar,
+            Parsec.Char.char '_'
+          ]
+      )
+
+  return $ T.pack (uppercaseChar : restOfIdentifier)
 
 -- | Consume all whitespace, line comments and block comments
 space :: Parser ()
@@ -129,3 +167,17 @@ docCommentStart = "/*|"
 
 docCommentEnd :: Text
 docCommentEnd = "*/"
+
+reservedWords :: [Text]
+reservedWords =
+  [ "match",
+    "with",
+    "import",
+    "as",
+    "module",
+    "exports",
+    "type",
+    "alias",
+    "union",
+    "opaque"
+  ]
