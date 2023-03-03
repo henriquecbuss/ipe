@@ -1,0 +1,141 @@
+name: Unit tests
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# As of 26 December 2022, ubuntu-latest, windows-latest and macos-latest come
+# with Stack 2.9.1. ubuntu-latest and macos-latest come with GHC 9.4.3.
+# windows-latest comes with GHC 9.4.2.
+
+jobs:
+  pedantic:
+    name: Pedantic
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone project
+        uses: actions/checkout@v3
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.stack
+          key: ${{ runner.os }}-${{ hashFiles('stack.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-
+      - name: Pedantic build
+        run: |
+          # Stack 2.9.3 is required to build Stack
+          stack upgrade
+          stack build --pedantic
+
+  unit-tests:
+    name: Unit tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            extra-suffix: ""
+            stack-args: ""
+          - os: ubuntu-latest
+            extra-suffix: "alpine"
+            stack-args: "--docker --system-ghc --no-install-ghc --flag stack:static"
+          - os: windows-latest
+            extra-suffix: ""
+            stack-args: ""
+          - os: macos-latest
+            extra-suffix: ""
+            stack-args: ""
+    steps:
+      - name: Setup macOS
+        if: startsWith(runner.os, 'macOS')
+        run: |
+          # pkg-config added because it is required by package digest-0.0.1.4.
+          brew install pkg-config
+      - name: Clone project
+        uses: actions/checkout@v3
+      - name: Cache dependencies on Unix-like OS
+        if: startsWith(runner.os, 'Linux') || startsWith(runner.os, 'macOS')
+        uses: actions/cache@v3
+        with:
+          path: ~/.stack
+          key: ${{ runner.os }}-${{ hashFiles('stack.yaml') }}-${{ matrix.extra-suffix }}
+      - name: Cache dependencies on Windows
+        if: startsWith(runner.os, 'Windows')
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~\AppData\Roaming\stack
+            ~\AppData\Local\Programs\stack
+          key: ${{ runner.os }}-${{ hashFiles('stack.yaml') }}-${{ matrix.extra-suffix }}
+
+      # Separating out Unix-like OS from Windows because of the problem of
+      # upgrading GitHub-supplied Stack 2.9.1 to 2.9.3 on Windows
+      - name: Run tests on Unix-like OS
+        if: startsWith(runner.os, 'Linux') || startsWith(runner.os, 'macOS')
+        shell: bash
+        run: |
+          set -ex
+
+          # Stack 2.9.3 is required to build Stack.
+          stack upgrade
+
+          # Check the Stack version
+          stack --version
+
+          if [[ "${{ matrix.extra-suffix }}" == "alpine" ]]
+          then
+              mkdir -p ~/.stack
+              touch ~/.stack/config.yaml
+              cat > ~/.stack/config.yaml <<EOF
+              extra-include-dirs:
+              - /usr/include
+              extra-lib-dirs:
+              - /lib
+              - /usr/lib
+          EOF
+          fi
+
+          stack test ${{ matrix.stack-args }} --haddock --no-haddock-deps --ghc-options="-Werror -O0" --copy-bins --local-bin-path bin
+
+          # Get output about whether the exe is dynamically linked
+          if [[ "${{ matrix.os }}" == "macos-latest" ]]
+          then
+              echo "Skipping ldd check on Mac"
+          elif [[ "${{ matrix.extra-suffix }}" == "alpine" ]]
+          then
+              # ldd returns exit code 1 if it's static, so failure is success
+              (ldd ./bin/stack && exit 1) || true
+          else
+              ldd ./bin/stack
+          fi
+
+          ./bin/stack --version
+
+      # Separating out Windows because of the problem of upgrading GitHub-supplied
+      # Stack 2.9.1 to 2.9.3 on Windows
+      - name: Run tests on Windows
+        if: startsWith(runner.os, 'Windows')
+        shell: bash
+        run: |
+          set -ex
+
+          # Stack 2.9.3 is required to build Stack. The --local-bin-path is
+          # required to allow Stack (effectively) to overwrite the currently
+          # running Stack executable. The should be fixed in later versions of
+          # Stack that reflect
+          # https://github.com/commercialhaskell/stack/pull/6023
+          stack --local-bin-path /c/hostedtoolcache/windows/stack/2.9.1/x64 upgrade
+
+          # Check the Stack version
+          stack --version
+
+          stack test ${{ matrix.stack-args }} --haddock --no-haddock-deps --ghc-options="-Werror -O0" --copy-bins --local-bin-path bin
+
+          echo "Skipping ldd check on Windows"
+
+          ./bin/stack --version
