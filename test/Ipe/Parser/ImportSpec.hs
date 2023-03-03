@@ -22,7 +22,8 @@ singleParserSpec =
         ""
         "import SomeModule"
         `shouldParse` Ipe.Grammar.ImportExpression
-          { Ipe.Grammar.importedModule = "SomeModule",
+          { Ipe.Grammar.importedModulePath = [],
+            Ipe.Grammar.importedModule = "SomeModule",
             Ipe.Grammar.importedModuleAlias = Nothing
           }
 
@@ -32,7 +33,8 @@ singleParserSpec =
         ""
         "import Some.Module"
         `shouldParse` Ipe.Grammar.ImportExpression
-          { Ipe.Grammar.importedModule = "Some.Module",
+          { Ipe.Grammar.importedModulePath = ["Some"],
+            Ipe.Grammar.importedModule = "Module",
             Ipe.Grammar.importedModuleAlias = Nothing
           }
 
@@ -42,8 +44,9 @@ singleParserSpec =
         ""
         "import Some.Module as SomeAlias"
         `shouldParse` Ipe.Grammar.ImportExpression
-          { Ipe.Grammar.importedModule = "Some.Module",
-            Ipe.Grammar.importedModuleAlias = Just "SomeAlias"
+          { Ipe.Grammar.importedModulePath = ["Some"],
+            Ipe.Grammar.importedModule = "Module",
+            Ipe.Grammar.importedModuleAlias = Just ([], "SomeAlias")
           }
 
     it "should parse a simple import with a nested alias" $
@@ -52,8 +55,9 @@ singleParserSpec =
         ""
         "import Some.Module as Some.Alias"
         `shouldParse` Ipe.Grammar.ImportExpression
-          { Ipe.Grammar.importedModule = "Some.Module",
-            Ipe.Grammar.importedModuleAlias = Just "Some.Alias"
+          { Ipe.Grammar.importedModulePath = ["Some"],
+            Ipe.Grammar.importedModule = "Module",
+            Ipe.Grammar.importedModuleAlias = Just (["Some"], "Alias")
           }
 
     it "should parse a nested import with an alias" $
@@ -62,8 +66,9 @@ singleParserSpec =
         ""
         "import Some.Module as SomeAlias"
         `shouldParse` Ipe.Grammar.ImportExpression
-          { Ipe.Grammar.importedModule = "Some.Module",
-            Ipe.Grammar.importedModuleAlias = Just "SomeAlias"
+          { Ipe.Grammar.importedModulePath = ["Some"],
+            Ipe.Grammar.importedModule = "Module",
+            Ipe.Grammar.importedModuleAlias = Just ([], "SomeAlias")
           }
 
     it "should parse a nested import with a nested alias" $
@@ -72,8 +77,9 @@ singleParserSpec =
         ""
         "import Some.Module as Some.Alias"
         `shouldParse` Ipe.Grammar.ImportExpression
-          { Ipe.Grammar.importedModule = "Some.Module",
-            Ipe.Grammar.importedModuleAlias = Just "Some.Alias"
+          { Ipe.Grammar.importedModulePath = ["Some"],
+            Ipe.Grammar.importedModule = "Module",
+            Ipe.Grammar.importedModuleAlias = Just (["Some"], "Alias")
           }
 
     it "should fail with a lower case letter after many dots" $
@@ -113,8 +119,9 @@ listParserSpec =
         ""
         "import Some.Module as Some.Alias"
         `shouldParse` [ Ipe.Grammar.ImportExpression
-                          { Ipe.Grammar.importedModule = "Some.Module",
-                            Ipe.Grammar.importedModuleAlias = Just "Some.Alias"
+                          { Ipe.Grammar.importedModulePath = ["Some"],
+                            Ipe.Grammar.importedModule = "Module",
+                            Ipe.Grammar.importedModuleAlias = Just (["Some"], "Alias")
                           }
                       ]
 
@@ -125,11 +132,13 @@ listParserSpec =
         "import Some.Module as Some.Alias\n\
         \import Some.Other.Module"
         `shouldParse` [ Ipe.Grammar.ImportExpression
-                          { Ipe.Grammar.importedModule = "Some.Module",
-                            Ipe.Grammar.importedModuleAlias = Just "Some.Alias"
+                          { Ipe.Grammar.importedModulePath = ["Some"],
+                            Ipe.Grammar.importedModule = "Module",
+                            Ipe.Grammar.importedModuleAlias = Just (["Some"], "Alias")
                           },
                         Ipe.Grammar.ImportExpression
-                          { Ipe.Grammar.importedModule = "Some.Other.Module",
+                          { Ipe.Grammar.importedModulePath = ["Some", "Other"],
+                            Ipe.Grammar.importedModule = "Module",
                             Ipe.Grammar.importedModuleAlias = Nothing
                           }
                       ]
@@ -146,27 +155,33 @@ listParserSpec =
         \import Some.Other.Module5\n\
         \"
         `shouldParse` [ Ipe.Grammar.ImportExpression
-                          { Ipe.Grammar.importedModule = "Some.Module",
-                            Ipe.Grammar.importedModuleAlias = Just "Some.Alias"
+                          { Ipe.Grammar.importedModulePath = ["Some"],
+                            Ipe.Grammar.importedModule = "Module",
+                            Ipe.Grammar.importedModuleAlias = Just (["Some"], "Alias")
                           },
                         Ipe.Grammar.ImportExpression
-                          { Ipe.Grammar.importedModule = "Some.Other.Module",
+                          { Ipe.Grammar.importedModulePath = ["Some", "Other"],
+                            Ipe.Grammar.importedModule = "Module",
                             Ipe.Grammar.importedModuleAlias = Nothing
                           },
                         Ipe.Grammar.ImportExpression
-                          { Ipe.Grammar.importedModule = "Some.Other.Module2",
-                            Ipe.Grammar.importedModuleAlias = Just "M2"
+                          { Ipe.Grammar.importedModulePath = ["Some", "Other"],
+                            Ipe.Grammar.importedModule = "Module2",
+                            Ipe.Grammar.importedModuleAlias = Just ([], "M2")
                           },
                         Ipe.Grammar.ImportExpression
-                          { Ipe.Grammar.importedModule = "Some.Other.Module3",
+                          { Ipe.Grammar.importedModulePath = ["Some", "Other"],
+                            Ipe.Grammar.importedModule = "Module3",
                             Ipe.Grammar.importedModuleAlias = Nothing
                           },
                         Ipe.Grammar.ImportExpression
-                          { Ipe.Grammar.importedModule = "Some.Other.Module4",
-                            Ipe.Grammar.importedModuleAlias = Just "M4"
+                          { Ipe.Grammar.importedModulePath = ["Some", "Other"],
+                            Ipe.Grammar.importedModule = "Module4",
+                            Ipe.Grammar.importedModuleAlias = Just ([], "M4")
                           },
                         Ipe.Grammar.ImportExpression
-                          { Ipe.Grammar.importedModule = "Some.Other.Module5",
+                          { Ipe.Grammar.importedModulePath = ["Some", "Other"],
+                            Ipe.Grammar.importedModule = "Module5",
                             Ipe.Grammar.importedModuleAlias = Nothing
                           }
                       ]

@@ -6,7 +6,7 @@ import qualified Data.Map.Strict as Map
 import qualified Ipe.Grammar
 import qualified Ipe.Parser.TypeDefinition
 import Test.Hspec
-import Test.Hspec.Megaparsec (elabel, err, etoks, failsLeaving, initialState, shouldFailWith, shouldParse, ueof, utok, utoks)
+import Test.Hspec.Megaparsec (elabel, err, etok, etoks, failsLeaving, initialState, shouldFailWith, shouldParse, ueof, utok, utoks)
 import qualified Text.Megaparsec as Parsec.Common
 
 spec :: Spec
@@ -43,9 +43,10 @@ typeAlias =
           `shouldFailWith` err
             15
             ( utok '.'
+                <> etok '_'
                 <> elabel "a type definition parameter, which must start with a lowercase letter, and followed by any combination of numbers, letters or `_`"
+                <> elabel "alphanumeric character"
                 <> elabel "an `=`, followed by the actual type definition"
-                <> elabel "the rest of the type definition name, which can be any combination of letters, numbers or `_`"
             )
 
       it "should fail with no `=`" $ do
@@ -75,9 +76,10 @@ typeAlias =
           `shouldFailWith` err
             12
             ( utok '!'
+                <> etok '_'
                 <> elabel "a type definition parameter, which must start with a lowercase letter, and followed by any combination of numbers, letters or `_`"
+                <> elabel "alphanumeric character"
                 <> elabel "an `=`, followed by the actual type definition"
-                <> elabel "the rest of the type definition name, which can be any combination of letters, numbers or `_`"
             )
 
       it "should fail with invalid type" $ do
@@ -96,11 +98,13 @@ typeAliasWithConcreteTypes =
         ""
         "type alias SomeType = Number"
         `shouldParse` Ipe.Grammar.TypeAliasDefinition
-          { Ipe.Grammar.typeAliasDefinitionName = "SomeType",
-            Ipe.Grammar.typeAliasDefinitionParameters = [],
-            Ipe.Grammar.typeAliasDefinitionDocComment = Nothing,
-            Ipe.Grammar.typeAliasType = Ipe.Grammar.ConcreteType "Number" []
-          }
+          ( Ipe.Grammar.TypeAlias
+              { Ipe.Grammar.typeAliasDefinitionName = "SomeType",
+                Ipe.Grammar.typeAliasDefinitionParameters = [],
+                Ipe.Grammar.typeAliasDefinitionDocComment = Nothing,
+                Ipe.Grammar.typeAliasType = Ipe.Grammar.ConcreteType [] "Number" []
+              }
+          )
 
     it "can parse a simple type with parentheses" $
       Parsec.Common.parse
@@ -108,25 +112,29 @@ typeAliasWithConcreteTypes =
         ""
         "type alias SomeType = (Number)"
         `shouldParse` Ipe.Grammar.TypeAliasDefinition
-          { Ipe.Grammar.typeAliasDefinitionName = "SomeType",
-            Ipe.Grammar.typeAliasDefinitionParameters = [],
-            Ipe.Grammar.typeAliasDefinitionDocComment = Nothing,
-            Ipe.Grammar.typeAliasType = Ipe.Grammar.ConcreteType "Number" []
-          }
+          ( Ipe.Grammar.TypeAlias
+              { Ipe.Grammar.typeAliasDefinitionName = "SomeType",
+                Ipe.Grammar.typeAliasDefinitionParameters = [],
+                Ipe.Grammar.typeAliasDefinitionDocComment = Nothing,
+                Ipe.Grammar.typeAliasType = Ipe.Grammar.ConcreteType [] "Number" []
+              }
+          )
 
     it "can parse a type with doc comments" $ do
       Parsec.Common.parse
         Ipe.Parser.TypeDefinition.parser
         ""
-        "/*| Some doc comment \n\
+        "/|* Some doc comment \n\
         \*/\n\n\
         \type alias SomeType = Number"
         `shouldParse` Ipe.Grammar.TypeAliasDefinition
-          { Ipe.Grammar.typeAliasDefinitionName = "SomeType",
-            Ipe.Grammar.typeAliasDefinitionParameters = [],
-            Ipe.Grammar.typeAliasDefinitionDocComment = Just "Some doc comment \n",
-            Ipe.Grammar.typeAliasType = Ipe.Grammar.ConcreteType "Number" []
-          }
+          ( Ipe.Grammar.TypeAlias
+              { Ipe.Grammar.typeAliasDefinitionName = "SomeType",
+                Ipe.Grammar.typeAliasDefinitionParameters = [],
+                Ipe.Grammar.typeAliasDefinitionDocComment = Just "Some doc comment \n",
+                Ipe.Grammar.typeAliasType = Ipe.Grammar.ConcreteType [] "Number" []
+              }
+          )
 
     it "can parse a type with arguments" $ do
       Parsec.Common.parse
@@ -134,11 +142,13 @@ typeAliasWithConcreteTypes =
         ""
         "type alias SomeType a b = Number"
         `shouldParse` Ipe.Grammar.TypeAliasDefinition
-          { Ipe.Grammar.typeAliasDefinitionName = "SomeType",
-            Ipe.Grammar.typeAliasDefinitionParameters = ["a", "b"],
-            Ipe.Grammar.typeAliasDefinitionDocComment = Nothing,
-            Ipe.Grammar.typeAliasType = Ipe.Grammar.ConcreteType "Number" []
-          }
+          ( Ipe.Grammar.TypeAlias
+              { Ipe.Grammar.typeAliasDefinitionName = "SomeType",
+                Ipe.Grammar.typeAliasDefinitionParameters = ["a", "b"],
+                Ipe.Grammar.typeAliasDefinitionDocComment = Nothing,
+                Ipe.Grammar.typeAliasType = Ipe.Grammar.ConcreteType [] "Number" []
+              }
+          )
 
     it "can parse a type with parameters" $ do
       Parsec.Common.parse
@@ -146,11 +156,13 @@ typeAliasWithConcreteTypes =
         ""
         "type alias SomeType = List Number"
         `shouldParse` Ipe.Grammar.TypeAliasDefinition
-          { Ipe.Grammar.typeAliasDefinitionName = "SomeType",
-            Ipe.Grammar.typeAliasDefinitionParameters = [],
-            Ipe.Grammar.typeAliasDefinitionDocComment = Nothing,
-            Ipe.Grammar.typeAliasType = Ipe.Grammar.ConcreteType "List" [Ipe.Grammar.ConcreteType "Number" []]
-          }
+          ( Ipe.Grammar.TypeAlias
+              { Ipe.Grammar.typeAliasDefinitionName = "SomeType",
+                Ipe.Grammar.typeAliasDefinitionParameters = [],
+                Ipe.Grammar.typeAliasDefinitionDocComment = Nothing,
+                Ipe.Grammar.typeAliasType = Ipe.Grammar.ConcreteType [] "List" [Ipe.Grammar.ConcreteType [] "Number" []]
+              }
+          )
 
     it "can parse a type with parameters and parentheses" $ do
       Parsec.Common.parse
@@ -158,11 +170,13 @@ typeAliasWithConcreteTypes =
         ""
         "type alias SomeType = (List (Number))"
         `shouldParse` Ipe.Grammar.TypeAliasDefinition
-          { Ipe.Grammar.typeAliasDefinitionName = "SomeType",
-            Ipe.Grammar.typeAliasDefinitionParameters = [],
-            Ipe.Grammar.typeAliasDefinitionDocComment = Nothing,
-            Ipe.Grammar.typeAliasType = Ipe.Grammar.ConcreteType "List" [Ipe.Grammar.ConcreteType "Number" []]
-          }
+          ( Ipe.Grammar.TypeAlias
+              { Ipe.Grammar.typeAliasDefinitionName = "SomeType",
+                Ipe.Grammar.typeAliasDefinitionParameters = [],
+                Ipe.Grammar.typeAliasDefinitionDocComment = Nothing,
+                Ipe.Grammar.typeAliasType = Ipe.Grammar.ConcreteType [] "List" [Ipe.Grammar.ConcreteType [] "Number" []]
+              }
+          )
 
     it "can't parse with missing closing parenthesis" $ do
       Parsec.Common.runParser'
@@ -176,11 +190,13 @@ typeAliasWithConcreteTypes =
         ""
         "type alias SomeType = Some.Very.Very.Very.Very.Deeply.Nested.Type"
         `shouldParse` Ipe.Grammar.TypeAliasDefinition
-          { Ipe.Grammar.typeAliasDefinitionName = "SomeType",
-            Ipe.Grammar.typeAliasDefinitionParameters = [],
-            Ipe.Grammar.typeAliasDefinitionDocComment = Nothing,
-            Ipe.Grammar.typeAliasType = Ipe.Grammar.ConcreteType "Some.Very.Very.Very.Very.Deeply.Nested.Type" []
-          }
+          ( Ipe.Grammar.TypeAlias
+              { Ipe.Grammar.typeAliasDefinitionName = "SomeType",
+                Ipe.Grammar.typeAliasDefinitionParameters = [],
+                Ipe.Grammar.typeAliasDefinitionDocComment = Nothing,
+                Ipe.Grammar.typeAliasType = Ipe.Grammar.ConcreteType ["Some", "Very", "Very", "Very", "Very", "Deeply", "Nested"] "Type" []
+              }
+          )
 
 typeAliasWithParameterTypes :: Spec
 typeAliasWithParameterTypes =
@@ -191,25 +207,29 @@ typeAliasWithParameterTypes =
         ""
         "type alias SomeType = a"
         `shouldParse` Ipe.Grammar.TypeAliasDefinition
-          { Ipe.Grammar.typeAliasDefinitionName = "SomeType",
-            Ipe.Grammar.typeAliasDefinitionParameters = [],
-            Ipe.Grammar.typeAliasDefinitionDocComment = Nothing,
-            Ipe.Grammar.typeAliasType = Ipe.Grammar.ParameterType "a"
-          }
+          ( Ipe.Grammar.TypeAlias
+              { Ipe.Grammar.typeAliasDefinitionName = "SomeType",
+                Ipe.Grammar.typeAliasDefinitionParameters = [],
+                Ipe.Grammar.typeAliasDefinitionDocComment = Nothing,
+                Ipe.Grammar.typeAliasType = Ipe.Grammar.ParameterType "a"
+              }
+          )
 
     it "can parse a type with doc comments" $ do
       Parsec.Common.parse
         Ipe.Parser.TypeDefinition.parser
         ""
-        "/*| Some doc comment \n\
+        "/|* Some doc comment \n\
         \*/\n\n\
         \type alias SomeType = a"
         `shouldParse` Ipe.Grammar.TypeAliasDefinition
-          { Ipe.Grammar.typeAliasDefinitionName = "SomeType",
-            Ipe.Grammar.typeAliasDefinitionParameters = [],
-            Ipe.Grammar.typeAliasDefinitionDocComment = Just "Some doc comment \n",
-            Ipe.Grammar.typeAliasType = Ipe.Grammar.ParameterType "a"
-          }
+          ( Ipe.Grammar.TypeAlias
+              { Ipe.Grammar.typeAliasDefinitionName = "SomeType",
+                Ipe.Grammar.typeAliasDefinitionParameters = [],
+                Ipe.Grammar.typeAliasDefinitionDocComment = Just "Some doc comment \n",
+                Ipe.Grammar.typeAliasType = Ipe.Grammar.ParameterType "a"
+              }
+          )
 
     it "can parse a type with arguments" $ do
       Parsec.Common.parse
@@ -217,11 +237,13 @@ typeAliasWithParameterTypes =
         ""
         "type alias SomeType a b = a"
         `shouldParse` Ipe.Grammar.TypeAliasDefinition
-          { Ipe.Grammar.typeAliasDefinitionName = "SomeType",
-            Ipe.Grammar.typeAliasDefinitionParameters = ["a", "b"],
-            Ipe.Grammar.typeAliasDefinitionDocComment = Nothing,
-            Ipe.Grammar.typeAliasType = Ipe.Grammar.ParameterType "a"
-          }
+          ( Ipe.Grammar.TypeAlias
+              { Ipe.Grammar.typeAliasDefinitionName = "SomeType",
+                Ipe.Grammar.typeAliasDefinitionParameters = ["a", "b"],
+                Ipe.Grammar.typeAliasDefinitionDocComment = Nothing,
+                Ipe.Grammar.typeAliasType = Ipe.Grammar.ParameterType "a"
+              }
+          )
 
 typeAliasWithRecord :: Spec
 typeAliasWithRecord =
@@ -236,50 +258,56 @@ typeAliasWithRecord =
           \  , someString : String \n\
           \  }"
           `shouldParse` Ipe.Grammar.TypeAliasDefinition
-            { Ipe.Grammar.typeAliasDefinitionName = "SomeType",
-              Ipe.Grammar.typeAliasDefinitionParameters = [],
-              Ipe.Grammar.typeAliasDefinitionDocComment = Nothing,
-              Ipe.Grammar.typeAliasType =
-                Ipe.Grammar.RecordType
-                  ( Map.fromList
-                      [ ("someNumber", Ipe.Grammar.ConcreteType "Number" []),
-                        ("someString", Ipe.Grammar.ConcreteType "String" [])
-                      ]
-                  )
-            }
+            ( Ipe.Grammar.TypeAlias
+                { Ipe.Grammar.typeAliasDefinitionName = "SomeType",
+                  Ipe.Grammar.typeAliasDefinitionParameters = [],
+                  Ipe.Grammar.typeAliasDefinitionDocComment = Nothing,
+                  Ipe.Grammar.typeAliasType =
+                    Ipe.Grammar.RecordType
+                      ( Map.fromList
+                          [ ("someNumber", Ipe.Grammar.ConcreteType [] "Number" []),
+                            ("someString", Ipe.Grammar.ConcreteType [] "String" [])
+                          ]
+                      )
+                }
+            )
       it "can parse a complex type with arguments and nested parameters" $ do
         Parsec.Common.parse
           Ipe.Parser.TypeDefinition.parser
           ""
-          "/*| Some doc comment */\n\
+          "/|* Some doc comment */\n\
           \ type alias SomeType a =\n\
           \  { someNumber : Number\n\
           \  , someString : String \n\
           \  , someComplexType: Result (Maybe (List String)) (Dict String (Set User.Id))\n\
           \  }"
           `shouldParse` Ipe.Grammar.TypeAliasDefinition
-            { Ipe.Grammar.typeAliasDefinitionName = "SomeType",
-              Ipe.Grammar.typeAliasDefinitionParameters = ["a"],
-              Ipe.Grammar.typeAliasDefinitionDocComment = Just "Some doc comment ",
-              Ipe.Grammar.typeAliasType =
-                Ipe.Grammar.RecordType
-                  ( Map.fromList
-                      [ ("someNumber", Ipe.Grammar.ConcreteType "Number" []),
-                        ("someString", Ipe.Grammar.ConcreteType "String" []),
-                        ( "someComplexType",
-                          Ipe.Grammar.ConcreteType
-                            "Result"
-                            [ Ipe.Grammar.ConcreteType "Maybe" [Ipe.Grammar.ConcreteType "List" [Ipe.Grammar.ConcreteType "String" []]],
+            ( Ipe.Grammar.TypeAlias
+                { Ipe.Grammar.typeAliasDefinitionName = "SomeType",
+                  Ipe.Grammar.typeAliasDefinitionParameters = ["a"],
+                  Ipe.Grammar.typeAliasDefinitionDocComment = Just "Some doc comment ",
+                  Ipe.Grammar.typeAliasType =
+                    Ipe.Grammar.RecordType
+                      ( Map.fromList
+                          [ ("someNumber", Ipe.Grammar.ConcreteType [] "Number" []),
+                            ("someString", Ipe.Grammar.ConcreteType [] "String" []),
+                            ( "someComplexType",
                               Ipe.Grammar.ConcreteType
-                                "Dict"
-                                [ Ipe.Grammar.ConcreteType "String" [],
-                                  Ipe.Grammar.ConcreteType "Set" [Ipe.Grammar.ConcreteType "User.Id" []]
+                                []
+                                "Result"
+                                [ Ipe.Grammar.ConcreteType [] "Maybe" [Ipe.Grammar.ConcreteType [] "List" [Ipe.Grammar.ConcreteType [] "String" []]],
+                                  Ipe.Grammar.ConcreteType
+                                    []
+                                    "Dict"
+                                    [ Ipe.Grammar.ConcreteType [] "String" [],
+                                      Ipe.Grammar.ConcreteType [] "Set" [Ipe.Grammar.ConcreteType ["User"] "Id" []]
+                                    ]
                                 ]
-                            ]
-                        )
-                      ]
-                  )
-            }
+                            )
+                          ]
+                      )
+                }
+            )
 
 typeUnion :: Spec
 typeUnion =
@@ -290,17 +318,19 @@ typeUnion =
         ""
         "type union SomeType = | Constructor"
         `shouldParse` Ipe.Grammar.TypeUnionDefinition
-          { Ipe.Grammar.typeUnionDefinitionName = "SomeType",
-            Ipe.Grammar.typeUnionDefinitionParameters = [],
-            Ipe.Grammar.typeUnionDefinitionDocComment = Nothing,
-            Ipe.Grammar.typeUnionDefinitionConstructors =
-              [ Ipe.Grammar.CustomTypeConstructor
-                  { Ipe.Grammar.customTypeConstructorName = "Constructor",
-                    Ipe.Grammar.customTypeConstructorDocComment = Nothing,
-                    Ipe.Grammar.customTypeConstructorArgs = []
-                  }
-              ]
-          }
+          ( Ipe.Grammar.TypeUnion
+              { Ipe.Grammar.typeUnionDefinitionName = "SomeType",
+                Ipe.Grammar.typeUnionDefinitionParameters = [],
+                Ipe.Grammar.typeUnionDefinitionDocComment = Nothing,
+                Ipe.Grammar.typeUnionDefinitionConstructors =
+                  [ Ipe.Grammar.CustomTypeConstructor
+                      { Ipe.Grammar.customTypeConstructorName = "Constructor",
+                        Ipe.Grammar.customTypeConstructorDocComment = Nothing,
+                        Ipe.Grammar.customTypeConstructorArgs = []
+                      }
+                  ]
+              }
+          )
 
     it "should parse a single with a simple argument" $ do
       Parsec.Common.parse
@@ -308,19 +338,21 @@ typeUnion =
         ""
         "type union SomeType = | Constructor Number"
         `shouldParse` Ipe.Grammar.TypeUnionDefinition
-          { Ipe.Grammar.typeUnionDefinitionName = "SomeType",
-            Ipe.Grammar.typeUnionDefinitionParameters = [],
-            Ipe.Grammar.typeUnionDefinitionDocComment = Nothing,
-            Ipe.Grammar.typeUnionDefinitionConstructors =
-              [ Ipe.Grammar.CustomTypeConstructor
-                  { Ipe.Grammar.customTypeConstructorName = "Constructor",
-                    Ipe.Grammar.customTypeConstructorDocComment = Nothing,
-                    Ipe.Grammar.customTypeConstructorArgs =
-                      [ Ipe.Grammar.ConcreteType "Number" []
-                      ]
-                  }
-              ]
-          }
+          ( Ipe.Grammar.TypeUnion
+              { Ipe.Grammar.typeUnionDefinitionName = "SomeType",
+                Ipe.Grammar.typeUnionDefinitionParameters = [],
+                Ipe.Grammar.typeUnionDefinitionDocComment = Nothing,
+                Ipe.Grammar.typeUnionDefinitionConstructors =
+                  [ Ipe.Grammar.CustomTypeConstructor
+                      { Ipe.Grammar.customTypeConstructorName = "Constructor",
+                        Ipe.Grammar.customTypeConstructorDocComment = Nothing,
+                        Ipe.Grammar.customTypeConstructorArgs =
+                          [ Ipe.Grammar.ConcreteType [] "Number" []
+                          ]
+                      }
+                  ]
+              }
+          )
 
     it "should parse a single with a complex argument" $ do
       Parsec.Common.parse
@@ -339,34 +371,38 @@ typeUnion =
         \      )\n\
         \      c"
         `shouldParse` Ipe.Grammar.TypeUnionDefinition
-          { Ipe.Grammar.typeUnionDefinitionName = "SomeType",
-            Ipe.Grammar.typeUnionDefinitionParameters = [],
-            Ipe.Grammar.typeUnionDefinitionDocComment = Nothing,
-            Ipe.Grammar.typeUnionDefinitionConstructors =
-              [ Ipe.Grammar.CustomTypeConstructor
-                  { Ipe.Grammar.customTypeConstructorName = "Constructor",
-                    Ipe.Grammar.customTypeConstructorDocComment = Nothing,
-                    Ipe.Grammar.customTypeConstructorArgs =
-                      [ Ipe.Grammar.ConcreteType "Number" [],
-                        Ipe.Grammar.ConcreteType
-                          "OneOf"
-                          [ Ipe.Grammar.ParameterType "a",
-                            Ipe.Grammar.RecordType
-                              ( Map.fromList
-                                  [ ("someType", Ipe.Grammar.ConcreteType "String" []),
-                                    ("someOtherType", Ipe.Grammar.ParameterType "b"),
-                                    ("anEmptyRecord", Ipe.Grammar.RecordType Map.empty)
-                                  ]
-                              ),
+          ( Ipe.Grammar.TypeUnion
+              { Ipe.Grammar.typeUnionDefinitionName = "SomeType",
+                Ipe.Grammar.typeUnionDefinitionParameters = [],
+                Ipe.Grammar.typeUnionDefinitionDocComment = Nothing,
+                Ipe.Grammar.typeUnionDefinitionConstructors =
+                  [ Ipe.Grammar.CustomTypeConstructor
+                      { Ipe.Grammar.customTypeConstructorName = "Constructor",
+                        Ipe.Grammar.customTypeConstructorDocComment = Nothing,
+                        Ipe.Grammar.customTypeConstructorArgs =
+                          [ Ipe.Grammar.ConcreteType [] "Number" [],
                             Ipe.Grammar.ConcreteType
-                              "String"
                               []
-                          ],
-                        Ipe.Grammar.ParameterType "c"
-                      ]
-                  }
-              ]
-          }
+                              "OneOf"
+                              [ Ipe.Grammar.ParameterType "a",
+                                Ipe.Grammar.RecordType
+                                  ( Map.fromList
+                                      [ ("someType", Ipe.Grammar.ConcreteType [] "String" []),
+                                        ("someOtherType", Ipe.Grammar.ParameterType "b"),
+                                        ("anEmptyRecord", Ipe.Grammar.RecordType Map.empty)
+                                      ]
+                                  ),
+                                Ipe.Grammar.ConcreteType
+                                  []
+                                  "String"
+                                  []
+                              ],
+                            Ipe.Grammar.ParameterType "c"
+                          ]
+                      }
+                  ]
+              }
+          )
 
     it "should parse when there are many constructors" $ do
       Parsec.Common.parse
@@ -377,37 +413,40 @@ typeUnion =
         \  | AnotherConstructor a {}\n\
         \  | YetAnotherConstructor (Maybe (List String))"
         `shouldParse` Ipe.Grammar.TypeUnionDefinition
-          { Ipe.Grammar.typeUnionDefinitionName = "SomeType",
-            Ipe.Grammar.typeUnionDefinitionParameters = [],
-            Ipe.Grammar.typeUnionDefinitionDocComment = Nothing,
-            Ipe.Grammar.typeUnionDefinitionConstructors =
-              [ Ipe.Grammar.CustomTypeConstructor
-                  { Ipe.Grammar.customTypeConstructorName = "Constructor",
-                    Ipe.Grammar.customTypeConstructorDocComment = Nothing,
-                    Ipe.Grammar.customTypeConstructorArgs =
-                      [ Ipe.Grammar.ConcreteType "Number" []
-                      ]
-                  },
-                Ipe.Grammar.CustomTypeConstructor
-                  { Ipe.Grammar.customTypeConstructorName = "AnotherConstructor",
-                    Ipe.Grammar.customTypeConstructorDocComment = Nothing,
-                    Ipe.Grammar.customTypeConstructorArgs =
-                      [ Ipe.Grammar.ParameterType "a",
-                        Ipe.Grammar.RecordType Map.empty
-                      ]
-                  },
-                Ipe.Grammar.CustomTypeConstructor
-                  { Ipe.Grammar.customTypeConstructorName = "YetAnotherConstructor",
-                    Ipe.Grammar.customTypeConstructorDocComment = Nothing,
-                    Ipe.Grammar.customTypeConstructorArgs =
-                      [ Ipe.Grammar.ConcreteType
-                          "Maybe"
-                          [ Ipe.Grammar.ConcreteType "List" [Ipe.Grammar.ConcreteType "String" []]
+          ( Ipe.Grammar.TypeUnion
+              { Ipe.Grammar.typeUnionDefinitionName = "SomeType",
+                Ipe.Grammar.typeUnionDefinitionParameters = [],
+                Ipe.Grammar.typeUnionDefinitionDocComment = Nothing,
+                Ipe.Grammar.typeUnionDefinitionConstructors =
+                  [ Ipe.Grammar.CustomTypeConstructor
+                      { Ipe.Grammar.customTypeConstructorName = "Constructor",
+                        Ipe.Grammar.customTypeConstructorDocComment = Nothing,
+                        Ipe.Grammar.customTypeConstructorArgs =
+                          [ Ipe.Grammar.ConcreteType [] "Number" []
                           ]
-                      ]
-                  }
-              ]
-          }
+                      },
+                    Ipe.Grammar.CustomTypeConstructor
+                      { Ipe.Grammar.customTypeConstructorName = "AnotherConstructor",
+                        Ipe.Grammar.customTypeConstructorDocComment = Nothing,
+                        Ipe.Grammar.customTypeConstructorArgs =
+                          [ Ipe.Grammar.ParameterType "a",
+                            Ipe.Grammar.RecordType Map.empty
+                          ]
+                      },
+                    Ipe.Grammar.CustomTypeConstructor
+                      { Ipe.Grammar.customTypeConstructorName = "YetAnotherConstructor",
+                        Ipe.Grammar.customTypeConstructorDocComment = Nothing,
+                        Ipe.Grammar.customTypeConstructorArgs =
+                          [ Ipe.Grammar.ConcreteType
+                              []
+                              "Maybe"
+                              [ Ipe.Grammar.ConcreteType [] "List" [Ipe.Grammar.ConcreteType [] "String" []]
+                              ]
+                          ]
+                      }
+                  ]
+              }
+          )
 
     it "should fail when missing `|` with a single constructor" $ do
       Parsec.Common.parse
@@ -418,7 +457,7 @@ typeUnion =
           22
           ( utok 'C'
               <> elabel "a `|`, followed by a constructor name"
-              <> elabel "a doc comment, starting with `/*|` and ending with `*/`"
+              <> elabel "a doc comment, starting with `/|*` and ending with `*/`"
           )
 
     it "should fail when there are no constructors" $ do
@@ -450,9 +489,10 @@ typeUnion =
         `shouldFailWith` err
           15
           ( utok '.'
+              <> etok '_'
               <> elabel "a type definition parameter, which must start with a lowercase letter, and followed by any combination of numbers, letters or `_`"
+              <> elabel "alphanumeric character"
               <> elabel "the actual type definition"
-              <> elabel "the rest of the type definition name, which can be any combination of letters, numbers or `_`"
           )
 
     it "should fail with no `=`" $ do
@@ -482,9 +522,10 @@ typeUnion =
         `shouldFailWith` err
           12
           ( utok '!'
+              <> etok '_'
               <> elabel "a type definition parameter, which must start with a lowercase letter, and followed by any combination of numbers, letters or `_`"
+              <> elabel "alphanumeric character"
               <> elabel "the actual type definition"
-              <> elabel "the rest of the type definition name, which can be any combination of letters, numbers or `_`"
           )
 
     it "should fail with invalid type" $ do
@@ -500,19 +541,21 @@ typeUnion =
         ""
         "type union SomeType = | Constructor Some.Other.Type"
         `shouldParse` Ipe.Grammar.TypeUnionDefinition
-          { Ipe.Grammar.typeUnionDefinitionName = "SomeType",
-            Ipe.Grammar.typeUnionDefinitionParameters = [],
-            Ipe.Grammar.typeUnionDefinitionDocComment = Nothing,
-            Ipe.Grammar.typeUnionDefinitionConstructors =
-              [ Ipe.Grammar.CustomTypeConstructor
-                  { Ipe.Grammar.customTypeConstructorName = "Constructor",
-                    Ipe.Grammar.customTypeConstructorDocComment = Nothing,
-                    Ipe.Grammar.customTypeConstructorArgs =
-                      [ Ipe.Grammar.ConcreteType "Some.Other.Type" []
-                      ]
-                  }
-              ]
-          }
+          ( Ipe.Grammar.TypeUnion
+              { Ipe.Grammar.typeUnionDefinitionName = "SomeType",
+                Ipe.Grammar.typeUnionDefinitionParameters = [],
+                Ipe.Grammar.typeUnionDefinitionDocComment = Nothing,
+                Ipe.Grammar.typeUnionDefinitionConstructors =
+                  [ Ipe.Grammar.CustomTypeConstructor
+                      { Ipe.Grammar.customTypeConstructorName = "Constructor",
+                        Ipe.Grammar.customTypeConstructorDocComment = Nothing,
+                        Ipe.Grammar.customTypeConstructorArgs =
+                          [ Ipe.Grammar.ConcreteType ["Some", "Other"] "Type" []
+                          ]
+                      }
+                  ]
+              }
+          )
 
     it "shouldn't allow dots in the constructor name" $ do
       Parsec.Common.parse
@@ -520,17 +563,19 @@ typeUnion =
         ""
         "type union SomeType = | Some.Constructor Number"
         `shouldParse` Ipe.Grammar.TypeUnionDefinition
-          { Ipe.Grammar.typeUnionDefinitionName = "SomeType",
-            Ipe.Grammar.typeUnionDefinitionParameters = [],
-            Ipe.Grammar.typeUnionDefinitionDocComment = Nothing,
-            Ipe.Grammar.typeUnionDefinitionConstructors =
-              [ Ipe.Grammar.CustomTypeConstructor
-                  { Ipe.Grammar.customTypeConstructorName = "Some",
-                    Ipe.Grammar.customTypeConstructorDocComment = Nothing,
-                    Ipe.Grammar.customTypeConstructorArgs = []
-                  }
-              ]
-          }
+          ( Ipe.Grammar.TypeUnion
+              { Ipe.Grammar.typeUnionDefinitionName = "SomeType",
+                Ipe.Grammar.typeUnionDefinitionParameters = [],
+                Ipe.Grammar.typeUnionDefinitionDocComment = Nothing,
+                Ipe.Grammar.typeUnionDefinitionConstructors =
+                  [ Ipe.Grammar.CustomTypeConstructor
+                      { Ipe.Grammar.customTypeConstructorName = "Some",
+                        Ipe.Grammar.customTypeConstructorDocComment = Nothing,
+                        Ipe.Grammar.customTypeConstructorArgs = []
+                      }
+                  ]
+              }
+          )
 
 typeOpaque :: Spec
 typeOpaque =
@@ -541,17 +586,19 @@ typeOpaque =
         ""
         "type opaque SomeType = | Constructor"
         `shouldParse` Ipe.Grammar.TypeOpaqueDefinition
-          { Ipe.Grammar.typeOpaqueDefinitionName = "SomeType",
-            Ipe.Grammar.typeOpaqueDefinitionParameters = [],
-            Ipe.Grammar.typeOpaqueDefinitionDocComment = Nothing,
-            Ipe.Grammar.typeOpaqueDefinitionConstructors =
-              [ Ipe.Grammar.CustomTypeConstructor
-                  { Ipe.Grammar.customTypeConstructorName = "Constructor",
-                    Ipe.Grammar.customTypeConstructorDocComment = Nothing,
-                    Ipe.Grammar.customTypeConstructorArgs = []
-                  }
-              ]
-          }
+          ( Ipe.Grammar.TypeOpaque
+              { Ipe.Grammar.typeOpaqueDefinitionName = "SomeType",
+                Ipe.Grammar.typeOpaqueDefinitionParameters = [],
+                Ipe.Grammar.typeOpaqueDefinitionDocComment = Nothing,
+                Ipe.Grammar.typeOpaqueDefinitionConstructors =
+                  [ Ipe.Grammar.CustomTypeConstructor
+                      { Ipe.Grammar.customTypeConstructorName = "Constructor",
+                        Ipe.Grammar.customTypeConstructorDocComment = Nothing,
+                        Ipe.Grammar.customTypeConstructorArgs = []
+                      }
+                  ]
+              }
+          )
 
     it "should parse a single with a simple argument" $ do
       Parsec.Common.parse
@@ -559,19 +606,21 @@ typeOpaque =
         ""
         "type opaque SomeType = | Constructor Number"
         `shouldParse` Ipe.Grammar.TypeOpaqueDefinition
-          { Ipe.Grammar.typeOpaqueDefinitionName = "SomeType",
-            Ipe.Grammar.typeOpaqueDefinitionParameters = [],
-            Ipe.Grammar.typeOpaqueDefinitionDocComment = Nothing,
-            Ipe.Grammar.typeOpaqueDefinitionConstructors =
-              [ Ipe.Grammar.CustomTypeConstructor
-                  { Ipe.Grammar.customTypeConstructorName = "Constructor",
-                    Ipe.Grammar.customTypeConstructorDocComment = Nothing,
-                    Ipe.Grammar.customTypeConstructorArgs =
-                      [ Ipe.Grammar.ConcreteType "Number" []
-                      ]
-                  }
-              ]
-          }
+          ( Ipe.Grammar.TypeOpaque
+              { Ipe.Grammar.typeOpaqueDefinitionName = "SomeType",
+                Ipe.Grammar.typeOpaqueDefinitionParameters = [],
+                Ipe.Grammar.typeOpaqueDefinitionDocComment = Nothing,
+                Ipe.Grammar.typeOpaqueDefinitionConstructors =
+                  [ Ipe.Grammar.CustomTypeConstructor
+                      { Ipe.Grammar.customTypeConstructorName = "Constructor",
+                        Ipe.Grammar.customTypeConstructorDocComment = Nothing,
+                        Ipe.Grammar.customTypeConstructorArgs =
+                          [ Ipe.Grammar.ConcreteType [] "Number" []
+                          ]
+                      }
+                  ]
+              }
+          )
 
     it "should parse a single with a complex argument" $ do
       Parsec.Common.parse
@@ -590,34 +639,38 @@ typeOpaque =
         \      )\n\
         \      c"
         `shouldParse` Ipe.Grammar.TypeOpaqueDefinition
-          { Ipe.Grammar.typeOpaqueDefinitionName = "SomeType",
-            Ipe.Grammar.typeOpaqueDefinitionParameters = [],
-            Ipe.Grammar.typeOpaqueDefinitionDocComment = Nothing,
-            Ipe.Grammar.typeOpaqueDefinitionConstructors =
-              [ Ipe.Grammar.CustomTypeConstructor
-                  { Ipe.Grammar.customTypeConstructorName = "Constructor",
-                    Ipe.Grammar.customTypeConstructorDocComment = Nothing,
-                    Ipe.Grammar.customTypeConstructorArgs =
-                      [ Ipe.Grammar.ConcreteType "Number" [],
-                        Ipe.Grammar.ConcreteType
-                          "OneOf"
-                          [ Ipe.Grammar.ParameterType "a",
-                            Ipe.Grammar.RecordType
-                              ( Map.fromList
-                                  [ ("someType", Ipe.Grammar.ConcreteType "String" []),
-                                    ("someOtherType", Ipe.Grammar.ParameterType "b"),
-                                    ("anEmptyRecord", Ipe.Grammar.RecordType Map.empty)
-                                  ]
-                              ),
+          ( Ipe.Grammar.TypeOpaque
+              { Ipe.Grammar.typeOpaqueDefinitionName = "SomeType",
+                Ipe.Grammar.typeOpaqueDefinitionParameters = [],
+                Ipe.Grammar.typeOpaqueDefinitionDocComment = Nothing,
+                Ipe.Grammar.typeOpaqueDefinitionConstructors =
+                  [ Ipe.Grammar.CustomTypeConstructor
+                      { Ipe.Grammar.customTypeConstructorName = "Constructor",
+                        Ipe.Grammar.customTypeConstructorDocComment = Nothing,
+                        Ipe.Grammar.customTypeConstructorArgs =
+                          [ Ipe.Grammar.ConcreteType [] "Number" [],
                             Ipe.Grammar.ConcreteType
-                              "String"
                               []
-                          ],
-                        Ipe.Grammar.ParameterType "c"
-                      ]
-                  }
-              ]
-          }
+                              "OneOf"
+                              [ Ipe.Grammar.ParameterType "a",
+                                Ipe.Grammar.RecordType
+                                  ( Map.fromList
+                                      [ ("someType", Ipe.Grammar.ConcreteType [] "String" []),
+                                        ("someOtherType", Ipe.Grammar.ParameterType "b"),
+                                        ("anEmptyRecord", Ipe.Grammar.RecordType Map.empty)
+                                      ]
+                                  ),
+                                Ipe.Grammar.ConcreteType
+                                  []
+                                  "String"
+                                  []
+                              ],
+                            Ipe.Grammar.ParameterType "c"
+                          ]
+                      }
+                  ]
+              }
+          )
 
     it "should parse when there are many constructors" $ do
       Parsec.Common.parse
@@ -628,37 +681,40 @@ typeOpaque =
         \  | AnotherConstructor a {}\n\
         \  | YetAnotherConstructor (Maybe (List String))"
         `shouldParse` Ipe.Grammar.TypeOpaqueDefinition
-          { Ipe.Grammar.typeOpaqueDefinitionName = "SomeType",
-            Ipe.Grammar.typeOpaqueDefinitionParameters = [],
-            Ipe.Grammar.typeOpaqueDefinitionDocComment = Nothing,
-            Ipe.Grammar.typeOpaqueDefinitionConstructors =
-              [ Ipe.Grammar.CustomTypeConstructor
-                  { Ipe.Grammar.customTypeConstructorName = "Constructor",
-                    Ipe.Grammar.customTypeConstructorDocComment = Nothing,
-                    Ipe.Grammar.customTypeConstructorArgs =
-                      [ Ipe.Grammar.ConcreteType "Number" []
-                      ]
-                  },
-                Ipe.Grammar.CustomTypeConstructor
-                  { Ipe.Grammar.customTypeConstructorName = "AnotherConstructor",
-                    Ipe.Grammar.customTypeConstructorDocComment = Nothing,
-                    Ipe.Grammar.customTypeConstructorArgs =
-                      [ Ipe.Grammar.ParameterType "a",
-                        Ipe.Grammar.RecordType Map.empty
-                      ]
-                  },
-                Ipe.Grammar.CustomTypeConstructor
-                  { Ipe.Grammar.customTypeConstructorName = "YetAnotherConstructor",
-                    Ipe.Grammar.customTypeConstructorDocComment = Nothing,
-                    Ipe.Grammar.customTypeConstructorArgs =
-                      [ Ipe.Grammar.ConcreteType
-                          "Maybe"
-                          [ Ipe.Grammar.ConcreteType "List" [Ipe.Grammar.ConcreteType "String" []]
+          ( Ipe.Grammar.TypeOpaque
+              { Ipe.Grammar.typeOpaqueDefinitionName = "SomeType",
+                Ipe.Grammar.typeOpaqueDefinitionParameters = [],
+                Ipe.Grammar.typeOpaqueDefinitionDocComment = Nothing,
+                Ipe.Grammar.typeOpaqueDefinitionConstructors =
+                  [ Ipe.Grammar.CustomTypeConstructor
+                      { Ipe.Grammar.customTypeConstructorName = "Constructor",
+                        Ipe.Grammar.customTypeConstructorDocComment = Nothing,
+                        Ipe.Grammar.customTypeConstructorArgs =
+                          [ Ipe.Grammar.ConcreteType [] "Number" []
                           ]
-                      ]
-                  }
-              ]
-          }
+                      },
+                    Ipe.Grammar.CustomTypeConstructor
+                      { Ipe.Grammar.customTypeConstructorName = "AnotherConstructor",
+                        Ipe.Grammar.customTypeConstructorDocComment = Nothing,
+                        Ipe.Grammar.customTypeConstructorArgs =
+                          [ Ipe.Grammar.ParameterType "a",
+                            Ipe.Grammar.RecordType Map.empty
+                          ]
+                      },
+                    Ipe.Grammar.CustomTypeConstructor
+                      { Ipe.Grammar.customTypeConstructorName = "YetAnotherConstructor",
+                        Ipe.Grammar.customTypeConstructorDocComment = Nothing,
+                        Ipe.Grammar.customTypeConstructorArgs =
+                          [ Ipe.Grammar.ConcreteType
+                              []
+                              "Maybe"
+                              [ Ipe.Grammar.ConcreteType [] "List" [Ipe.Grammar.ConcreteType [] "String" []]
+                              ]
+                          ]
+                      }
+                  ]
+              }
+          )
 
     it "should fail when missing `|` with a single constructor" $ do
       Parsec.Common.parse
@@ -669,7 +725,7 @@ typeOpaque =
           23
           ( utok 'C'
               <> elabel "a `|`, followed by a constructor name"
-              <> elabel "a doc comment, starting with `/*|` and ending with `*/`"
+              <> elabel "a doc comment, starting with `/|*` and ending with `*/`"
           )
 
     it "should fail when there are no constructors" $ do
@@ -701,9 +757,10 @@ typeOpaque =
         `shouldFailWith` err
           16
           ( utok '.'
+              <> etok '_'
               <> elabel "a type definition parameter, which must start with a lowercase letter, and followed by any combination of numbers, letters or `_`"
+              <> elabel "alphanumeric character"
               <> elabel "the actual type definition"
-              <> elabel "the rest of the type definition name, which can be any combination of letters, numbers or `_`"
           )
 
     it "should fail with no `=`" $ do
@@ -733,9 +790,10 @@ typeOpaque =
         `shouldFailWith` err
           13
           ( utok '!'
+              <> etok '_'
               <> elabel "a type definition parameter, which must start with a lowercase letter, and followed by any combination of numbers, letters or `_`"
+              <> elabel "alphanumeric character"
               <> elabel "the actual type definition"
-              <> elabel "the rest of the type definition name, which can be any combination of letters, numbers or `_`"
           )
 
     it "should fail with invalid type" $ do
@@ -751,19 +809,21 @@ typeOpaque =
         ""
         "type opaque SomeType = | Constructor Some.Other.Type"
         `shouldParse` Ipe.Grammar.TypeOpaqueDefinition
-          { Ipe.Grammar.typeOpaqueDefinitionName = "SomeType",
-            Ipe.Grammar.typeOpaqueDefinitionParameters = [],
-            Ipe.Grammar.typeOpaqueDefinitionDocComment = Nothing,
-            Ipe.Grammar.typeOpaqueDefinitionConstructors =
-              [ Ipe.Grammar.CustomTypeConstructor
-                  { Ipe.Grammar.customTypeConstructorName = "Constructor",
-                    Ipe.Grammar.customTypeConstructorDocComment = Nothing,
-                    Ipe.Grammar.customTypeConstructorArgs =
-                      [ Ipe.Grammar.ConcreteType "Some.Other.Type" []
-                      ]
-                  }
-              ]
-          }
+          ( Ipe.Grammar.TypeOpaque
+              { Ipe.Grammar.typeOpaqueDefinitionName = "SomeType",
+                Ipe.Grammar.typeOpaqueDefinitionParameters = [],
+                Ipe.Grammar.typeOpaqueDefinitionDocComment = Nothing,
+                Ipe.Grammar.typeOpaqueDefinitionConstructors =
+                  [ Ipe.Grammar.CustomTypeConstructor
+                      { Ipe.Grammar.customTypeConstructorName = "Constructor",
+                        Ipe.Grammar.customTypeConstructorDocComment = Nothing,
+                        Ipe.Grammar.customTypeConstructorArgs =
+                          [ Ipe.Grammar.ConcreteType ["Some", "Other"] "Type" []
+                          ]
+                      }
+                  ]
+              }
+          )
 
     it "shouldn't allow dots in the constructor name" $ do
       Parsec.Common.parse
@@ -771,14 +831,16 @@ typeOpaque =
         ""
         "type opaque SomeType = | Some.Constructor Number"
         `shouldParse` Ipe.Grammar.TypeOpaqueDefinition
-          { Ipe.Grammar.typeOpaqueDefinitionName = "SomeType",
-            Ipe.Grammar.typeOpaqueDefinitionParameters = [],
-            Ipe.Grammar.typeOpaqueDefinitionDocComment = Nothing,
-            Ipe.Grammar.typeOpaqueDefinitionConstructors =
-              [ Ipe.Grammar.CustomTypeConstructor
-                  { Ipe.Grammar.customTypeConstructorName = "Some",
-                    Ipe.Grammar.customTypeConstructorDocComment = Nothing,
-                    Ipe.Grammar.customTypeConstructorArgs = []
-                  }
-              ]
-          }
+          ( Ipe.Grammar.TypeOpaque
+              { Ipe.Grammar.typeOpaqueDefinitionName = "SomeType",
+                Ipe.Grammar.typeOpaqueDefinitionParameters = [],
+                Ipe.Grammar.typeOpaqueDefinitionDocComment = Nothing,
+                Ipe.Grammar.typeOpaqueDefinitionConstructors =
+                  [ Ipe.Grammar.CustomTypeConstructor
+                      { Ipe.Grammar.customTypeConstructorName = "Some",
+                        Ipe.Grammar.customTypeConstructorDocComment = Nothing,
+                        Ipe.Grammar.customTypeConstructorArgs = []
+                      }
+                  ]
+              }
+          )

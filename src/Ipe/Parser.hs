@@ -8,15 +8,17 @@ module Ipe.Parser
     symbol,
     symbolWithNoBlockComments,
     space,
+    lowercaseIdentifier,
+    uppercaseIdentifier,
     hspace,
     spaceWithNoBlockComments,
     docComment,
+    reservedWords,
   )
 where
 
 import qualified Control.Applicative
 import qualified Control.Monad
-import qualified Data.List
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Void (Void)
@@ -31,26 +33,13 @@ type Parser = Parsec.Common.Parsec Void Text
 -- | Parse a module name. Module names start with an upper case letter, and
 -- contain only letters, numbers, `.` or `_`. Letters after a `.` must be upper
 -- case as well
-moduleName :: Parser Text
+moduleName :: Parser ([Text], Text)
 moduleName = do
-  firstChar <- Parsec.Char.upperChar
-  rest <-
-    Parsec.Common.many
-      ( Parsec.Common.choice
-          [ Parsec.Char.alphaNumChar,
-            Parsec.Char.char '_'
-          ]
-          <?> "the rest of the module name, which can be any combination of letters, numbers, `.` or `_`"
-      )
+  path <- Parsec.Common.many $ Parsec.Common.try (uppercaseIdentifier <* Parsec.Char.char '.')
 
-  nestedModules <- Parsec.Common.many (Parsec.Char.char '.' *> moduleName)
+  name <- uppercaseIdentifier
 
-  return $
-    T.concat
-      ( Data.List.intersperse
-          "."
-          (T.pack (firstChar : rest) : nestedModules)
-      )
+  return (path, name)
 
 -- | Consume all whitespace, line comments and block comments right after a parser
 lexeme :: Parser a -> Parser a
@@ -68,6 +57,41 @@ symbol = Parsec.Lexer.symbol space
 -- | Consume all whitespace and line comments right after a text
 symbolWithNoBlockComments :: Text -> Parser Text
 symbolWithNoBlockComments = Parsec.Lexer.symbol spaceWithNoBlockComments
+
+-- | Parse an identifier that starts with a lowercase letter, making sure it's not a reserved keyword
+lowercaseIdentifier :: Parser Text
+lowercaseIdentifier = do
+  identifier <- do
+    lowercaseChar <- Parsec.Char.lowerChar
+    restOfIdentifier <-
+      Parsec.Common.many
+        ( Parsec.Common.choice
+            [ Parsec.Char.alphaNumChar,
+              Parsec.Char.char '_'
+            ]
+        )
+
+    return $ T.pack (lowercaseChar : restOfIdentifier)
+
+  Control.Monad.when (identifier `elem` Ipe.Parser.reservedWords) $
+    Control.Monad.fail $
+      "Keyword " <> T.unpack identifier <> " cannot be an identifier"
+
+  return identifier
+
+-- | Parse an identifier that starts with an uppercase letter
+uppercaseIdentifier :: Parser Text
+uppercaseIdentifier = do
+  uppercaseChar <- Parsec.Char.upperChar
+  restOfIdentifier <-
+    Parsec.Common.many
+      ( Parsec.Common.choice
+          [ Parsec.Char.alphaNumChar,
+            Parsec.Char.char '_'
+          ]
+      )
+
+  return $ T.pack (uppercaseChar : restOfIdentifier)
 
 -- | Consume all whitespace, line comments and block comments
 space :: Parser ()
@@ -125,7 +149,21 @@ blockCommentEnd :: Text
 blockCommentEnd = "*/"
 
 docCommentStart :: Text
-docCommentStart = "/*|"
+docCommentStart = "/|*"
 
 docCommentEnd :: Text
 docCommentEnd = "*/"
+
+reservedWords :: [Text]
+reservedWords =
+  [ "match",
+    "with",
+    "import",
+    "as",
+    "module",
+    "exports",
+    "type",
+    "alias",
+    "union",
+    "opaque"
+  ]

@@ -30,14 +30,14 @@ moduleNameSpec =
         Ipe.Parser.moduleName
         ""
         "SomeModule"
-        `shouldParse` "SomeModule"
+        `shouldParse` ([], "SomeModule")
 
     it "should parse a module name with dots" $
       Parsec.Common.parse
         Ipe.Parser.moduleName
         ""
         "Some.Module"
-        `shouldParse` "Some.Module"
+        `shouldParse` (["Some"], "Module")
 
     it "should fail on a module that starts with a lower case letter" $
       Parsec.Common.parse
@@ -284,14 +284,14 @@ docCommentSpec =
       Parsec.Common.parse
         Ipe.Parser.docComment
         ""
-        "/*| some doc comment */"
+        "/|* some doc comment */"
         `shouldParse` "some doc comment "
 
     it "should parse a multiline doc comment" $
       Parsec.Common.parse
         Ipe.Parser.docComment
         ""
-        "/*| some doc comment \nwith\nmultiple\nlines\n\t\n*/"
+        "/|* some doc comment \nwith\nmultiple\nlines\n\t\n*/"
         `shouldParse` "some doc comment \nwith\nmultiple\nlines\n\t\n"
 
     it "should fail if the comment is not a doc comment" $
@@ -299,11 +299,11 @@ docCommentSpec =
         Ipe.Parser.docComment
         ""
         "/* some comment */"
-        `shouldFailWith` err 0 (utoks "/* " <> etoks "/*|")
+        `shouldFailWith` err 0 (utoks "/* " <> etoks "/|*")
 
     it "should fail with other input" $
       Parsec.Common.parse
         Ipe.Parser.docComment
         ""
         "x = 5"
-        `shouldFailWith` err 0 (utoks "x =" <> etoks "/*|")
+        `shouldFailWith` err 0 (utoks "x =" <> etoks "/|*")
