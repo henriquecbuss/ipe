@@ -30,8 +30,8 @@ moduleBody =
   Parsec.Common.many
     ( Ipe.Parser.lexeme $
         Parsec.Common.choice
-          [ TypeDefinition <$> Ipe.Parser.TypeDefinition.parser,
-            TopLevelDefinition <$> Ipe.Parser.TopLevelDefinition.parser
+          [ TypeDefinition <$> Parsec.Common.try Ipe.Parser.TypeDefinition.parser,
+            TopLevelDefinition <$> Parsec.Common.try Ipe.Parser.TopLevelDefinition.parser
           ]
     )
 
