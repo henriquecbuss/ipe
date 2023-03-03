@@ -122,7 +122,7 @@ typeAliasWithConcreteTypes =
       Parsec.Common.parse
         Ipe.Parser.TypeDefinition.parser
         ""
-        "/*| Some doc comment \n\
+        "/|* Some doc comment \n\
         \*/\n\n\
         \type alias SomeType = Number"
         `shouldParse` Ipe.Grammar.TypeAliasDefinition
@@ -217,7 +217,7 @@ typeAliasWithParameterTypes =
       Parsec.Common.parse
         Ipe.Parser.TypeDefinition.parser
         ""
-        "/*| Some doc comment \n\
+        "/|* Some doc comment \n\
         \*/\n\n\
         \type alias SomeType = a"
         `shouldParse` Ipe.Grammar.TypeAliasDefinition
@@ -273,7 +273,7 @@ typeAliasWithRecord =
         Parsec.Common.parse
           Ipe.Parser.TypeDefinition.parser
           ""
-          "/*| Some doc comment */\n\
+          "/|* Some doc comment */\n\
           \ type alias SomeType a =\n\
           \  { someNumber : Number\n\
           \  , someString : String \n\
@@ -455,7 +455,7 @@ typeUnion =
           22
           ( utok 'C'
               <> elabel "a `|`, followed by a constructor name"
-              <> elabel "a doc comment, starting with `/*|` and ending with `*/`"
+              <> elabel "a doc comment, starting with `/|*` and ending with `*/`"
           )
 
     it "should fail when there are no constructors" $ do
@@ -721,7 +721,7 @@ typeOpaque =
           23
           ( utok 'C'
               <> elabel "a `|`, followed by a constructor name"
-              <> elabel "a doc comment, starting with `/*|` and ending with `*/`"
+              <> elabel "a doc comment, starting with `/|*` and ending with `*/`"
           )
 
     it "should fail when there are no constructors" $ do

@@ -32,7 +32,7 @@ parserSpec =
         Ipe.Parser.ModuleDefinition.parser
         ""
         "module SomeModule exports [ someFunction, otherFunction ]\n\
-        \/*|\n\
+        \/|*\n\
         \This is a doc comment!\n\
         \Here's another line\n\
         \*/"

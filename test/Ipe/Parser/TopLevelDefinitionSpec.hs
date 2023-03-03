@@ -109,7 +109,7 @@ spec = describe "the top level definition parser" $ do
     Parsec.Common.parse
       Ipe.Parser.TopLevelDefinition.parser
       ""
-      "/*| A top level function that adds 1 to its argument */\n\
+      "/|* A top level function that adds 1 to its argument */\n\
       \topLevelFunction = \\x -> x + 1"
       `shouldParse` Ipe.Grammar.TopLevelDefinition
         { Ipe.Grammar.topLevelDefinitionName = "topLevelFunction",
@@ -141,7 +141,7 @@ spec = describe "the top level definition parser" $ do
     Parsec.Common.parse
       Ipe.Parser.TopLevelDefinition.parser
       ""
-      "/*| A top level expression that equals x + 1 */\n\
+      "/|* A top level expression that equals x + 1 */\n\
       \topLevelExpression = x + 1"
       `shouldParse` Ipe.Grammar.TopLevelDefinition
         { Ipe.Grammar.topLevelDefinitionName = "topLevelExpression",
@@ -287,7 +287,7 @@ spec = describe "the top level definition parser" $ do
     Parsec.Common.parse
       Ipe.Parser.TopLevelDefinition.parser
       ""
-      "/*| A top level function that adds 1 to its argument */\n\
+      "/|* A top level function that adds 1 to its argument */\n\
       \topLevelFunction : Number -> Number\n\
       \topLevelFunction = \\x -> x + 1"
       `shouldParse` Ipe.Grammar.TopLevelDefinition
@@ -327,7 +327,7 @@ spec = describe "the top level definition parser" $ do
     Parsec.Common.parse
       Ipe.Parser.TopLevelDefinition.parser
       ""
-      "/*| A top level expression that equals x + 1 */\n\
+      "/|* A top level expression that equals x + 1 */\n\
       \topLevelExpression : Number\n\
       \topLevelExpression = x + 1"
       `shouldParse` Ipe.Grammar.TopLevelDefinition

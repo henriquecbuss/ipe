@@ -20,10 +20,10 @@ parserSpec =
         Ipe.Parser.Module.parser
         ""
         "module Nested.Module exports [ fromString, OpaqueType ]\n\
-        \/*| This is just a simple module that should be parsed */\n\
+        \/|* This is just a simple module that should be parsed */\n\
         \\n\
         \\n\
-        \/*| Try to turn a String into an OpaqueType */\n\
+        \/|* Try to turn a String into an OpaqueType */\n\
         \fromString : String -> Maybe OpaqueType\n\
         \fromString =\n\
         \   \\stringValue ->\n\
@@ -49,9 +49,7 @@ parserSpec =
             Ipe.Grammar.topLevelDefinitions =
               [ Ipe.Grammar.TopLevelDefinition
                   { Ipe.Grammar.topLevelDefinitionName = "fromString",
-                    -- TODO
-                    -- Ipe.Grammar.topLevelDefinitionDocComment = Just "Try to turn a String into an OpaqueType ",
-                    Ipe.Grammar.topLevelDefinitionDocComment = Nothing,
+                    Ipe.Grammar.topLevelDefinitionDocComment = Just "Try to turn a String into an OpaqueType ",
                     Ipe.Grammar.topLevelDefinitionValue =
                       Ipe.Grammar.IpeFunction
                         ["stringValue"]
@@ -171,7 +169,7 @@ parserSpec =
         Ipe.Parser.Module.parser
         ""
         "module Nested.Module exports [ fromString, OpaqueType ]\n\
-        \/*| This is just a simple module that should be parsed */\n\
+        \/|* This is just a simple module that should be parsed */\n\
         \\n\
         \\n\
         \import RootModule\n\
@@ -181,12 +179,12 @@ parserSpec =
         \\n\
         \{-| Some opaque type -}\n\
         \opaque type OpaqueType =\n\
-        \   /*| Some constructor */\n\
+        \   /|* Some constructor */\n\
         \   | OpaqueTypeConstructor Number\n\
         \   | OpaqueTypeConstructor2 RootModule.Type\n\
         \\n\
         \\n\
-        \/*| Try to turn a String into an OpaqueType */\n\
+        \/|* Try to turn a String into an OpaqueType */\n\
         \fromString : String -> Maybe OpaqueType\n\
         \fromString =\n\
         \   \\stringValue ->\n\

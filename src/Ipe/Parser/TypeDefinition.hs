@@ -199,7 +199,7 @@ recordItem = do
 
 customTypeConstructor :: Parser Ipe.Grammar.CustomTypeConstructor
 customTypeConstructor = do
-  docComment <- Parsec.Common.optional Ipe.Parser.docComment <?> "a doc comment, starting with `/*|` and ending with `*/`"
+  docComment <- Parsec.Common.optional Ipe.Parser.docComment <?> "a doc comment, starting with `/|*` and ending with `*/`"
 
   Control.Monad.void (Ipe.Parser.symbol "|" <?> "a `|`, followed by a constructor name")
 

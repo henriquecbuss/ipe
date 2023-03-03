@@ -149,7 +149,7 @@ blockCommentEnd :: Text
 blockCommentEnd = "*/"
 
 docCommentStart :: Text
-docCommentStart = "/*|"
+docCommentStart = "/|*"
 
 docCommentEnd :: Text
 docCommentEnd = "*/"
