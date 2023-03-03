@@ -70,6 +70,7 @@ term acceptArgs =
       Ipe.Parser.lexeme matchExpression,
       functionCallOrValue acceptArgs
     ]
+    <* Parsec.Common.notFollowedBy (Ipe.Parser.symbol "->")
 
 operatorTable :: [[Combinators.Expr.Operator Parser Ipe.Grammar.Expression]]
 operatorTable =
