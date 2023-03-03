@@ -97,7 +97,7 @@ jobs:
           EOF
           fi
 
-          stack test ${{ matrix.stack-args }} --haddock --no-haddock-deps --ghc-options="-Werror -O0" --copy-bins --local-bin-path bin
+          stack test ${{ matrix.stack-args }} --ghc-options="-Werror -O0" --copy-bins --local-bin-path bin
 
           # Get output about whether the exe is dynamically linked
           if [[ "${{ matrix.os }}" == "macos-latest" ]]
@@ -131,7 +131,7 @@ jobs:
           # Check the Stack version
           stack --version
 
-          stack test ${{ matrix.stack-args }} --haddock --no-haddock-deps --ghc-options="-Werror -O0" --copy-bins --local-bin-path bin
+          stack test ${{ matrix.stack-args }} --ghc-options="-Werror -O0" --copy-bins --local-bin-path bin
 
           echo "Skipping ldd check on Windows"
 
