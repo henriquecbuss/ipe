@@ -4,6 +4,7 @@ module Ipe.Grammar
     IpeFunctionBody (..),
     ImportList,
     ImportExpression (..),
+    FunctionCallOrValue (..),
     TypeDefinition (..),
     CustomTypeConstructor (..),
     IpeType (..),
@@ -132,9 +133,16 @@ data Expression
   | IpeNumber Float
   | IpeMatch Expression [(IpeMatchPattern, Expression)]
   | IpeString Text
-  | -- TODO - Support record accessors
-    IpeFunctionCallOrValue [Text] Text [Expression]
+  | IpeFunctionCallOrValue FunctionCallOrValue
   | IpeFunction [Text] IpeFunctionBody
+  deriving (Eq, Show)
+
+data FunctionCallOrValue = FunctionCallOrValue
+  { functionCallOrValuePath :: [Text],
+    functionCallOrValueName :: Text,
+    functionCallOrValueRecordAccessors :: [Text],
+    functionCallOrValueArguments :: [Expression]
+  }
   deriving (Eq, Show)
 
 data IpeBinaryOperator

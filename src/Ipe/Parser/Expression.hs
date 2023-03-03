@@ -45,14 +45,29 @@ functionCallOrValue :: Bool -> Parser Ipe.Grammar.Expression
 functionCallOrValue acceptArgs = do
   moduleNames <- Parsec.Common.many (Ipe.Parser.uppercaseIdentifier <* Parsec.Char.char '.')
 
-  name <- Ipe.Parser.lexeme Ipe.Parser.lowercaseIdentifier
+  (name, recordAccessors) <-
+    Ipe.Parser.lexeme
+      ( do
+          name <- Ipe.Parser.lowercaseIdentifier
+
+          recordAccessors <- Parsec.Common.many (Parsec.Char.char '.' *> Ipe.Parser.lowercaseIdentifier)
+          return (name, recordAccessors)
+      )
 
   args <-
     if acceptArgs
       then Parsec.Common.many . Parsec.Common.try . Ipe.Parser.lexeme $ term False
       else return []
 
-  return $ Ipe.Grammar.IpeFunctionCallOrValue moduleNames name args
+  return $
+    Ipe.Grammar.IpeFunctionCallOrValue
+      ( Ipe.Grammar.FunctionCallOrValue
+          { Ipe.Grammar.functionCallOrValuePath = moduleNames,
+            Ipe.Grammar.functionCallOrValueName = name,
+            Ipe.Grammar.functionCallOrValueRecordAccessors = recordAccessors,
+            Ipe.Grammar.functionCallOrValueArguments = args
+          }
+      )
 
 term :: Bool -> Parser Ipe.Grammar.Expression
 term acceptArgs =

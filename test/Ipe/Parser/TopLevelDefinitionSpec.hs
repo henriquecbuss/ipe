@@ -27,7 +27,15 @@ spec = describe "the top level definition parser" $ do
                     Ipe.Grammar.functionReturn =
                       Ipe.Grammar.IpeBinaryOperation
                         Ipe.Grammar.Add
-                        (Ipe.Grammar.IpeFunctionCallOrValue [] "x" [])
+                        ( Ipe.Grammar.IpeFunctionCallOrValue
+                            ( Ipe.Grammar.FunctionCallOrValue
+                                { Ipe.Grammar.functionCallOrValuePath = [],
+                                  Ipe.Grammar.functionCallOrValueName = "x",
+                                  Ipe.Grammar.functionCallOrValueRecordAccessors = [],
+                                  Ipe.Grammar.functionCallOrValueArguments = []
+                                }
+                            )
+                        )
                         (Ipe.Grammar.IpeNumber 1)
                   }
               ),
@@ -50,8 +58,24 @@ spec = describe "the top level definition parser" $ do
                     Ipe.Grammar.functionReturn =
                       Ipe.Grammar.IpeBinaryOperation
                         Ipe.Grammar.Add
-                        (Ipe.Grammar.IpeFunctionCallOrValue [] "x" [])
-                        (Ipe.Grammar.IpeFunctionCallOrValue [] "y" [])
+                        ( Ipe.Grammar.IpeFunctionCallOrValue
+                            ( Ipe.Grammar.FunctionCallOrValue
+                                { Ipe.Grammar.functionCallOrValuePath = [],
+                                  Ipe.Grammar.functionCallOrValueName = "x",
+                                  Ipe.Grammar.functionCallOrValueRecordAccessors = [],
+                                  Ipe.Grammar.functionCallOrValueArguments = []
+                                }
+                            )
+                        )
+                        ( Ipe.Grammar.IpeFunctionCallOrValue
+                            ( Ipe.Grammar.FunctionCallOrValue
+                                { Ipe.Grammar.functionCallOrValuePath = [],
+                                  Ipe.Grammar.functionCallOrValueName = "y",
+                                  Ipe.Grammar.functionCallOrValueRecordAccessors = [],
+                                  Ipe.Grammar.functionCallOrValueArguments = []
+                                }
+                            )
+                        )
                   }
               ),
           Ipe.Grammar.topLevelDefinitionTypeAnnotation = Nothing
@@ -68,7 +92,15 @@ spec = describe "the top level definition parser" $ do
           Ipe.Grammar.topLevelDefinitionValue =
             Ipe.Grammar.IpeBinaryOperation
               Ipe.Grammar.Add
-              (Ipe.Grammar.IpeFunctionCallOrValue [] "x" [])
+              ( Ipe.Grammar.IpeFunctionCallOrValue
+                  ( Ipe.Grammar.FunctionCallOrValue
+                      { Ipe.Grammar.functionCallOrValuePath = [],
+                        Ipe.Grammar.functionCallOrValueName = "x",
+                        Ipe.Grammar.functionCallOrValueRecordAccessors = [],
+                        Ipe.Grammar.functionCallOrValueArguments = []
+                      }
+                  )
+              )
               (Ipe.Grammar.IpeNumber 1),
           Ipe.Grammar.topLevelDefinitionTypeAnnotation = Nothing
         }
@@ -90,7 +122,15 @@ spec = describe "the top level definition parser" $ do
                     Ipe.Grammar.functionReturn =
                       Ipe.Grammar.IpeBinaryOperation
                         Ipe.Grammar.Add
-                        (Ipe.Grammar.IpeFunctionCallOrValue [] "x" [])
+                        ( Ipe.Grammar.IpeFunctionCallOrValue
+                            ( Ipe.Grammar.FunctionCallOrValue
+                                { Ipe.Grammar.functionCallOrValuePath = [],
+                                  Ipe.Grammar.functionCallOrValueName = "x",
+                                  Ipe.Grammar.functionCallOrValueRecordAccessors = [],
+                                  Ipe.Grammar.functionCallOrValueArguments = []
+                                }
+                            )
+                        )
                         (Ipe.Grammar.IpeNumber 1)
                   }
               ),
@@ -109,7 +149,15 @@ spec = describe "the top level definition parser" $ do
           Ipe.Grammar.topLevelDefinitionValue =
             Ipe.Grammar.IpeBinaryOperation
               Ipe.Grammar.Add
-              (Ipe.Grammar.IpeFunctionCallOrValue [] "x" [])
+              ( Ipe.Grammar.IpeFunctionCallOrValue
+                  ( Ipe.Grammar.FunctionCallOrValue
+                      { Ipe.Grammar.functionCallOrValuePath = [],
+                        Ipe.Grammar.functionCallOrValueName = "x",
+                        Ipe.Grammar.functionCallOrValueRecordAccessors = [],
+                        Ipe.Grammar.functionCallOrValueArguments = []
+                      }
+                  )
+              )
               (Ipe.Grammar.IpeNumber 1),
           Ipe.Grammar.topLevelDefinitionTypeAnnotation = Nothing
         }
@@ -131,7 +179,15 @@ spec = describe "the top level definition parser" $ do
                     Ipe.Grammar.functionReturn =
                       Ipe.Grammar.IpeBinaryOperation
                         Ipe.Grammar.Add
-                        (Ipe.Grammar.IpeFunctionCallOrValue [] "x" [])
+                        ( Ipe.Grammar.IpeFunctionCallOrValue
+                            ( Ipe.Grammar.FunctionCallOrValue
+                                { Ipe.Grammar.functionCallOrValuePath = [],
+                                  Ipe.Grammar.functionCallOrValueName = "x",
+                                  Ipe.Grammar.functionCallOrValueRecordAccessors = [],
+                                  Ipe.Grammar.functionCallOrValueArguments = []
+                                }
+                            )
+                        )
                         (Ipe.Grammar.IpeNumber 1)
                   }
               ),
@@ -162,8 +218,24 @@ spec = describe "the top level definition parser" $ do
                     Ipe.Grammar.functionReturn =
                       Ipe.Grammar.IpeBinaryOperation
                         Ipe.Grammar.Add
-                        (Ipe.Grammar.IpeFunctionCallOrValue [] "x" [])
-                        (Ipe.Grammar.IpeFunctionCallOrValue [] "y" [])
+                        ( Ipe.Grammar.IpeFunctionCallOrValue
+                            ( Ipe.Grammar.FunctionCallOrValue
+                                { Ipe.Grammar.functionCallOrValuePath = [],
+                                  Ipe.Grammar.functionCallOrValueName = "x",
+                                  Ipe.Grammar.functionCallOrValueRecordAccessors = [],
+                                  Ipe.Grammar.functionCallOrValueArguments = []
+                                }
+                            )
+                        )
+                        ( Ipe.Grammar.IpeFunctionCallOrValue
+                            ( Ipe.Grammar.FunctionCallOrValue
+                                { Ipe.Grammar.functionCallOrValuePath = [],
+                                  Ipe.Grammar.functionCallOrValueName = "y",
+                                  Ipe.Grammar.functionCallOrValueRecordAccessors = [],
+                                  Ipe.Grammar.functionCallOrValueArguments = []
+                                }
+                            )
+                        )
                   }
               ),
           Ipe.Grammar.topLevelDefinitionTypeAnnotation =
@@ -191,7 +263,15 @@ spec = describe "the top level definition parser" $ do
           Ipe.Grammar.topLevelDefinitionValue =
             Ipe.Grammar.IpeBinaryOperation
               Ipe.Grammar.Add
-              (Ipe.Grammar.IpeFunctionCallOrValue [] "x" [])
+              ( Ipe.Grammar.IpeFunctionCallOrValue
+                  ( Ipe.Grammar.FunctionCallOrValue
+                      { Ipe.Grammar.functionCallOrValuePath = [],
+                        Ipe.Grammar.functionCallOrValueName = "x",
+                        Ipe.Grammar.functionCallOrValueRecordAccessors = [],
+                        Ipe.Grammar.functionCallOrValueArguments = []
+                      }
+                  )
+              )
               (Ipe.Grammar.IpeNumber 1),
           Ipe.Grammar.topLevelDefinitionTypeAnnotation =
             Just
@@ -221,7 +301,15 @@ spec = describe "the top level definition parser" $ do
                     Ipe.Grammar.functionReturn =
                       Ipe.Grammar.IpeBinaryOperation
                         Ipe.Grammar.Add
-                        (Ipe.Grammar.IpeFunctionCallOrValue [] "x" [])
+                        ( Ipe.Grammar.IpeFunctionCallOrValue
+                            ( Ipe.Grammar.FunctionCallOrValue
+                                { Ipe.Grammar.functionCallOrValuePath = [],
+                                  Ipe.Grammar.functionCallOrValueName = "x",
+                                  Ipe.Grammar.functionCallOrValueRecordAccessors = [],
+                                  Ipe.Grammar.functionCallOrValueArguments = []
+                                }
+                            )
+                        )
                         (Ipe.Grammar.IpeNumber 1)
                   }
               ),
@@ -248,7 +336,15 @@ spec = describe "the top level definition parser" $ do
           Ipe.Grammar.topLevelDefinitionValue =
             Ipe.Grammar.IpeBinaryOperation
               Ipe.Grammar.Add
-              (Ipe.Grammar.IpeFunctionCallOrValue [] "x" [])
+              ( Ipe.Grammar.IpeFunctionCallOrValue
+                  ( Ipe.Grammar.FunctionCallOrValue
+                      { Ipe.Grammar.functionCallOrValuePath = [],
+                        Ipe.Grammar.functionCallOrValueName = "x",
+                        Ipe.Grammar.functionCallOrValueRecordAccessors = [],
+                        Ipe.Grammar.functionCallOrValueArguments = []
+                      }
+                  )
+              )
               (Ipe.Grammar.IpeNumber 1),
           Ipe.Grammar.topLevelDefinitionTypeAnnotation =
             Just
@@ -274,7 +370,15 @@ spec = describe "the top level definition parser" $ do
               ["x", "y"]
               ( Ipe.Grammar.IpeFunctionBody
                   { Ipe.Grammar.attributions = [],
-                    Ipe.Grammar.functionReturn = Ipe.Grammar.IpeFunctionCallOrValue [] "x" []
+                    Ipe.Grammar.functionReturn =
+                      Ipe.Grammar.IpeFunctionCallOrValue
+                        ( Ipe.Grammar.FunctionCallOrValue
+                            { Ipe.Grammar.functionCallOrValuePath = [],
+                              Ipe.Grammar.functionCallOrValueName = "x",
+                              Ipe.Grammar.functionCallOrValueRecordAccessors = [],
+                              Ipe.Grammar.functionCallOrValueArguments = []
+                            }
+                        )
                   }
               ),
           Ipe.Grammar.topLevelDefinitionTypeAnnotation =
@@ -304,7 +408,15 @@ spec = describe "the top level definition parser" $ do
               ["x", "y"]
               ( Ipe.Grammar.IpeFunctionBody
                   { Ipe.Grammar.attributions = [],
-                    Ipe.Grammar.functionReturn = Ipe.Grammar.IpeFunctionCallOrValue [] "y" []
+                    Ipe.Grammar.functionReturn =
+                      Ipe.Grammar.IpeFunctionCallOrValue
+                        ( Ipe.Grammar.FunctionCallOrValue
+                            { Ipe.Grammar.functionCallOrValuePath = [],
+                              Ipe.Grammar.functionCallOrValueName = "y",
+                              Ipe.Grammar.functionCallOrValueRecordAccessors = [],
+                              Ipe.Grammar.functionCallOrValueArguments = []
+                            }
+                        )
                   }
               ),
           Ipe.Grammar.topLevelDefinitionTypeAnnotation =
