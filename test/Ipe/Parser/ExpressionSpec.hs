@@ -436,7 +436,7 @@ patternMatchSpec = do
         \ SomeConstructor -> 1"
         `shouldParse` Ipe.Grammar.IpeMatch
           (Ipe.Grammar.IpeFunctionCallOrValue [] "x" [])
-          [(Ipe.Grammar.IpeCustomTypePattern "SomeConstructor" [], Ipe.Grammar.IpeNumber 1)]
+          [(Ipe.Grammar.IpeCustomTypePattern [] "SomeConstructor" [], Ipe.Grammar.IpeNumber 1)]
 
     it "should parse a custom type pattern that has some simple arguments" $
       Parsec.Common.parse
@@ -448,9 +448,9 @@ patternMatchSpec = do
         \ ThirdConstructor -> 3"
         `shouldParse` Ipe.Grammar.IpeMatch
           (Ipe.Grammar.IpeFunctionCallOrValue [] "x" [])
-          [ (Ipe.Grammar.IpeCustomTypePattern "SomeConstructor" [], Ipe.Grammar.IpeNumber 1),
-            (Ipe.Grammar.IpeCustomTypePattern "OtherConstructor" [], Ipe.Grammar.IpeNumber 2),
-            (Ipe.Grammar.IpeCustomTypePattern "ThirdConstructor" [], Ipe.Grammar.IpeNumber 3)
+          [ (Ipe.Grammar.IpeCustomTypePattern [] "SomeConstructor" [], Ipe.Grammar.IpeNumber 1),
+            (Ipe.Grammar.IpeCustomTypePattern [] "OtherConstructor" [], Ipe.Grammar.IpeNumber 2),
+            (Ipe.Grammar.IpeCustomTypePattern [] "ThirdConstructor" [], Ipe.Grammar.IpeNumber 3)
           ]
 
     it "should parse a custom type pattern that has some simple arguments and a final one which is a variable" $
@@ -464,9 +464,9 @@ patternMatchSpec = do
         \ x -> 4"
         `shouldParse` Ipe.Grammar.IpeMatch
           (Ipe.Grammar.IpeFunctionCallOrValue [] "x" [])
-          [ (Ipe.Grammar.IpeCustomTypePattern "SomeConstructor" [], Ipe.Grammar.IpeNumber 1),
-            (Ipe.Grammar.IpeCustomTypePattern "OtherConstructor" [], Ipe.Grammar.IpeNumber 2),
-            ( Ipe.Grammar.IpeCustomTypePattern "ThirdConstructor" [],
+          [ (Ipe.Grammar.IpeCustomTypePattern [] "SomeConstructor" [], Ipe.Grammar.IpeNumber 1),
+            (Ipe.Grammar.IpeCustomTypePattern [] "OtherConstructor" [], Ipe.Grammar.IpeNumber 2),
+            ( Ipe.Grammar.IpeCustomTypePattern [] "ThirdConstructor" [],
               Ipe.Grammar.IpeFunctionCallOrValue
                 ["Imported"]
                 "function"
@@ -489,9 +489,9 @@ patternMatchSpec = do
         \ 1 -> 4"
         `shouldParse` Ipe.Grammar.IpeMatch
           (Ipe.Grammar.IpeFunctionCallOrValue [] "x" [])
-          [ (Ipe.Grammar.IpeCustomTypePattern "SomeConstructor" [], Ipe.Grammar.IpeNumber 1),
-            (Ipe.Grammar.IpeCustomTypePattern "OtherConstructor" [], Ipe.Grammar.IpeNumber 2),
-            ( Ipe.Grammar.IpeCustomTypePattern "ThirdConstructor" [],
+          [ (Ipe.Grammar.IpeCustomTypePattern [] "SomeConstructor" [], Ipe.Grammar.IpeNumber 1),
+            (Ipe.Grammar.IpeCustomTypePattern [] "OtherConstructor" [], Ipe.Grammar.IpeNumber 2),
+            ( Ipe.Grammar.IpeCustomTypePattern [] "ThirdConstructor" [],
               Ipe.Grammar.IpeFunctionCallOrValue
                 ["Imported"]
                 "function"
@@ -514,9 +514,9 @@ patternMatchSpec = do
         \ 'string' -> 4"
         `shouldParse` Ipe.Grammar.IpeMatch
           (Ipe.Grammar.IpeFunctionCallOrValue [] "x" [])
-          [ (Ipe.Grammar.IpeCustomTypePattern "SomeConstructor" [], Ipe.Grammar.IpeNumber 1),
-            (Ipe.Grammar.IpeCustomTypePattern "OtherConstructor" [], Ipe.Grammar.IpeNumber 2),
-            ( Ipe.Grammar.IpeCustomTypePattern "ThirdConstructor" [],
+          [ (Ipe.Grammar.IpeCustomTypePattern [] "SomeConstructor" [], Ipe.Grammar.IpeNumber 1),
+            (Ipe.Grammar.IpeCustomTypePattern [] "OtherConstructor" [], Ipe.Grammar.IpeNumber 2),
+            ( Ipe.Grammar.IpeCustomTypePattern [] "ThirdConstructor" [],
               Ipe.Grammar.IpeFunctionCallOrValue
                 ["Imported"]
                 "function"
@@ -539,9 +539,9 @@ patternMatchSpec = do
         \ _ -> 4"
         `shouldParse` Ipe.Grammar.IpeMatch
           (Ipe.Grammar.IpeFunctionCallOrValue [] "x" [])
-          [ (Ipe.Grammar.IpeCustomTypePattern "SomeConstructor" [], Ipe.Grammar.IpeNumber 1),
-            (Ipe.Grammar.IpeCustomTypePattern "OtherConstructor" [], Ipe.Grammar.IpeNumber 2),
-            ( Ipe.Grammar.IpeCustomTypePattern "ThirdConstructor" [],
+          [ (Ipe.Grammar.IpeCustomTypePattern [] "SomeConstructor" [], Ipe.Grammar.IpeNumber 1),
+            (Ipe.Grammar.IpeCustomTypePattern [] "OtherConstructor" [], Ipe.Grammar.IpeNumber 2),
+            ( Ipe.Grammar.IpeCustomTypePattern [] "ThirdConstructor" [],
               Ipe.Grammar.IpeFunctionCallOrValue
                 ["Imported"]
                 "function"
@@ -564,6 +564,7 @@ patternMatchSpec = do
         `shouldParse` Ipe.Grammar.IpeMatch
           (Ipe.Grammar.IpeFunctionCallOrValue [] "x" [])
           [ ( Ipe.Grammar.IpeCustomTypePattern
+                []
                 "SomeConstructor"
                 [ Ipe.Grammar.IpeVariablePattern "a",
                   Ipe.Grammar.IpeLiteralNumberPattern 5
@@ -571,15 +572,19 @@ patternMatchSpec = do
               Ipe.Grammar.IpeFunctionCallOrValue [] "a" []
             ),
             ( Ipe.Grammar.IpeCustomTypePattern
+                []
                 "OtherConstructor"
-                [Ipe.Grammar.IpeCustomTypePattern "NestedConstructor" [Ipe.Grammar.IpeLiteralStringPattern "abc"]],
+                [Ipe.Grammar.IpeCustomTypePattern [] "NestedConstructor" [Ipe.Grammar.IpeLiteralStringPattern "abc"]],
               Ipe.Grammar.IpeNumber 2
             ),
             ( Ipe.Grammar.IpeCustomTypePattern
-                "Imported.ThirdConstructor"
+                ["Imported"]
+                "ThirdConstructor"
                 [ Ipe.Grammar.IpeCustomTypePattern
+                    []
                     "Level1"
                     [ Ipe.Grammar.IpeCustomTypePattern
+                        []
                         "Level2"
                         [Ipe.Grammar.IpeVariablePattern "x"]
                     ],

@@ -150,7 +150,7 @@ data IpeBinaryOperator
 data IpeMatchPattern
   = IpeWildCardPattern
   | IpeVariablePattern Text
-  | IpeCustomTypePattern Text [IpeMatchPattern]
+  | IpeCustomTypePattern [Text] Text [IpeMatchPattern]
   | IpeLiteralNumberPattern Float
   | IpeLiteralStringPattern Text
   deriving (Eq, Show)

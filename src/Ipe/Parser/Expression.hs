@@ -168,13 +168,8 @@ matchPattern acceptArgs =
 
 customTypePattern :: Bool -> Parser Ipe.Grammar.IpeMatchPattern
 customTypePattern acceptArgs = do
-  customTypeName <-
-    Ipe.Parser.lexeme $
-      do
-        moduleNames <- Parsec.Common.many $ Parsec.Common.try (Ipe.Parser.uppercaseIdentifier <* Parsec.Char.char '.')
-        constructorName <- Ipe.Parser.uppercaseIdentifier
-
-        return (T.intercalate "." (moduleNames ++ [constructorName]))
+  customTypePath <- Parsec.Common.many $ Parsec.Common.try (Ipe.Parser.uppercaseIdentifier <* Parsec.Char.char '.')
+  customTypeName <- Ipe.Parser.lexeme Ipe.Parser.uppercaseIdentifier
 
   args <-
     if acceptArgs
@@ -183,5 +178,6 @@ customTypePattern acceptArgs = do
 
   return $
     Ipe.Grammar.IpeCustomTypePattern
+      customTypePath
       customTypeName
       args
