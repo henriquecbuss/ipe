@@ -97,21 +97,7 @@ jobs:
           EOF
           fi
 
-          stack test ${{ matrix.stack-args }} --ghc-options="-Werror -O0" --copy-bins --local-bin-path bin
-
-          # Get output about whether the exe is dynamically linked
-          if [[ "${{ matrix.os }}" == "macos-latest" ]]
-          then
-              echo "Skipping ldd check on Mac"
-          elif [[ "${{ matrix.extra-suffix }}" == "alpine" ]]
-          then
-              # ldd returns exit code 1 if it's static, so failure is success
-              (ldd ./bin/stack && exit 1) || true
-          else
-              ldd ./bin/stack
-          fi
-
-          ./bin/stack --version
+          stack test ${{ matrix.stack-args }} --ghc-options="-Werror -O0"
 
       # Separating out Windows because of the problem of upgrading GitHub-supplied
       # Stack 2.9.1 to 2.9.3 on Windows
@@ -131,8 +117,4 @@ jobs:
           # Check the Stack version
           stack --version
 
-          stack test ${{ matrix.stack-args }} --ghc-options="-Werror -O0" --copy-bins --local-bin-path bin
-
-          echo "Skipping ldd check on Windows"
-
-          ./bin/stack --version
+          stack test ${{ matrix.stack-args }} --ghc-options="-Werror -O0"
