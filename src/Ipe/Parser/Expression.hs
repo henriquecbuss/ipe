@@ -9,13 +9,14 @@ import qualified Data.Text as T
 import qualified Ipe.Grammar
 import Ipe.Parser (Parser)
 import qualified Ipe.Parser
+import Text.Megaparsec ((<|>))
 import qualified Text.Megaparsec as Parsec.Common
 import qualified Text.Megaparsec.Char as Parsec.Char
 import qualified Text.Megaparsec.Char.Lexer as Parsec.Lexer
 
 parser :: Parser Ipe.Grammar.Expression
 parser =
-  Combinators.Expr.makeExprParser (term True) operatorTable
+  Combinators.Expr.makeExprParser (term True pos) operatorTable
 
 literalNumber :: Parser Float
 literalNumber =
@@ -35,20 +36,14 @@ literalString =
               (Parsec.Char.char '\'')
         )
 
-number :: Parser Ipe.Grammar.Expression
-number = Ipe.Grammar.IpeNumber <$> literalNumber
-
-string :: Parser Ipe.Grammar.Expression
-string = Ipe.Grammar.IpeString <$> literalString
-
 functionCallOrValue :: Bool -> Parser Ipe.Grammar.Expression
 functionCallOrValue acceptArgs = do
-  moduleNames <- Parsec.Common.many (Ipe.Parser.uppercaseIdentifier <* Parsec.Char.char '.')
+  moduleNames <- Parsec.Common.many $ Parsec.Common.try (Ipe.Parser.uppercaseIdentifier <* Parsec.Char.char '.')
 
   (name, recordAccessors) <-
     Ipe.Parser.lexeme
       ( do
-          name <- Ipe.Parser.lowercaseIdentifier
+          name <- Ipe.Parser.lowercaseIdentifier <|> Ipe.Parser.uppercaseIdentifier
 
           recordAccessors <- Parsec.Common.many (Parsec.Char.char '.' *> Ipe.Parser.lowercaseIdentifier)
           return (name, recordAccessors)
@@ -73,8 +68,8 @@ term :: Bool -> Parser Ipe.Grammar.Expression
 term acceptArgs =
   Parsec.Common.choice
     [ Parsec.Common.between (Ipe.Parser.symbol "(") (Ipe.Parser.symbol ")") parser,
-      Ipe.Parser.lexeme number,
-      Ipe.Parser.lexeme string,
+      Ipe.Parser.lexeme $ Ipe.Grammar.IpeNumber <$> literalNumber,
+      Ipe.Parser.lexeme $ Ipe.Grammar.IpeString <$> literalString,
       Ipe.Parser.lexeme function,
       Ipe.Parser.lexeme matchExpression,
       functionCallOrValue acceptArgs

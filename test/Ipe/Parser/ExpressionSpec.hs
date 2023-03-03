@@ -1076,10 +1076,47 @@ patternMatchSpec = do
             (Ipe.Grammar.IpeWildCardPattern, Ipe.Grammar.IpeNumber 4)
           ]
 
+    it "should parse a custom type pattern that could be confused with an expression" $
+      Parsec.Common.parse
+        Ipe.Parser.Expression.parser
+        ""
+        "match x with\n\
+        \ SomeConstructor -> a\n\
+        \ OtherConstructor Arg -> 2"
+        `shouldParse` Ipe.Grammar.IpeMatch
+          ( Ipe.Grammar.IpeFunctionCallOrValue
+              ( Ipe.Grammar.FunctionCallOrValue
+                  { Ipe.Grammar.functionCallOrValuePath = [],
+                    Ipe.Grammar.functionCallOrValueName = "x",
+                    Ipe.Grammar.functionCallOrValueRecordAccessors = [],
+                    Ipe.Grammar.functionCallOrValueArguments = []
+                  }
+              )
+          )
+          [ ( Ipe.Grammar.IpeCustomTypePattern [] "SomeConstructor" [],
+              Ipe.Grammar.IpeFunctionCallOrValue
+                ( Ipe.Grammar.FunctionCallOrValue
+                    { Ipe.Grammar.functionCallOrValuePath = [],
+                      Ipe.Grammar.functionCallOrValueName = "a",
+                      Ipe.Grammar.functionCallOrValueRecordAccessors = [],
+                      Ipe.Grammar.functionCallOrValueArguments = []
+                    }
+                )
+            ),
+            ( Ipe.Grammar.IpeCustomTypePattern
+                []
+                "OtherConstructor"
+                [ Ipe.Grammar.IpeCustomTypePattern [] "Arg" []
+                ],
+              Ipe.Grammar.IpeNumber 2
+            )
+          ]
+
     it "should parse a custom type pattern that has some complex arguments" $
       Parsec.Common.parse
         Ipe.Parser.Expression.parser
         ""
+        -- TODO - It's parsing as `a OtherConstructor (NestedConstructor 'abc') ->`
         "match x with\n\
         \ SomeConstructor a 5 -> a\n\
         \ OtherConstructor (NestedConstructor 'abc') -> 2\n\
