@@ -147,29 +147,16 @@ parameterType = do
 
 concreteType :: Bool -> Parser Ipe.Grammar.IpeType
 concreteType acceptArgs = do
-  name <-
-    Ipe.Parser.lexeme
-      ( do
-          firstChar <- Parsec.Char.upperChar
+  importedFrom <- Parsec.Common.many $ Parsec.Common.try (Ipe.Parser.uppercaseIdentifier <* Parsec.Char.char '.')
 
-          rest <-
-            Parsec.Common.many
-              ( Parsec.Common.choice
-                  [ Parsec.Char.alphaNumChar,
-                    Parsec.Char.char '_',
-                    Parsec.Char.char '.'
-                  ]
-              )
-
-          return $ T.pack $ firstChar : rest
-      )
+  name <- Ipe.Parser.lexeme Ipe.Parser.uppercaseIdentifier
 
   args <-
     if acceptArgs
       then Parsec.Common.many (ipeType False)
       else return []
 
-  return $ Ipe.Grammar.ConcreteType name args
+  return $ Ipe.Grammar.ConcreteType importedFrom name args
 
 recordType :: Parser Ipe.Grammar.IpeType
 recordType = do

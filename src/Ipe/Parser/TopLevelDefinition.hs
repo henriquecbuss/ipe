@@ -82,12 +82,18 @@ unconsLast (x : xs) = (x : rest, lastElement)
 sanitizeTypeAnnotation :: Ipe.Grammar.TypeAnnotation -> Maybe (Text, Ipe.Grammar.TypeAnnotation)
 sanitizeTypeAnnotation annotation =
   case Ipe.Grammar.typeAnnotationReturnType annotation of
-    Ipe.Grammar.ConcreteType concreteTypeName typeArgs ->
+    Ipe.Grammar.ConcreteType concreteTypeImportPath concreteTypeName typeArgs ->
       case unconsLast typeArgs of
         (restOfTypeArgs, Ipe.Grammar.ParameterType lastTypeName) ->
           Just
             ( lastTypeName,
-              annotation {Ipe.Grammar.typeAnnotationReturnType = Ipe.Grammar.ConcreteType concreteTypeName restOfTypeArgs}
+              annotation
+                { Ipe.Grammar.typeAnnotationReturnType =
+                    Ipe.Grammar.ConcreteType
+                      concreteTypeImportPath
+                      concreteTypeName
+                      restOfTypeArgs
+                }
             )
         _ -> Nothing
     _ -> Nothing

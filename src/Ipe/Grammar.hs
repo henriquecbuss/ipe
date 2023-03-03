@@ -90,7 +90,7 @@ data CustomTypeConstructor = CustomTypeConstructor
 -- - RecordType: a record, with a dictionary of keys and values that are IpeType
 data IpeType
   = ParameterType Text
-  | ConcreteType Text [IpeType]
+  | ConcreteType [Text] Text [IpeType]
   | RecordType (Map Text IpeType)
   deriving (Eq, Show)
 

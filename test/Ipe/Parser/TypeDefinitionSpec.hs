@@ -100,7 +100,7 @@ typeAliasWithConcreteTypes =
               { Ipe.Grammar.typeAliasDefinitionName = "SomeType",
                 Ipe.Grammar.typeAliasDefinitionParameters = [],
                 Ipe.Grammar.typeAliasDefinitionDocComment = Nothing,
-                Ipe.Grammar.typeAliasType = Ipe.Grammar.ConcreteType "Number" []
+                Ipe.Grammar.typeAliasType = Ipe.Grammar.ConcreteType [] "Number" []
               }
           )
 
@@ -114,7 +114,7 @@ typeAliasWithConcreteTypes =
               { Ipe.Grammar.typeAliasDefinitionName = "SomeType",
                 Ipe.Grammar.typeAliasDefinitionParameters = [],
                 Ipe.Grammar.typeAliasDefinitionDocComment = Nothing,
-                Ipe.Grammar.typeAliasType = Ipe.Grammar.ConcreteType "Number" []
+                Ipe.Grammar.typeAliasType = Ipe.Grammar.ConcreteType [] "Number" []
               }
           )
 
@@ -130,7 +130,7 @@ typeAliasWithConcreteTypes =
               { Ipe.Grammar.typeAliasDefinitionName = "SomeType",
                 Ipe.Grammar.typeAliasDefinitionParameters = [],
                 Ipe.Grammar.typeAliasDefinitionDocComment = Just "Some doc comment \n",
-                Ipe.Grammar.typeAliasType = Ipe.Grammar.ConcreteType "Number" []
+                Ipe.Grammar.typeAliasType = Ipe.Grammar.ConcreteType [] "Number" []
               }
           )
 
@@ -144,7 +144,7 @@ typeAliasWithConcreteTypes =
               { Ipe.Grammar.typeAliasDefinitionName = "SomeType",
                 Ipe.Grammar.typeAliasDefinitionParameters = ["a", "b"],
                 Ipe.Grammar.typeAliasDefinitionDocComment = Nothing,
-                Ipe.Grammar.typeAliasType = Ipe.Grammar.ConcreteType "Number" []
+                Ipe.Grammar.typeAliasType = Ipe.Grammar.ConcreteType [] "Number" []
               }
           )
 
@@ -158,7 +158,7 @@ typeAliasWithConcreteTypes =
               { Ipe.Grammar.typeAliasDefinitionName = "SomeType",
                 Ipe.Grammar.typeAliasDefinitionParameters = [],
                 Ipe.Grammar.typeAliasDefinitionDocComment = Nothing,
-                Ipe.Grammar.typeAliasType = Ipe.Grammar.ConcreteType "List" [Ipe.Grammar.ConcreteType "Number" []]
+                Ipe.Grammar.typeAliasType = Ipe.Grammar.ConcreteType [] "List" [Ipe.Grammar.ConcreteType [] "Number" []]
               }
           )
 
@@ -172,7 +172,7 @@ typeAliasWithConcreteTypes =
               { Ipe.Grammar.typeAliasDefinitionName = "SomeType",
                 Ipe.Grammar.typeAliasDefinitionParameters = [],
                 Ipe.Grammar.typeAliasDefinitionDocComment = Nothing,
-                Ipe.Grammar.typeAliasType = Ipe.Grammar.ConcreteType "List" [Ipe.Grammar.ConcreteType "Number" []]
+                Ipe.Grammar.typeAliasType = Ipe.Grammar.ConcreteType [] "List" [Ipe.Grammar.ConcreteType [] "Number" []]
               }
           )
 
@@ -192,7 +192,7 @@ typeAliasWithConcreteTypes =
               { Ipe.Grammar.typeAliasDefinitionName = "SomeType",
                 Ipe.Grammar.typeAliasDefinitionParameters = [],
                 Ipe.Grammar.typeAliasDefinitionDocComment = Nothing,
-                Ipe.Grammar.typeAliasType = Ipe.Grammar.ConcreteType "Some.Very.Very.Very.Very.Deeply.Nested.Type" []
+                Ipe.Grammar.typeAliasType = Ipe.Grammar.ConcreteType ["Some", "Very", "Very", "Very", "Very", "Deeply", "Nested"] "Type" []
               }
           )
 
@@ -263,8 +263,8 @@ typeAliasWithRecord =
                   Ipe.Grammar.typeAliasType =
                     Ipe.Grammar.RecordType
                       ( Map.fromList
-                          [ ("someNumber", Ipe.Grammar.ConcreteType "Number" []),
-                            ("someString", Ipe.Grammar.ConcreteType "String" [])
+                          [ ("someNumber", Ipe.Grammar.ConcreteType [] "Number" []),
+                            ("someString", Ipe.Grammar.ConcreteType [] "String" [])
                           ]
                       )
                 }
@@ -287,16 +287,18 @@ typeAliasWithRecord =
                   Ipe.Grammar.typeAliasType =
                     Ipe.Grammar.RecordType
                       ( Map.fromList
-                          [ ("someNumber", Ipe.Grammar.ConcreteType "Number" []),
-                            ("someString", Ipe.Grammar.ConcreteType "String" []),
+                          [ ("someNumber", Ipe.Grammar.ConcreteType [] "Number" []),
+                            ("someString", Ipe.Grammar.ConcreteType [] "String" []),
                             ( "someComplexType",
                               Ipe.Grammar.ConcreteType
+                                []
                                 "Result"
-                                [ Ipe.Grammar.ConcreteType "Maybe" [Ipe.Grammar.ConcreteType "List" [Ipe.Grammar.ConcreteType "String" []]],
+                                [ Ipe.Grammar.ConcreteType [] "Maybe" [Ipe.Grammar.ConcreteType [] "List" [Ipe.Grammar.ConcreteType [] "String" []]],
                                   Ipe.Grammar.ConcreteType
+                                    []
                                     "Dict"
-                                    [ Ipe.Grammar.ConcreteType "String" [],
-                                      Ipe.Grammar.ConcreteType "Set" [Ipe.Grammar.ConcreteType "User.Id" []]
+                                    [ Ipe.Grammar.ConcreteType [] "String" [],
+                                      Ipe.Grammar.ConcreteType [] "Set" [Ipe.Grammar.ConcreteType ["User"] "Id" []]
                                     ]
                                 ]
                             )
@@ -343,7 +345,7 @@ typeUnion =
                       { Ipe.Grammar.customTypeConstructorName = "Constructor",
                         Ipe.Grammar.customTypeConstructorDocComment = Nothing,
                         Ipe.Grammar.customTypeConstructorArgs =
-                          [ Ipe.Grammar.ConcreteType "Number" []
+                          [ Ipe.Grammar.ConcreteType [] "Number" []
                           ]
                       }
                   ]
@@ -376,18 +378,20 @@ typeUnion =
                       { Ipe.Grammar.customTypeConstructorName = "Constructor",
                         Ipe.Grammar.customTypeConstructorDocComment = Nothing,
                         Ipe.Grammar.customTypeConstructorArgs =
-                          [ Ipe.Grammar.ConcreteType "Number" [],
+                          [ Ipe.Grammar.ConcreteType [] "Number" [],
                             Ipe.Grammar.ConcreteType
+                              []
                               "OneOf"
                               [ Ipe.Grammar.ParameterType "a",
                                 Ipe.Grammar.RecordType
                                   ( Map.fromList
-                                      [ ("someType", Ipe.Grammar.ConcreteType "String" []),
+                                      [ ("someType", Ipe.Grammar.ConcreteType [] "String" []),
                                         ("someOtherType", Ipe.Grammar.ParameterType "b"),
                                         ("anEmptyRecord", Ipe.Grammar.RecordType Map.empty)
                                       ]
                                   ),
                                 Ipe.Grammar.ConcreteType
+                                  []
                                   "String"
                                   []
                               ],
@@ -416,7 +420,7 @@ typeUnion =
                       { Ipe.Grammar.customTypeConstructorName = "Constructor",
                         Ipe.Grammar.customTypeConstructorDocComment = Nothing,
                         Ipe.Grammar.customTypeConstructorArgs =
-                          [ Ipe.Grammar.ConcreteType "Number" []
+                          [ Ipe.Grammar.ConcreteType [] "Number" []
                           ]
                       },
                     Ipe.Grammar.CustomTypeConstructor
@@ -432,8 +436,9 @@ typeUnion =
                         Ipe.Grammar.customTypeConstructorDocComment = Nothing,
                         Ipe.Grammar.customTypeConstructorArgs =
                           [ Ipe.Grammar.ConcreteType
+                              []
                               "Maybe"
-                              [ Ipe.Grammar.ConcreteType "List" [Ipe.Grammar.ConcreteType "String" []]
+                              [ Ipe.Grammar.ConcreteType [] "List" [Ipe.Grammar.ConcreteType [] "String" []]
                               ]
                           ]
                       }
@@ -541,7 +546,7 @@ typeUnion =
                       { Ipe.Grammar.customTypeConstructorName = "Constructor",
                         Ipe.Grammar.customTypeConstructorDocComment = Nothing,
                         Ipe.Grammar.customTypeConstructorArgs =
-                          [ Ipe.Grammar.ConcreteType "Some.Other.Type" []
+                          [ Ipe.Grammar.ConcreteType ["Some", "Other"] "Type" []
                           ]
                       }
                   ]
@@ -606,7 +611,7 @@ typeOpaque =
                       { Ipe.Grammar.customTypeConstructorName = "Constructor",
                         Ipe.Grammar.customTypeConstructorDocComment = Nothing,
                         Ipe.Grammar.customTypeConstructorArgs =
-                          [ Ipe.Grammar.ConcreteType "Number" []
+                          [ Ipe.Grammar.ConcreteType [] "Number" []
                           ]
                       }
                   ]
@@ -639,18 +644,20 @@ typeOpaque =
                       { Ipe.Grammar.customTypeConstructorName = "Constructor",
                         Ipe.Grammar.customTypeConstructorDocComment = Nothing,
                         Ipe.Grammar.customTypeConstructorArgs =
-                          [ Ipe.Grammar.ConcreteType "Number" [],
+                          [ Ipe.Grammar.ConcreteType [] "Number" [],
                             Ipe.Grammar.ConcreteType
+                              []
                               "OneOf"
                               [ Ipe.Grammar.ParameterType "a",
                                 Ipe.Grammar.RecordType
                                   ( Map.fromList
-                                      [ ("someType", Ipe.Grammar.ConcreteType "String" []),
+                                      [ ("someType", Ipe.Grammar.ConcreteType [] "String" []),
                                         ("someOtherType", Ipe.Grammar.ParameterType "b"),
                                         ("anEmptyRecord", Ipe.Grammar.RecordType Map.empty)
                                       ]
                                   ),
                                 Ipe.Grammar.ConcreteType
+                                  []
                                   "String"
                                   []
                               ],
@@ -679,7 +686,7 @@ typeOpaque =
                       { Ipe.Grammar.customTypeConstructorName = "Constructor",
                         Ipe.Grammar.customTypeConstructorDocComment = Nothing,
                         Ipe.Grammar.customTypeConstructorArgs =
-                          [ Ipe.Grammar.ConcreteType "Number" []
+                          [ Ipe.Grammar.ConcreteType [] "Number" []
                           ]
                       },
                     Ipe.Grammar.CustomTypeConstructor
@@ -695,8 +702,9 @@ typeOpaque =
                         Ipe.Grammar.customTypeConstructorDocComment = Nothing,
                         Ipe.Grammar.customTypeConstructorArgs =
                           [ Ipe.Grammar.ConcreteType
+                              []
                               "Maybe"
-                              [ Ipe.Grammar.ConcreteType "List" [Ipe.Grammar.ConcreteType "String" []]
+                              [ Ipe.Grammar.ConcreteType [] "List" [Ipe.Grammar.ConcreteType [] "String" []]
                               ]
                           ]
                       }
@@ -804,7 +812,7 @@ typeOpaque =
                       { Ipe.Grammar.customTypeConstructorName = "Constructor",
                         Ipe.Grammar.customTypeConstructorDocComment = Nothing,
                         Ipe.Grammar.customTypeConstructorArgs =
-                          [ Ipe.Grammar.ConcreteType "Some.Other.Type" []
+                          [ Ipe.Grammar.ConcreteType ["Some", "Other"] "Type" []
                           ]
                       }
                   ]

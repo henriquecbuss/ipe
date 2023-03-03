@@ -139,8 +139,8 @@ spec = describe "the top level definition parser" $ do
             Just
               ( Ipe.Grammar.TypeAnnotation
                   { Ipe.Grammar.typeAnnotationName = "topLevelFunction",
-                    Ipe.Grammar.typeAnnotationArguments = [Ipe.Grammar.ConcreteType "Number" []],
-                    Ipe.Grammar.typeAnnotationReturnType = Ipe.Grammar.ConcreteType "Number" []
+                    Ipe.Grammar.typeAnnotationArguments = [Ipe.Grammar.ConcreteType [] "Number" []],
+                    Ipe.Grammar.typeAnnotationReturnType = Ipe.Grammar.ConcreteType [] "Number" []
                   }
               )
         }
@@ -171,10 +171,10 @@ spec = describe "the top level definition parser" $ do
               ( Ipe.Grammar.TypeAnnotation
                   { Ipe.Grammar.typeAnnotationName = "topLevelFunction",
                     Ipe.Grammar.typeAnnotationArguments =
-                      [ Ipe.Grammar.ConcreteType "Number" [],
-                        Ipe.Grammar.ConcreteType "Number" []
+                      [ Ipe.Grammar.ConcreteType [] "Number" [],
+                        Ipe.Grammar.ConcreteType [] "Number" []
                       ],
-                    Ipe.Grammar.typeAnnotationReturnType = Ipe.Grammar.ConcreteType "Number" []
+                    Ipe.Grammar.typeAnnotationReturnType = Ipe.Grammar.ConcreteType [] "Number" []
                   }
               )
         }
@@ -198,7 +198,7 @@ spec = describe "the top level definition parser" $ do
               ( Ipe.Grammar.TypeAnnotation
                   { Ipe.Grammar.typeAnnotationName = "topLevelExpression",
                     Ipe.Grammar.typeAnnotationArguments = [],
-                    Ipe.Grammar.typeAnnotationReturnType = Ipe.Grammar.ConcreteType "Number" []
+                    Ipe.Grammar.typeAnnotationReturnType = Ipe.Grammar.ConcreteType [] "Number" []
                   }
               )
         }
@@ -229,8 +229,8 @@ spec = describe "the top level definition parser" $ do
             Just
               ( Ipe.Grammar.TypeAnnotation
                   { Ipe.Grammar.typeAnnotationName = "topLevelFunction",
-                    Ipe.Grammar.typeAnnotationArguments = [Ipe.Grammar.ConcreteType "Number" []],
-                    Ipe.Grammar.typeAnnotationReturnType = Ipe.Grammar.ConcreteType "Number" []
+                    Ipe.Grammar.typeAnnotationArguments = [Ipe.Grammar.ConcreteType [] "Number" []],
+                    Ipe.Grammar.typeAnnotationReturnType = Ipe.Grammar.ConcreteType [] "Number" []
                   }
               )
         }
@@ -255,7 +255,7 @@ spec = describe "the top level definition parser" $ do
               ( Ipe.Grammar.TypeAnnotation
                   { Ipe.Grammar.typeAnnotationName = "topLevelExpression",
                     Ipe.Grammar.typeAnnotationArguments = [],
-                    Ipe.Grammar.typeAnnotationReturnType = Ipe.Grammar.ConcreteType "Number" []
+                    Ipe.Grammar.typeAnnotationReturnType = Ipe.Grammar.ConcreteType [] "Number" []
                   }
               )
         }
@@ -282,10 +282,10 @@ spec = describe "the top level definition parser" $ do
               ( Ipe.Grammar.TypeAnnotation
                   { Ipe.Grammar.typeAnnotationName = "topLevelFunction",
                     Ipe.Grammar.typeAnnotationArguments =
-                      [ Ipe.Grammar.RecordType $ Map.fromList [("a", Ipe.Grammar.ConcreteType "Number" [])],
-                        Ipe.Grammar.RecordType $ Map.fromList [("b", Ipe.Grammar.ConcreteType "Number" [])]
+                      [ Ipe.Grammar.RecordType $ Map.fromList [("a", Ipe.Grammar.ConcreteType [] "Number" [])],
+                        Ipe.Grammar.RecordType $ Map.fromList [("b", Ipe.Grammar.ConcreteType [] "Number" [])]
                       ],
-                    Ipe.Grammar.typeAnnotationReturnType = Ipe.Grammar.RecordType $ Map.fromList [("a", Ipe.Grammar.ConcreteType "Number" [])]
+                    Ipe.Grammar.typeAnnotationReturnType = Ipe.Grammar.RecordType $ Map.fromList [("a", Ipe.Grammar.ConcreteType [] "Number" [])]
                   }
               )
         }
