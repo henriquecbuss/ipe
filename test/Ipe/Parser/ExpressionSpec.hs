@@ -102,14 +102,14 @@ functionCallOrValueSpec =
         Ipe.Parser.Expression.parser
         ""
         "someValue"
-        `shouldParse` Ipe.Grammar.IpeFunctionCallOrValue "someValue" []
+        `shouldParse` Ipe.Grammar.IpeFunctionCallOrValue [] "someValue" []
 
     it "should parse an imported value" $
       Parsec.Common.parse
         Ipe.Parser.Expression.parser
         ""
         "SomeModule.someValue"
-        `shouldParse` Ipe.Grammar.IpeFunctionCallOrValue "SomeModule.someValue" []
+        `shouldParse` Ipe.Grammar.IpeFunctionCallOrValue ["SomeModule"] "someValue" []
 
     it "should parse a function with a value argument" $ do
       Parsec.Common.parse
@@ -117,8 +117,9 @@ functionCallOrValueSpec =
         ""
         "someFunction someValue"
         `shouldParse` Ipe.Grammar.IpeFunctionCallOrValue
+          []
           "someFunction"
-          [ Ipe.Grammar.IpeFunctionCallOrValue "someValue" []
+          [ Ipe.Grammar.IpeFunctionCallOrValue [] "someValue" []
           ]
 
     it "should parse a function with multiple value arguments" $ do
@@ -127,10 +128,11 @@ functionCallOrValueSpec =
         ""
         "someFunction someValue1 someValue2 someValue3"
         `shouldParse` Ipe.Grammar.IpeFunctionCallOrValue
+          []
           "someFunction"
-          [ Ipe.Grammar.IpeFunctionCallOrValue "someValue1" [],
-            Ipe.Grammar.IpeFunctionCallOrValue "someValue2" [],
-            Ipe.Grammar.IpeFunctionCallOrValue "someValue3" []
+          [ Ipe.Grammar.IpeFunctionCallOrValue [] "someValue1" [],
+            Ipe.Grammar.IpeFunctionCallOrValue [] "someValue2" [],
+            Ipe.Grammar.IpeFunctionCallOrValue [] "someValue3" []
           ]
 
     it "should parse a function with a function with arguments as argument" $ do
@@ -139,13 +141,15 @@ functionCallOrValueSpec =
         ""
         "someFunction (someOtherFunction someValue2 someValue3) someThirdFunction"
         `shouldParse` Ipe.Grammar.IpeFunctionCallOrValue
+          []
           "someFunction"
           [ Ipe.Grammar.IpeFunctionCallOrValue
+              []
               "someOtherFunction"
-              [ Ipe.Grammar.IpeFunctionCallOrValue "someValue2" [],
-                Ipe.Grammar.IpeFunctionCallOrValue "someValue3" []
+              [ Ipe.Grammar.IpeFunctionCallOrValue [] "someValue2" [],
+                Ipe.Grammar.IpeFunctionCallOrValue [] "someValue3" []
               ],
-            Ipe.Grammar.IpeFunctionCallOrValue "someThirdFunction" []
+            Ipe.Grammar.IpeFunctionCallOrValue [] "someThirdFunction" []
           ]
 
     it "should parse an imported function with an imported function with imported arguments as argument" $ do
@@ -156,13 +160,15 @@ functionCallOrValueSpec =
         \  (Module1.Module2.someOtherFunction Module1.Module2.someValue2 someValue3)\n\
         \  Module3.someThirdFunction"
         `shouldParse` Ipe.Grammar.IpeFunctionCallOrValue
-          "Module1.Module2.someFunction"
+          ["Module1", "Module2"]
+          "someFunction"
           [ Ipe.Grammar.IpeFunctionCallOrValue
-              "Module1.Module2.someOtherFunction"
-              [ Ipe.Grammar.IpeFunctionCallOrValue "Module1.Module2.someValue2" [],
-                Ipe.Grammar.IpeFunctionCallOrValue "someValue3" []
+              ["Module1", "Module2"]
+              "someOtherFunction"
+              [ Ipe.Grammar.IpeFunctionCallOrValue ["Module1", "Module2"] "someValue2" [],
+                Ipe.Grammar.IpeFunctionCallOrValue [] "someValue3" []
               ],
-            Ipe.Grammar.IpeFunctionCallOrValue "Module3.someThirdFunction" []
+            Ipe.Grammar.IpeFunctionCallOrValue ["Module3"] "someThirdFunction" []
           ]
 
 binaryOperatorSpec :: Spec
@@ -251,8 +257,9 @@ binaryOperatorSpec =
               (Ipe.Grammar.IpeNumber 4)
           )
           ( Ipe.Grammar.IpeFunctionCallOrValue
+              []
               "someFunc"
-              [ Ipe.Grammar.IpeFunctionCallOrValue "firstArg" []
+              [ Ipe.Grammar.IpeFunctionCallOrValue [] "firstArg" []
               ]
           )
 
@@ -275,14 +282,15 @@ binaryOperatorSpec =
                       (Ipe.Grammar.IpeNumber 5)
                       (Ipe.Grammar.IpeNumber 2)
                   )
-                  (Ipe.Grammar.IpeFunctionCallOrValue "someFunc" [])
+                  (Ipe.Grammar.IpeFunctionCallOrValue [] "someFunc" [])
               )
-              (Ipe.Grammar.IpeFunctionCallOrValue "Module1.someOtherFunc" [])
+              (Ipe.Grammar.IpeFunctionCallOrValue ["Module1"] "someOtherFunc" [])
           )
           ( Ipe.Grammar.IpeFunctionCallOrValue
+              []
               "yetAnotherFunc"
-              [ Ipe.Grammar.IpeFunctionCallOrValue "with_" [],
-                Ipe.Grammar.IpeFunctionCallOrValue "some" [Ipe.Grammar.IpeFunctionCallOrValue "Module2.args" []],
+              [ Ipe.Grammar.IpeFunctionCallOrValue [] "with_" [],
+                Ipe.Grammar.IpeFunctionCallOrValue [] "some" [Ipe.Grammar.IpeFunctionCallOrValue ["Module2"] "args" []],
                 Ipe.Grammar.IpeNumber 42,
                 Ipe.Grammar.IpeString "hello"
               ]
@@ -303,7 +311,7 @@ lambdaFunctionSpec =
                 Ipe.Grammar.functionReturn =
                   Ipe.Grammar.IpeBinaryOperation
                     Ipe.Grammar.Add
-                    (Ipe.Grammar.IpeFunctionCallOrValue "x" [])
+                    (Ipe.Grammar.IpeFunctionCallOrValue [] "x" [])
                     (Ipe.Grammar.IpeNumber 1)
               }
           )
@@ -324,16 +332,18 @@ lambdaFunctionSpec =
                   [ ( "y",
                       Ipe.Grammar.IpeBinaryOperation
                         Ipe.Grammar.Add
-                        (Ipe.Grammar.IpeFunctionCallOrValue "x" [])
+                        (Ipe.Grammar.IpeFunctionCallOrValue [] "x" [])
                         (Ipe.Grammar.IpeNumber 1)
                     ),
                     ( "z",
                       Ipe.Grammar.IpeFunctionCallOrValue
+                        []
                         "complexOperation"
-                        [ Ipe.Grammar.IpeFunctionCallOrValue "y" [],
+                        [ Ipe.Grammar.IpeFunctionCallOrValue [] "y" [],
                           Ipe.Grammar.IpeFunctionCallOrValue
+                            []
                             "someFunction"
-                            [ Ipe.Grammar.IpeFunctionCallOrValue "x" [],
+                            [ Ipe.Grammar.IpeFunctionCallOrValue [] "x" [],
                               Ipe.Grammar.IpeBinaryOperation Ipe.Grammar.Add (Ipe.Grammar.IpeNumber 2) (Ipe.Grammar.IpeNumber 3)
                             ]
                         ]
@@ -342,7 +352,7 @@ lambdaFunctionSpec =
                 Ipe.Grammar.functionReturn =
                   Ipe.Grammar.IpeBinaryOperation
                     Ipe.Grammar.Divide
-                    (Ipe.Grammar.IpeFunctionCallOrValue "z" [])
+                    (Ipe.Grammar.IpeFunctionCallOrValue [] "z" [])
                     (Ipe.Grammar.IpeNumber 3)
               }
           )
@@ -364,16 +374,18 @@ lambdaFunctionSpec =
                   [ ( "a",
                       Ipe.Grammar.IpeBinaryOperation
                         Ipe.Grammar.Add
-                        (Ipe.Grammar.IpeFunctionCallOrValue "x" [])
+                        (Ipe.Grammar.IpeFunctionCallOrValue [] "x" [])
                         (Ipe.Grammar.IpeNumber 1)
                     ),
                     ( "b",
                       Ipe.Grammar.IpeFunctionCallOrValue
+                        []
                         "complexOperation"
-                        [ Ipe.Grammar.IpeFunctionCallOrValue "y" [],
+                        [ Ipe.Grammar.IpeFunctionCallOrValue [] "y" [],
                           Ipe.Grammar.IpeFunctionCallOrValue
+                            []
                             "someFunction"
-                            [ Ipe.Grammar.IpeFunctionCallOrValue "x" [],
+                            [ Ipe.Grammar.IpeFunctionCallOrValue [] "x" [],
                               Ipe.Grammar.IpeBinaryOperation Ipe.Grammar.Add (Ipe.Grammar.IpeNumber 2) (Ipe.Grammar.IpeNumber 3)
                             ]
                         ]
@@ -381,14 +393,14 @@ lambdaFunctionSpec =
                     ( "c",
                       Ipe.Grammar.IpeBinaryOperation
                         Ipe.Grammar.Multiply
-                        (Ipe.Grammar.IpeFunctionCallOrValue "aFunction" [Ipe.Grammar.IpeFunctionCallOrValue "a" [], Ipe.Grammar.IpeFunctionCallOrValue "b" []])
-                        (Ipe.Grammar.IpeFunctionCallOrValue "otherFunction" [Ipe.Grammar.IpeFunctionCallOrValue "x" [], Ipe.Grammar.IpeFunctionCallOrValue "y" [], Ipe.Grammar.IpeFunctionCallOrValue "z" []])
+                        (Ipe.Grammar.IpeFunctionCallOrValue [] "aFunction" [Ipe.Grammar.IpeFunctionCallOrValue [] "a" [], Ipe.Grammar.IpeFunctionCallOrValue [] "b" []])
+                        (Ipe.Grammar.IpeFunctionCallOrValue [] "otherFunction" [Ipe.Grammar.IpeFunctionCallOrValue [] "x" [], Ipe.Grammar.IpeFunctionCallOrValue [] "y" [], Ipe.Grammar.IpeFunctionCallOrValue [] "z" []])
                     )
                   ],
                 Ipe.Grammar.functionReturn =
                   Ipe.Grammar.IpeBinaryOperation
                     Ipe.Grammar.Divide
-                    (Ipe.Grammar.IpeFunctionCallOrValue "c" [])
+                    (Ipe.Grammar.IpeFunctionCallOrValue [] "c" [])
                     (Ipe.Grammar.IpeNumber 3)
               }
           )
@@ -403,7 +415,7 @@ patternMatchSpec = do
         "match x with\n\
         \ _ -> 1"
         `shouldParse` Ipe.Grammar.IpeMatch
-          (Ipe.Grammar.IpeFunctionCallOrValue "x" [])
+          (Ipe.Grammar.IpeFunctionCallOrValue [] "x" [])
           [(Ipe.Grammar.IpeWildCardPattern, Ipe.Grammar.IpeNumber 1)]
 
     it "should parse a single variable pattern" $
@@ -413,7 +425,7 @@ patternMatchSpec = do
         "match x with\n\
         \ y -> 1"
         `shouldParse` Ipe.Grammar.IpeMatch
-          (Ipe.Grammar.IpeFunctionCallOrValue "x" [])
+          (Ipe.Grammar.IpeFunctionCallOrValue [] "x" [])
           [(Ipe.Grammar.IpeVariablePattern "y", Ipe.Grammar.IpeNumber 1)]
 
     it "should parse a simple custom type pattern" $
@@ -423,7 +435,7 @@ patternMatchSpec = do
         "match x with\n\
         \ SomeConstructor -> 1"
         `shouldParse` Ipe.Grammar.IpeMatch
-          (Ipe.Grammar.IpeFunctionCallOrValue "x" [])
+          (Ipe.Grammar.IpeFunctionCallOrValue [] "x" [])
           [(Ipe.Grammar.IpeCustomTypePattern "SomeConstructor" [], Ipe.Grammar.IpeNumber 1)]
 
     it "should parse a custom type pattern that has some simple arguments" $
@@ -435,7 +447,7 @@ patternMatchSpec = do
         \ OtherConstructor -> 2\n\
         \ ThirdConstructor -> 3"
         `shouldParse` Ipe.Grammar.IpeMatch
-          (Ipe.Grammar.IpeFunctionCallOrValue "x" [])
+          (Ipe.Grammar.IpeFunctionCallOrValue [] "x" [])
           [ (Ipe.Grammar.IpeCustomTypePattern "SomeConstructor" [], Ipe.Grammar.IpeNumber 1),
             (Ipe.Grammar.IpeCustomTypePattern "OtherConstructor" [], Ipe.Grammar.IpeNumber 2),
             (Ipe.Grammar.IpeCustomTypePattern "ThirdConstructor" [], Ipe.Grammar.IpeNumber 3)
@@ -451,15 +463,16 @@ patternMatchSpec = do
         \ ThirdConstructor -> Imported.function 5 y (z 2)\n\
         \ x -> 4"
         `shouldParse` Ipe.Grammar.IpeMatch
-          (Ipe.Grammar.IpeFunctionCallOrValue "x" [])
+          (Ipe.Grammar.IpeFunctionCallOrValue [] "x" [])
           [ (Ipe.Grammar.IpeCustomTypePattern "SomeConstructor" [], Ipe.Grammar.IpeNumber 1),
             (Ipe.Grammar.IpeCustomTypePattern "OtherConstructor" [], Ipe.Grammar.IpeNumber 2),
             ( Ipe.Grammar.IpeCustomTypePattern "ThirdConstructor" [],
               Ipe.Grammar.IpeFunctionCallOrValue
-                "Imported.function"
+                ["Imported"]
+                "function"
                 [ Ipe.Grammar.IpeNumber 5,
-                  Ipe.Grammar.IpeFunctionCallOrValue "y" [],
-                  Ipe.Grammar.IpeFunctionCallOrValue "z" [Ipe.Grammar.IpeNumber 2]
+                  Ipe.Grammar.IpeFunctionCallOrValue [] "y" [],
+                  Ipe.Grammar.IpeFunctionCallOrValue [] "z" [Ipe.Grammar.IpeNumber 2]
                 ]
             ),
             (Ipe.Grammar.IpeVariablePattern "x", Ipe.Grammar.IpeNumber 4)
@@ -475,15 +488,16 @@ patternMatchSpec = do
         \ ThirdConstructor -> Imported.function 5 y (z 2)\n\
         \ 1 -> 4"
         `shouldParse` Ipe.Grammar.IpeMatch
-          (Ipe.Grammar.IpeFunctionCallOrValue "x" [])
+          (Ipe.Grammar.IpeFunctionCallOrValue [] "x" [])
           [ (Ipe.Grammar.IpeCustomTypePattern "SomeConstructor" [], Ipe.Grammar.IpeNumber 1),
             (Ipe.Grammar.IpeCustomTypePattern "OtherConstructor" [], Ipe.Grammar.IpeNumber 2),
             ( Ipe.Grammar.IpeCustomTypePattern "ThirdConstructor" [],
               Ipe.Grammar.IpeFunctionCallOrValue
-                "Imported.function"
+                ["Imported"]
+                "function"
                 [ Ipe.Grammar.IpeNumber 5,
-                  Ipe.Grammar.IpeFunctionCallOrValue "y" [],
-                  Ipe.Grammar.IpeFunctionCallOrValue "z" [Ipe.Grammar.IpeNumber 2]
+                  Ipe.Grammar.IpeFunctionCallOrValue [] "y" [],
+                  Ipe.Grammar.IpeFunctionCallOrValue [] "z" [Ipe.Grammar.IpeNumber 2]
                 ]
             ),
             (Ipe.Grammar.IpeLiteralNumberPattern 1, Ipe.Grammar.IpeNumber 4)
@@ -499,15 +513,16 @@ patternMatchSpec = do
         \ ThirdConstructor -> Imported.function 5 y (z 2)\n\
         \ 'string' -> 4"
         `shouldParse` Ipe.Grammar.IpeMatch
-          (Ipe.Grammar.IpeFunctionCallOrValue "x" [])
+          (Ipe.Grammar.IpeFunctionCallOrValue [] "x" [])
           [ (Ipe.Grammar.IpeCustomTypePattern "SomeConstructor" [], Ipe.Grammar.IpeNumber 1),
             (Ipe.Grammar.IpeCustomTypePattern "OtherConstructor" [], Ipe.Grammar.IpeNumber 2),
             ( Ipe.Grammar.IpeCustomTypePattern "ThirdConstructor" [],
               Ipe.Grammar.IpeFunctionCallOrValue
-                "Imported.function"
+                ["Imported"]
+                "function"
                 [ Ipe.Grammar.IpeNumber 5,
-                  Ipe.Grammar.IpeFunctionCallOrValue "y" [],
-                  Ipe.Grammar.IpeFunctionCallOrValue "z" [Ipe.Grammar.IpeNumber 2]
+                  Ipe.Grammar.IpeFunctionCallOrValue [] "y" [],
+                  Ipe.Grammar.IpeFunctionCallOrValue [] "z" [Ipe.Grammar.IpeNumber 2]
                 ]
             ),
             (Ipe.Grammar.IpeLiteralStringPattern "string", Ipe.Grammar.IpeNumber 4)
@@ -523,15 +538,16 @@ patternMatchSpec = do
         \ ThirdConstructor -> Imported.function 5 y (z 2)\n\
         \ _ -> 4"
         `shouldParse` Ipe.Grammar.IpeMatch
-          (Ipe.Grammar.IpeFunctionCallOrValue "x" [])
+          (Ipe.Grammar.IpeFunctionCallOrValue [] "x" [])
           [ (Ipe.Grammar.IpeCustomTypePattern "SomeConstructor" [], Ipe.Grammar.IpeNumber 1),
             (Ipe.Grammar.IpeCustomTypePattern "OtherConstructor" [], Ipe.Grammar.IpeNumber 2),
             ( Ipe.Grammar.IpeCustomTypePattern "ThirdConstructor" [],
               Ipe.Grammar.IpeFunctionCallOrValue
-                "Imported.function"
+                ["Imported"]
+                "function"
                 [ Ipe.Grammar.IpeNumber 5,
-                  Ipe.Grammar.IpeFunctionCallOrValue "y" [],
-                  Ipe.Grammar.IpeFunctionCallOrValue "z" [Ipe.Grammar.IpeNumber 2]
+                  Ipe.Grammar.IpeFunctionCallOrValue [] "y" [],
+                  Ipe.Grammar.IpeFunctionCallOrValue [] "z" [Ipe.Grammar.IpeNumber 2]
                 ]
             ),
             (Ipe.Grammar.IpeWildCardPattern, Ipe.Grammar.IpeNumber 4)
@@ -546,13 +562,13 @@ patternMatchSpec = do
         \ OtherConstructor (NestedConstructor 'abc') -> 2\n\
         \ Imported.ThirdConstructor (Level1 (Level2 x)) 5 'abc' -> 3 + x"
         `shouldParse` Ipe.Grammar.IpeMatch
-          (Ipe.Grammar.IpeFunctionCallOrValue "x" [])
+          (Ipe.Grammar.IpeFunctionCallOrValue [] "x" [])
           [ ( Ipe.Grammar.IpeCustomTypePattern
                 "SomeConstructor"
                 [ Ipe.Grammar.IpeVariablePattern "a",
                   Ipe.Grammar.IpeLiteralNumberPattern 5
                 ],
-              Ipe.Grammar.IpeFunctionCallOrValue "a" []
+              Ipe.Grammar.IpeFunctionCallOrValue [] "a" []
             ),
             ( Ipe.Grammar.IpeCustomTypePattern
                 "OtherConstructor"
@@ -573,6 +589,6 @@ patternMatchSpec = do
               Ipe.Grammar.IpeBinaryOperation
                 Ipe.Grammar.Add
                 (Ipe.Grammar.IpeNumber 3)
-                (Ipe.Grammar.IpeFunctionCallOrValue "x" [])
+                (Ipe.Grammar.IpeFunctionCallOrValue [] "x" [])
             )
           ]

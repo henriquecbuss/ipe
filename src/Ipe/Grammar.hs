@@ -131,8 +131,7 @@ data Expression
   | IpeMatch Expression [(IpeMatchPattern, Expression)]
   | IpeString Text
   | -- TODO - Support record accessors
-    -- TODO - Should this be something like { importedFrom :: Text, name :: Text }?
-    IpeFunctionCallOrValue Text [Expression]
+    IpeFunctionCallOrValue [Text] Text [Expression]
   | IpeFunction [Text] IpeFunctionBody
   deriving (Eq, Show)
 

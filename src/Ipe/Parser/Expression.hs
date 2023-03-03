@@ -41,24 +41,18 @@ number = Ipe.Grammar.IpeNumber <$> literalNumber
 string :: Parser Ipe.Grammar.Expression
 string = Ipe.Grammar.IpeString <$> literalString
 
-importedValue :: Parser Text
-importedValue = do
-  moduleNames <- Parsec.Common.many (Ipe.Parser.uppercaseIdentifier <* Parsec.Char.char '.')
-
-  functionName <- Ipe.Parser.lowercaseIdentifier
-
-  return $ T.intercalate "." (moduleNames ++ [functionName])
-
 functionCallOrValue :: Bool -> Parser Ipe.Grammar.Expression
 functionCallOrValue acceptArgs = do
-  name <- Ipe.Parser.lexeme importedValue
+  moduleNames <- Parsec.Common.many (Ipe.Parser.uppercaseIdentifier <* Parsec.Char.char '.')
+
+  name <- Ipe.Parser.lexeme Ipe.Parser.lowercaseIdentifier
 
   args <-
     if acceptArgs
       then Parsec.Common.many . Parsec.Common.try . Ipe.Parser.lexeme $ term False
       else return []
 
-  return $ Ipe.Grammar.IpeFunctionCallOrValue name args
+  return $ Ipe.Grammar.IpeFunctionCallOrValue moduleNames name args
 
 term :: Bool -> Parser Ipe.Grammar.Expression
 term acceptArgs =
