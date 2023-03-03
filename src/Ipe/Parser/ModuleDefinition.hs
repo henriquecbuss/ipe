@@ -16,7 +16,7 @@ parser :: Parser Ipe.Grammar.ModuleDefinition
 parser = do
   Control.Monad.void (Ipe.Parser.symbol "module")
 
-  name <- Ipe.Parser.lexeme Ipe.Parser.moduleName <?> "a module name. Module names must start with an upper case letter, and contain only letters, numbers, `.` or `_`"
+  (path, name) <- Ipe.Parser.lexeme Ipe.Parser.moduleName <?> "a module name. Module names must start with an upper case letter, and contain only letters, numbers, `.` or `_`"
 
   Control.Monad.void (Ipe.Parser.symbol "exports") <?> "the `exports` keyword, followed by a list of exported definitions"
 
@@ -36,7 +36,8 @@ parser = do
 
   return $
     Ipe.Grammar.ModuleDefinition
-      { Ipe.Grammar.moduleDefinitionName = name,
+      { Ipe.Grammar.moduleDefinitionPath = path,
+        Ipe.Grammar.moduleDefinitionName = name,
         Ipe.Grammar.exportedDefinitions = firstExportedDefinition : otherExportedDefinitions,
         Ipe.Grammar.moduleDocComment = moduleDocComment
       }

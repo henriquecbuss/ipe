@@ -22,7 +22,8 @@ import Data.Text (Text)
 
 -- | A module definition, with an export list
 data ModuleDefinition = ModuleDefinition
-  { moduleDefinitionName :: Text,
+  { moduleDefinitionPath :: [Text],
+    moduleDefinitionName :: Text,
     exportedDefinitions :: [Text],
     moduleDocComment :: Maybe Text
   }
@@ -33,8 +34,9 @@ type ImportList = [ImportExpression]
 
 -- | An import expression, that may have an alias
 data ImportExpression = ImportExpression
-  { importedModule :: Text,
-    importedModuleAlias :: Maybe Text
+  { importedModulePath :: [Text],
+    importedModule :: Text,
+    importedModuleAlias :: Maybe ([Text], Text)
   }
   deriving (Eq, Show)
 

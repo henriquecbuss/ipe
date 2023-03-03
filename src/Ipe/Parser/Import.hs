@@ -24,7 +24,7 @@ singleParser :: Parser Ipe.Grammar.ImportExpression
 singleParser = do
   Control.Monad.void (Ipe.Parser.symbol "import")
 
-  name <- Ipe.Parser.hlexeme Ipe.Parser.moduleName
+  (path, name) <- Ipe.Parser.hlexeme Ipe.Parser.moduleName
 
   alias <-
     Parsec.Common.optional
@@ -34,6 +34,7 @@ singleParser = do
 
   return $
     Ipe.Grammar.ImportExpression
-      { Ipe.Grammar.importedModule = name,
+      { Ipe.Grammar.importedModulePath = path,
+        Ipe.Grammar.importedModule = name,
         Ipe.Grammar.importedModuleAlias = alias
       }

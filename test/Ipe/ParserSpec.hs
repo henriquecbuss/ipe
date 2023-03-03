@@ -30,14 +30,14 @@ moduleNameSpec =
         Ipe.Parser.moduleName
         ""
         "SomeModule"
-        `shouldParse` "SomeModule"
+        `shouldParse` ([], "SomeModule")
 
     it "should parse a module name with dots" $
       Parsec.Common.parse
         Ipe.Parser.moduleName
         ""
         "Some.Module"
-        `shouldParse` "Some.Module"
+        `shouldParse` (["Some"], "Module")
 
     it "should fail on a module that starts with a lower case letter" $
       Parsec.Common.parse

@@ -21,7 +21,8 @@ parserSpec =
         ""
         "module SomeModule exports [ someFunction, otherFunction ]"
         `shouldParse` Ipe.Grammar.ModuleDefinition
-          { Ipe.Grammar.moduleDefinitionName = "SomeModule",
+          { Ipe.Grammar.moduleDefinitionPath = [],
+            Ipe.Grammar.moduleDefinitionName = "SomeModule",
             Ipe.Grammar.exportedDefinitions = ["someFunction", "otherFunction"],
             Ipe.Grammar.moduleDocComment = Nothing
           }
@@ -36,7 +37,8 @@ parserSpec =
         \Here's another line\n\
         \*/"
         `shouldParse` Ipe.Grammar.ModuleDefinition
-          { Ipe.Grammar.moduleDefinitionName = "SomeModule",
+          { Ipe.Grammar.moduleDefinitionPath = [],
+            Ipe.Grammar.moduleDefinitionName = "SomeModule",
             Ipe.Grammar.exportedDefinitions = ["someFunction", "otherFunction"],
             Ipe.Grammar.moduleDocComment = Just "This is a doc comment!\nHere's another line\n"
           }
@@ -47,7 +49,8 @@ parserSpec =
         ""
         "module Some.Module exports [ someFunction, otherFunction ]"
         `shouldParse` Ipe.Grammar.ModuleDefinition
-          { Ipe.Grammar.moduleDefinitionName = "Some.Module",
+          { Ipe.Grammar.moduleDefinitionPath = ["Some"],
+            Ipe.Grammar.moduleDefinitionName = "Module",
             Ipe.Grammar.exportedDefinitions = ["someFunction", "otherFunction"],
             Ipe.Grammar.moduleDocComment = Nothing
           }
