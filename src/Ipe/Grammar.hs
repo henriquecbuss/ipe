@@ -1,5 +1,6 @@
 module Ipe.Grammar
-  ( ModuleDefinition (..),
+  ( Module (..),
+    ModuleDefinition (..),
     TopLevelDefinition (..),
     IpeFunctionBody (..),
     ImportList,
@@ -20,6 +21,15 @@ where
 
 import Data.Map.Strict (Map)
 import Data.Text (Text)
+
+-- | The definition of a module, which represents a .ipe file
+data Module = Module
+  { moduleDefinition :: ModuleDefinition,
+    moduleImports :: ImportList,
+    typeDefinitions :: [TypeDefinition],
+    topLevelDefinitions :: [TopLevelDefinition]
+  }
+  deriving (Eq, Show)
 
 -- | A module definition, with an export list
 data ModuleDefinition = ModuleDefinition
