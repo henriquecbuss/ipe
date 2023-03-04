@@ -158,4 +158,18 @@ packages:
       size: 385
   original:
     hackage: hspec-megaparsec-2.2.0@sha256:679b9b91ea0ed0c36d6782d6051a08e0825409d10adbab8c8cfa9c8bd8bfc245,1802
+- completed:
+    hackage: transformers-0.6.1.0@sha256:7e7feea5fc9071375a973a48290fee6664e3eba38eb7028ce04850911f1ad0d4,3146
+    pantry-tree:
+      sha256: d3c0d29caf4101796285ba7853052dc370f204e7271738296ee68b114ae917ef
+      size: 2376
+  original:
+    hackage: transformers-0.6.1.0@sha256:7e7feea5fc9071375a973a48290fee6664e3eba38eb7028ce04850911f1ad0d4,3146
+- completed:
+    hackage: mtl-2.3.1@sha256:5377696d7315e2ef31a8d15d67b22d733c20cac2caf8b26756ff8524c8217e6d,1868
+    pantry-tree:
+      sha256: ac3cf1dc9ef397512d4bf8f2c3fbe4d64fb8aabd253288b34bf86c09ae234d4f
+      size: 1853
+  original:
+    hackage: mtl-2.3.1@sha256:5377696d7315e2ef31a8d15d67b22d733c20cac2caf8b26756ff8524c8217e6d,1868
 snapshots: []

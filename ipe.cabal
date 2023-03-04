@@ -35,6 +35,7 @@ library
       Ipe.Parser.ModuleDefinition
       Ipe.Parser.TopLevelDefinition
       Ipe.Parser.TypeDefinition
+      Ipe.TypeCheck
   other-modules:
       Paths_ipe
   hs-source-dirs:
@@ -46,6 +47,7 @@ library
     , megaparsec >=9.3.0 && <10
     , parser-combinators >=1.3.0 && <2
     , text >=2.0.1 && <3
+    , transformers >=0.6.1.0 && <0.7
   default-language: Haskell2010
 
 executable ipe-exe
