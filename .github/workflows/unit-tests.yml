@@ -1,0 +1,52 @@
+name: Unit tests
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  pedantic:
+    name: Pedantic
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone project
+        uses: actions/checkout@v3
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.stack
+          key: ${{ runner.os }}-${{ hashFiles('stack.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-
+      - name: Pedantic build
+        run: |
+          # Stack 2.9.3 is required to build Stack
+          stack upgrade
+          stack build --pedantic
+
+  unit-tests:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone project
+        uses: actions/checkout@v3
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.stack
+          key: ${{ hashFiles('stack.yaml') }}
+      - name: Run tests
+        shell: bash
+        run: |
+          set -ex
+
+          # Stack 2.9.3 is required to build Stack.
+          stack upgrade
+
+          # Check the Stack version
+          stack --version
+
+          stack test ${{ matrix.stack-args }} --ghc-options="-Werror -O0"
