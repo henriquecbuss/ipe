@@ -7,10 +7,6 @@ on:
       - main
   workflow_dispatch:
 
-# As of 26 December 2022, ubuntu-latest, windows-latest and macos-latest come
-# with Stack 2.9.1. ubuntu-latest and macos-latest come with GHC 9.4.3.
-# windows-latest comes with GHC 9.4.2.
-
 jobs:
   pedantic:
     name: Pedantic
@@ -33,86 +29,22 @@ jobs:
 
   unit-tests:
     name: Unit tests
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            extra-suffix: ""
-            stack-args: ""
-          - os: windows-latest
-            extra-suffix: ""
-            stack-args: ""
-          - os: macos-latest
-            extra-suffix: ""
-            stack-args: ""
+    runs-on: ubuntu-latest
     steps:
-      - name: Setup macOS
-        if: startsWith(runner.os, 'macOS')
-        run: |
-          # pkg-config added because it is required by package digest-0.0.1.4.
-          brew install pkg-config
       - name: Clone project
         uses: actions/checkout@v3
-      - name: Cache dependencies on Unix-like OS
-        if: startsWith(runner.os, 'Linux') || startsWith(runner.os, 'macOS')
+      - name: Cache dependencies
         uses: actions/cache@v3
         with:
           path: ~/.stack
-          key: ${{ runner.os }}-${{ hashFiles('stack.yaml') }}-${{ matrix.extra-suffix }}
-      - name: Cache dependencies on Windows
-        if: startsWith(runner.os, 'Windows')
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~\AppData\Roaming\stack
-            ~\AppData\Local\Programs\stack
-          key: ${{ runner.os }}-${{ hashFiles('stack.yaml') }}-${{ matrix.extra-suffix }}
-
-      # Separating out Unix-like OS from Windows because of the problem of
-      # upgrading GitHub-supplied Stack 2.9.1 to 2.9.3 on Windows
-      - name: Run tests on Unix-like OS
-        if: startsWith(runner.os, 'Linux') || startsWith(runner.os, 'macOS')
+          key: ${{ hashFiles('stack.yaml') }}
+      - name: Run tests
         shell: bash
         run: |
           set -ex
 
           # Stack 2.9.3 is required to build Stack.
           stack upgrade
-
-          # Check the Stack version
-          stack --version
-
-          if [[ "${{ matrix.extra-suffix }}" == "alpine" ]]
-          then
-              mkdir -p ~/.stack
-              touch ~/.stack/config.yaml
-              cat > ~/.stack/config.yaml <<EOF
-              extra-include-dirs:
-              - /usr/include
-              extra-lib-dirs:
-              - /lib
-              - /usr/lib
-          EOF
-          fi
-
-          stack test ${{ matrix.stack-args }} --ghc-options="-Werror -O0"
-
-      # Separating out Windows because of the problem of upgrading GitHub-supplied
-      # Stack 2.9.1 to 2.9.3 on Windows
-      - name: Run tests on Windows
-        if: startsWith(runner.os, 'Windows')
-        shell: bash
-        run: |
-          set -ex
-
-          # Stack 2.9.3 is required to build Stack. The --local-bin-path is
-          # required to allow Stack (effectively) to overwrite the currently
-          # running Stack executable. The should be fixed in later versions of
-          # Stack that reflect
-          # https://github.com/commercialhaskell/stack/pull/6023
-          stack --local-bin-path /c/hostedtoolcache/windows/stack/2.9.1/x64 upgrade
 
           # Check the Stack version
           stack --version

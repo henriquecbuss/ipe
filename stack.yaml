@@ -65,7 +65,6 @@ extra-deps:
   - hashable-1.4.1.0@sha256:50b2f002c68fe67730ee7a3cd8607486197dd99b084255005ad51ecd6970a41b,5019
   - integer-logarithms-1.0.3.1@sha256:d59bfd1d39808217af2b68789d3c0e57cb7199d47405a276060d88fef4f4017d,3246
   - hspec-megaparsec-2.2.0@sha256:679b9b91ea0ed0c36d6782d6051a08e0825409d10adbab8c8cfa9c8bd8bfc245,1802
-  - Win32-2.13.4.0@sha256:9b8a82743985f8a95c03b2bc64be33ad1cd603e2493cb8b48d3cb923556dbb61,5585
 # Override default flag values for local packages and extra-deps
 # flags: {}
 
