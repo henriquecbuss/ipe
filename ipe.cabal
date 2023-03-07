@@ -35,7 +35,8 @@ library
       Ipe.Parser.ModuleDefinition
       Ipe.Parser.TopLevelDefinition
       Ipe.Parser.TypeDefinition
-      Ipe.TypeCheck
+      Ipe.TypeChecker
+      Ipe.TypeChecker.Expression
   other-modules:
       Paths_ipe
   hs-source-dirs:
@@ -73,6 +74,7 @@ test-suite ipe-test
       Ipe.Parser.TopLevelDefinitionSpec
       Ipe.Parser.TypeDefinitionSpec
       Ipe.ParserSpec
+      Ipe.TypeChecker.ExpressionSpec
       Paths_ipe
   hs-source-dirs:
       test

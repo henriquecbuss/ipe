@@ -1,68 +1,25 @@
-{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Ipe.TypeCheck (typeCheckExpression, runTypeCheckExpression) where
+module Ipe.TypeChecker.Expression (typeCheck) where
 
-import Control.Monad.Trans.Class (lift)
-import Control.Monad.Trans.Except (ExceptT)
 import qualified Control.Monad.Trans.Except as Except
-import Control.Monad.Trans.State.Lazy (State)
-import qualified Control.Monad.Trans.State.Lazy as State
 import qualified Data.List
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Ipe.Grammar
+import Ipe.TypeChecker (IpeType (..), TypeCheckingMonad)
+import qualified Ipe.TypeChecker as TypeChecker
 
-data IpeType
-  = IpeNumber
-  | IpeString
-  | IpeFunction IpeType IpeType
-  | IpeUnit
-  | IpeRecord (Map Text IpeType)
-  deriving (Eq)
-
-instance Show IpeType where
-  show IpeNumber = "Number"
-  show IpeString = "String"
-  show (IpeFunction _ _) = "Function"
-  show IpeUnit = "()"
-  show (IpeRecord record) = T.unpack $ T.concat ["{", mapString, "}"]
-    where
-      mapString :: Text
-      mapString =
-        T.concat $
-          Data.List.intercalate ["\n, "] $
-            Map.foldrWithKey
-              ( \k v accum ->
-                  [T.concat [k, ": ", T.pack (show v)]] : accum
-              )
-              []
-              record
-
-class Monad m => MonadState k v m | m -> k v where
-  get :: Ord k => k -> m (Maybe v)
-  put :: Ord k => k -> v -> m ()
-
-instance MonadState k v (ExceptT e (State (Map k v))) where
-  get k = lift (Map.lookup k <$> State.get)
-  put k v = lift . State.modify $ Map.insert k v
-
-type TypeCheckingMonad = ExceptT Text (State (Map ([Text], Text) IpeType)) IpeType
-
-runTypeCheckExpression :: Ipe.Grammar.Expression -> (Either Text IpeType, Map ([Text], Text) IpeType)
-runTypeCheckExpression expression =
-  State.runState (Except.runExceptT (typeCheckExpression expression)) Map.empty
-
-typeCheckExpression :: Ipe.Grammar.Expression -> TypeCheckingMonad
-typeCheckExpression expr =
+typeCheck :: Ipe.Grammar.Expression -> TypeCheckingMonad
+typeCheck expr =
   case expr of
     Ipe.Grammar.IpeNumber _ -> return IpeNumber
     Ipe.Grammar.IpeString _ -> return IpeString
     Ipe.Grammar.IpeBinaryOperation operation left right -> do
-      leftResult <- typeCheckExpression left
-      rightResult <- typeCheckExpression right
+      leftResult <- typeCheck left
+      rightResult <- typeCheck right
 
       let checkSame operationName expectedType =
             if leftResult == expectedType && rightResult == expectedType
@@ -99,7 +56,7 @@ typeCheckExpression expr =
     Ipe.Grammar.IpeMatch _ _ -> do
       Except.throwE "TODO: match not implemented"
     Ipe.Grammar.IpeFunctionCallOrValue (Ipe.Grammar.FunctionCallOrValue path name recordAccessors arguments) -> do
-      value <- get (path, name)
+      value <- TypeChecker.get (path, name)
       case (value, recordAccessors, arguments) of
         (Just valueType, [], []) -> return valueType
         (Just (IpeRecord record), accessors, fnArgs) -> case (findTypeFromRecord record accessors, fnArgs) of
@@ -110,7 +67,7 @@ typeCheckExpression expr =
         (Just (IpeFunction fnInput fnOutput), [], args) -> applyArgsToFunction fnInput fnOutput args
         (Just _, _ : _, _) -> Except.throwE "can't access fields on a non-record"
         (Just _, _, _ : _) -> Except.throwE "can't call a non-function"
-        (Nothing, _, _) -> Except.throwE "TODO: Fetch variables to populate symbol table"
+        (Nothing, _, _) -> Except.throwE $ "Identifier " <> T.intercalate "." (path ++ [name]) <> " could not be found."
     Ipe.Grammar.IpeFunction _ _ ->
       Except.throwE "TODO: lambda function not implemented"
 
@@ -129,13 +86,13 @@ findTypeFromRecord record =
 applyArgsToFunction :: IpeType -> IpeType -> [Ipe.Grammar.Expression] -> TypeCheckingMonad
 applyArgsToFunction fnInput fnOutput [] = return $ IpeFunction fnInput fnOutput
 applyArgsToFunction fnInput fnOutput [x] = do
-  exprType <- typeCheckExpression x
+  exprType <- typeCheck x
 
   if exprType == fnInput
     then return fnOutput
     else Except.throwE $ "Can't match expected type " <> T.pack (show fnInput) <> " with actual type " <> T.pack (show exprType) <> "."
 applyArgsToFunction fnInput fnOutput (x : xs) = do
-  exprType <- typeCheckExpression x
+  exprType <- typeCheck x
 
   if exprType == fnInput
     then case fnOutput of
