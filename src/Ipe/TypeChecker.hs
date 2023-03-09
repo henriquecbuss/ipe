@@ -2,10 +2,14 @@
 
 module Ipe.TypeChecker (Type (..), run, runWith) where
 
+-- \| This module uses Algorithm W, explained in https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.65.7733&rep=rep1&type=pdf
+
 import qualified Control.Monad
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Except (ExceptT, runExceptT, throwE)
 import Control.Monad.Trans.State (State, evalState, get, put)
+import qualified Data.Bifunctor
+import qualified Data.List
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Text (Text)
@@ -27,6 +31,7 @@ data Type
   | TNum
   | TStr
   | TFun Type Type
+  | TRec [(String, Type)]
   -- TODO - Better show implementation?
   deriving (Eq)
 
@@ -35,12 +40,15 @@ instance Show Type where
   show TNum = "Number"
   show TStr = "String"
   show (TFun input output) = "(" ++ show input ++ " -> " ++ show output ++ ")"
+  show (TRec []) = "{}"
+  show (TRec fields) = "{ " ++ Data.List.intercalate ", " (map (\(name, t) -> name ++ ": " ++ show t) fields) ++ " }"
 
 instance Types Type where
   freeTypeVariables (TVar var) = Set.singleton var
   freeTypeVariables TNum = Set.empty
   freeTypeVariables TStr = Set.empty
   freeTypeVariables (TFun input output) = Set.union (freeTypeVariables input) (freeTypeVariables output)
+  freeTypeVariables (TRec fields) = Set.unions (map (freeTypeVariables . snd) fields)
 
   apply subs (TVar var) = case Map.lookup var subs of
     Nothing -> TVar var
@@ -48,6 +56,7 @@ instance Types Type where
   apply subs (TFun input output) = TFun (apply subs input) (apply subs output)
   apply _ TNum = TNum
   apply _ TStr = TStr
+  apply subs (TRec fields) = TRec (map (Data.Bifunctor.second (apply subs)) fields)
 
 data Scheme = Scheme [String] Type
 
@@ -101,6 +110,16 @@ mostGeneralUnifier (TVar var) t = varBind var t
 mostGeneralUnifier t (TVar var) = varBind var t
 mostGeneralUnifier TNum TNum = return Map.empty
 mostGeneralUnifier TStr TStr = return Map.empty
+mostGeneralUnifier (TRec fields1) (TRec fields2)
+  | length fields1 == length fields2 = do
+      let (names1, types1) = unzip fields1
+      let (names2, types2) = unzip fields2
+      if names1 == names2
+        then do
+          subs <- Control.Monad.zipWithM mostGeneralUnifier types1 types2
+          return $ foldr compose Map.empty subs
+        else throwE $ "can't match expected record\n\t" ++ show (TRec fields1) ++ "\nwith actual record\n\t" ++ show (TRec fields2)
+  | otherwise = throwE $ "can't match expected record\n\t" ++ show (TRec fields1) ++ "\nwith actual record\n\t" ++ show (TRec fields2)
 mostGeneralUnifier t1 t2 = throwE $ "can't match expected type\n\t" ++ show t1 ++ "\nwith actual type\n\t" ++ show t2
 
 varBind :: String -> Type -> TypeInferenceMonad Substitution
@@ -200,6 +219,18 @@ inferHelper env (IpeFunction args (IpeFunctionBody attributions fnReturn)) = do
 
   -- TODO - mgu
   return (sub, apply sub (foldr TFun type1 argTypeVars))
+inferHelper env (IpeRecord fields) = do
+  (finalFields, _) <-
+    foldr
+      ( \(fieldName, fieldExpr) currMonad -> do
+          (currFields, oldEnv) <- currMonad
+          (newSub, newType) <- inferHelper oldEnv fieldExpr
+
+          return ((T.unpack fieldName, newType) : currFields, apply newSub oldEnv)
+      )
+      (return ([], env))
+      fields
+  return (Map.empty, TRec finalFields)
 
 ------
 ------

@@ -17,6 +17,14 @@ spec =
     functionCallOrValueSpec
     functionDefinitionSpec
 
+simpleVariable :: T.Text -> Ipe.Grammar.Expression
+simpleVariable varName =
+  simpleFunction varName []
+
+simpleFunction :: T.Text -> [Ipe.Grammar.Expression] -> Ipe.Grammar.Expression
+simpleFunction fnName args =
+  IpeFunctionCallOrValue $ FunctionCallOrValue [] fnName [] args
+
 numberAndStringSpec :: Spec
 numberAndStringSpec =
   describe "when dealing with numbers and strings" $ do
@@ -178,6 +186,57 @@ functionCallOrValueSpec =
           )
           `shouldBe` Right TypeChecker.TNum
 
+    prop "should type check the structure of a simple flat record" $
+      \x y ->
+        TypeChecker.run (IpeRecord [("x", IpeNumber x), ("y", IpeString $ T.pack y)])
+          `shouldBe` Right (TypeChecker.TRec [("x", TypeChecker.TNum), ("y", TypeChecker.TStr)])
+
+    prop "should type check the structure of a complex nested record" $
+      \a e f h l ->
+        TypeChecker.runWith
+          (Map.singleton "d" (TypeChecker.TVar "dVar"))
+          ( IpeRecord
+              [ ("a", IpeNumber a),
+                ( "b",
+                  IpeRecord
+                    [ ( "c",
+                        IpeRecord
+                          [ ("d", simpleVariable "d"),
+                            ("e", IpeNumber e)
+                          ]
+                      ),
+                      ("f", IpeString $ T.pack f),
+                      ("g", IpeRecord [])
+                    ]
+                ),
+                ("h", IpeString $ T.pack h),
+                ("k", IpeRecord [("l", IpeNumber l)])
+              ]
+          )
+          `shouldBe` Right
+            ( TypeChecker.TRec
+                [ ("a", TypeChecker.TNum),
+                  ( "b",
+                    TypeChecker.TRec
+                      [ ( "c",
+                          TypeChecker.TRec
+                            [ ("d", TypeChecker.TVar "dVar"),
+                              ("e", TypeChecker.TNum)
+                            ]
+                        ),
+                        ("f", TypeChecker.TStr),
+                        ("g", TypeChecker.TRec [])
+                      ]
+                  ),
+                  ("h", TypeChecker.TStr),
+                  ( "k",
+                    TypeChecker.TRec
+                      [ ("l", TypeChecker.TNum)
+                      ]
+                  )
+                ]
+            )
+
 functionDefinitionSpec :: Spec
 functionDefinitionSpec =
   describe "when dealing with function definitions" $ do
@@ -237,11 +296,3 @@ functionDefinitionSpec =
               )
           )
           `shouldBe` Right (TypeChecker.TFun (TypeChecker.TVar "a0") TypeChecker.TNum)
-
-simpleVariable :: T.Text -> Ipe.Grammar.Expression
-simpleVariable varName =
-  simpleFunction varName []
-
-simpleFunction :: T.Text -> [Ipe.Grammar.Expression] -> Ipe.Grammar.Expression
-simpleFunction fnName args =
-  IpeFunctionCallOrValue $ FunctionCallOrValue [] fnName [] args
