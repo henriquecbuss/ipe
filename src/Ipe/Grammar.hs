@@ -145,6 +145,7 @@ data Expression
   | IpeString Text
   | IpeFunctionCallOrValue FunctionCallOrValue
   | IpeFunction [Text] IpeFunctionBody
+  | IpeRecord [(Text, Expression)]
   deriving (Eq, Show)
 
 data FunctionCallOrValue = FunctionCallOrValue
