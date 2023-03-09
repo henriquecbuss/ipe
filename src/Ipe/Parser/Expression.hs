@@ -72,6 +72,7 @@ term acceptArgs =
       Ipe.Parser.lexeme $ Ipe.Grammar.IpeString <$> literalString,
       Ipe.Parser.lexeme function,
       Ipe.Parser.lexeme matchExpression,
+      Ipe.Parser.lexeme record,
       functionCallOrValue acceptArgs
     ]
     <* Parsec.Common.notFollowedBy
@@ -195,6 +196,21 @@ customTypePattern acceptArgs = do
       customTypePath
       customTypeName
       args
+
+record :: Parser Ipe.Grammar.Expression
+record =
+  Parsec.Common.between (Ipe.Parser.symbol "{") (Ipe.Parser.symbol "}") $
+    Ipe.Grammar.IpeRecord <$> Parsec.Common.sepBy parseField (Ipe.Parser.symbol ",")
+  where
+    parseField :: Parser (Text, Ipe.Grammar.Expression)
+    parseField = do
+      name <- Ipe.Parser.lexeme Ipe.Parser.lowercaseIdentifier
+
+      Control.Monad.void $ Ipe.Parser.symbol "="
+
+      expr <- Ipe.Parser.lexeme parser
+
+      return (name, expr)
 
 forbiddenSymbols :: [Text]
 forbiddenSymbols = [":"]

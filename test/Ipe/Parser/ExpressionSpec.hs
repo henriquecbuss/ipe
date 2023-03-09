@@ -17,6 +17,7 @@ spec =
     binaryOperatorSpec
     lambdaFunctionSpec
     patternMatchSpec
+    recordSpec
 
 numberSpec :: Spec
 numberSpec = do
@@ -1180,4 +1181,49 @@ patternMatchSpec = do
                     )
                 )
             )
+          ]
+
+recordSpec :: Spec
+recordSpec =
+  context "when parsing records" $ do
+    it "should parse a simple flat record" $
+      Parsec.Common.parse
+        Ipe.Parser.Expression.parser
+        ""
+        "{ x = 5, y = 'abc' }"
+        `shouldParse` Ipe.Grammar.IpeRecord
+          [ ("x", Ipe.Grammar.IpeNumber 5),
+            ("y", Ipe.Grammar.IpeString "abc")
+          ]
+
+    it "should parse a complex nested record" $
+      Parsec.Common.parse
+        Ipe.Parser.Expression.parser
+        ""
+        "{ a = 5\n\
+        \, b = { c = { d = d\n\
+        \            , e = 4\n\
+        \            }\n\
+        \      , f = 'abcdef'\n\
+        \      , g = {}\n\
+        \      }\n\
+        \, h = 'abc'\n\
+        \, k = { l = 1 }\n\
+        \}"
+        `shouldParse` Ipe.Grammar.IpeRecord
+          [ ("a", Ipe.Grammar.IpeNumber 5),
+            ( "b",
+              Ipe.Grammar.IpeRecord
+                [ ( "c",
+                    Ipe.Grammar.IpeRecord
+                      [ ("d", Ipe.Grammar.IpeFunctionCallOrValue $ Ipe.Grammar.FunctionCallOrValue [] "d" [] []),
+                        ("e", Ipe.Grammar.IpeNumber 4)
+                      ]
+                  ),
+                  ("f", Ipe.Grammar.IpeString "abcdef"),
+                  ("g", Ipe.Grammar.IpeRecord [])
+                ]
+            ),
+            ("h", Ipe.Grammar.IpeString "abc"),
+            ("k", Ipe.Grammar.IpeRecord [("l", Ipe.Grammar.IpeNumber 1)])
           ]
