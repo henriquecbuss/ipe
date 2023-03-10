@@ -164,15 +164,25 @@ inferHelper env (IpeBinaryOperation operator exp1 exp2) = do
 inferHelper _ (IpeNumber _) = return (Map.empty, TNum)
 inferHelper env (IpeMatch _ _) = undefined
 inferHelper _ (IpeString _) = return (Map.empty, TStr)
-inferHelper (TypeEnv env) (IpeFunctionCallOrValue (FunctionCallOrValue path name _ args)) =
-  -- TODO - Support records
+inferHelper (TypeEnv env) (IpeFunctionCallOrValue (FunctionCallOrValue path name recordPath args)) =
   case Map.lookup fullName env of
     Nothing -> throwE $ "unbound variable: " ++ fullName
     Just valType -> do
       t <- instantiate valType
-      (finalSub, finalT) <- Control.Monad.foldM evalFunction (Map.empty, t) args
+      typeToUse <- findRecordEnd t recordPath
+      (finalSub, finalT) <- Control.Monad.foldM evalFunction (Map.empty, typeToUse) args
       return (finalSub, finalT)
       where
+        findRecordEnd :: Type -> [Text] -> TypeInferenceMonad Type
+        findRecordEnd inputType [] = return inputType
+        findRecordEnd (TRec fields) currPath = do
+          let (names, types) = unzip fields
+          let maybeIndex = Data.List.elemIndex (T.unpack $ head currPath) names
+          case maybeIndex of
+            Nothing -> throwE $ "record " ++ show (TRec fields) ++ " does not have a field named " ++ T.unpack (head currPath)
+            Just index -> findRecordEnd (types !! index) (tail currPath)
+        findRecordEnd inputType _ = return inputType
+
         evalFunction (previousSub, type_) argExpr = do
           (argSub, argType) <- inferHelper (TypeEnv env) argExpr
           case type_ of

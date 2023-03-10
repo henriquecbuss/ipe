@@ -25,6 +25,10 @@ simpleFunction :: T.Text -> [Ipe.Grammar.Expression] -> Ipe.Grammar.Expression
 simpleFunction fnName args =
   IpeFunctionCallOrValue $ FunctionCallOrValue [] fnName [] args
 
+simpleRecordAccessor :: T.Text -> [T.Text] -> [Ipe.Grammar.Expression] -> Ipe.Grammar.Expression
+simpleRecordAccessor fnName recordAccessors args =
+  IpeFunctionCallOrValue $ FunctionCallOrValue [] fnName recordAccessors args
+
 numberAndStringSpec :: Spec
 numberAndStringSpec =
   describe "when dealing with numbers and strings" $ do
@@ -296,3 +300,30 @@ functionDefinitionSpec =
               )
           )
           `shouldBe` Right (TypeChecker.TFun (TypeChecker.TVar "a0") TypeChecker.TNum)
+
+    prop "should type check calling a function from inside a record" $
+      \x y ->
+        let initialState = Map.singleton "x" (TypeChecker.TRec [("a", TypeChecker.TFun TypeChecker.TNum (TypeChecker.TFun TypeChecker.TStr TypeChecker.TNum))])
+         in TypeChecker.runWith initialState (simpleRecordAccessor "x" ["a"] [IpeNumber x, IpeString $ T.pack y])
+              `shouldBe` Right TypeChecker.TNum
+
+    it "should type check calling a value from inside a nested record" $
+      let initialState =
+            Map.singleton
+              "x"
+              ( TypeChecker.TRec
+                  [ ( "a",
+                      TypeChecker.TRec
+                        [ ("b", TypeChecker.TNum),
+                          ( "c",
+                            TypeChecker.TRec
+                              [ ("d", TypeChecker.TNum)
+                              ]
+                          )
+                        ]
+                    ),
+                    ("e", TypeChecker.TNum)
+                  ]
+              )
+       in TypeChecker.runWith initialState (simpleRecordAccessor "x" ["a", "c", "d"] [])
+            `shouldBe` Right TypeChecker.TNum
