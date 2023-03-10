@@ -16,6 +16,7 @@ spec =
     binaryOperationSpec
     functionCallOrValueSpec
     functionDefinitionSpec
+    matchSpec
 
 simpleVariable :: T.Text -> Ipe.Grammar.Expression
 simpleVariable varName =
@@ -327,3 +328,70 @@ functionDefinitionSpec =
               )
        in TypeChecker.runWith initialState (simpleRecordAccessor "x" ["a", "c", "d"] [])
             `shouldBe` Right TypeChecker.TNum
+
+matchSpec :: Spec
+matchSpec =
+  describe "when dealing with pattern matching" $ do
+    describe "when pattern matching on numbers" $ do
+      prop "should type check a simple case expression" $
+        \x ->
+          TypeChecker.run
+            ( IpeMatch
+                (IpeNumber x)
+                [ (IpeWildCardPattern, IpeNumber x)
+                ]
+            )
+            `shouldBe` Right TypeChecker.TNum
+
+      prop "should check for exhaustiveness" $
+        \x ->
+          TypeChecker.run
+            ( IpeMatch
+                (IpeNumber x)
+                [ (IpeLiteralNumberPattern x, IpeNumber x)
+                ]
+            )
+            `shouldBe` Left "can't pattern match on a number with a finite pattern match without matching all possible cases."
+
+      prop "should not allow duplicate matching" $
+        \x ->
+          TypeChecker.run
+            ( IpeMatch
+                (IpeNumber x)
+                [ (IpeLiteralNumberPattern x, IpeNumber x),
+                  (IpeLiteralNumberPattern x, IpeNumber x)
+                ]
+            )
+            `shouldBe` Left ("number " ++ show x ++ " is already pattern matched.")
+
+    describe "when pattern matching on strings" $ do
+      prop "should type check a simple case expression" $
+        \x ->
+          TypeChecker.run
+            ( IpeMatch
+                (IpeString $ T.pack x)
+                [ (IpeWildCardPattern, IpeString $ T.pack x)
+                ]
+            )
+            `shouldBe` Right TypeChecker.TStr
+
+      prop "should check for exhaustiveness" $
+        \x ->
+          TypeChecker.run
+            ( IpeMatch
+                (IpeString $ T.pack x)
+                [ (IpeLiteralStringPattern $ T.pack x, IpeString $ T.pack x)
+                ]
+            )
+            `shouldBe` Left "can't pattern match on a number with a finite pattern match without matching all possible cases."
+
+      prop "should not allow duplicate matching" $
+        \x ->
+          TypeChecker.run
+            ( IpeMatch
+                (IpeString $ T.pack x)
+                [ (IpeLiteralStringPattern $ T.pack x, IpeString $ T.pack x),
+                  (IpeLiteralStringPattern $ T.pack x, IpeString $ T.pack x)
+                ]
+            )
+            `shouldBe` Left ("string " ++ show x ++ " is already pattern matched.")

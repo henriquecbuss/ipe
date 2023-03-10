@@ -14,7 +14,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Text (Text)
 import qualified Data.Text as T
-import Ipe.Grammar (Expression (..), FunctionCallOrValue (..), IpeBinaryOperator (..), IpeFunctionBody (..))
+import Ipe.Grammar (Expression (..), FunctionCallOrValue (..), IpeBinaryOperator (..), IpeFunctionBody (..), IpeMatchPattern (..))
 
 -- TYPES
 
@@ -75,6 +75,14 @@ instance Types TypeEnv where
 data InferenceState = InferenceState {lastVarIndex :: Int, currentSubstitution :: Substitution}
 
 type TypeInferenceMonad a = ExceptT String (State InferenceState) a
+
+data HandledCases a = InfiniteCases | FiniteCases [a]
+
+data TVarCases
+  = InfiniteTVarCases
+  | FiniteTVarStrCases [Text]
+  | FiniteTVarNumCases [Float]
+  | UnknownTVarCases
 
 -- HELPER FUNCTIONS
 
@@ -162,7 +170,169 @@ inferHelper env (IpeBinaryOperation operator exp1 exp2) = do
       return (sub `compose` sub2 `compose` sub1, fnOutput)
     (PipeLeft, _, _) -> throwE "can't pipe left. I can only pipe left if the left side is a function."
 inferHelper _ (IpeNumber _) = return (Map.empty, TNum)
-inferHelper env (IpeMatch _ _) = undefined
+inferHelper env (IpeMatch matchExpr branches) = do
+  (sub1, type1) <- inferHelper env matchExpr
+
+  case type1 of
+    -- TODO - Support custom types
+    TFun _ _ -> throwE "can't pattern match on a function. You need to apply all arguments to it first."
+    TRec _ -> throwE "can't pattern match on a record. If you want to access a field, use the dot operator."
+    TVar tvar -> do
+      returnT <- newTypeVar "a"
+
+      (_, returnType, handledCases) <-
+        Control.Monad.foldM
+          ( \(currEnv, returnType, handledCases) (branchPattern, branchExpr) ->
+              case branchPattern of
+                IpeWildCardPattern -> do
+                  case handledCases of
+                    InfiniteTVarCases -> throwE "can't pattern match with an infinite pattern match after an infinite pattern match."
+                    FiniteTVarStrCases _ -> do
+                      (sub2, type2) <- inferHelper env branchExpr
+                      sub3 <- mostGeneralUnifier type2 returnType
+                      return (apply (sub3 `compose` sub2) currEnv, apply sub3 type2, InfiniteTVarCases)
+                    FiniteTVarNumCases _ -> do
+                      (sub2, type2) <- inferHelper env branchExpr
+                      sub3 <- mostGeneralUnifier type2 returnType
+                      return (apply (sub3 `compose` sub2) currEnv, apply sub3 type2, InfiniteTVarCases)
+                    UnknownTVarCases -> do
+                      (sub2, type2) <- inferHelper env branchExpr
+                      sub3 <- mostGeneralUnifier type2 returnType
+                      return (apply (sub3 `compose` sub2) currEnv, apply sub3 type2, InfiniteTVarCases)
+                IpeVariablePattern varName -> do
+                  case handledCases of
+                    InfiniteTVarCases -> throwE "can't pattern match with an infinite pattern match after an infinite pattern match."
+                    UnknownTVarCases -> do
+                      let TypeEnv env' = currEnv
+                      let newEnv = TypeEnv $ Map.insert (T.unpack varName) (Scheme [T.unpack varName] (TVar tvar)) env'
+                      (sub2, type2) <- inferHelper newEnv branchExpr
+                      sub3 <- mostGeneralUnifier type2 returnType
+                      return (apply (sub3 `compose` sub2) newEnv, apply sub3 type2, InfiniteTVarCases)
+                    FiniteTVarStrCases _ -> do
+                      let TypeEnv env' = currEnv
+                      let newEnv = TypeEnv $ Map.insert (T.unpack varName) (Scheme [T.unpack varName] (TVar tvar)) env'
+                      (sub2, type2) <- inferHelper newEnv branchExpr
+                      sub3 <- mostGeneralUnifier type2 returnType
+                      return (apply (sub3 `compose` sub2) newEnv, apply sub3 type2, InfiniteTVarCases)
+                    FiniteTVarNumCases _ -> do
+                      let TypeEnv env' = currEnv
+                      let newEnv = TypeEnv $ Map.insert (T.unpack varName) (Scheme [T.unpack varName] (TVar tvar)) env'
+                      (sub2, type2) <- inferHelper newEnv branchExpr
+                      sub3 <- mostGeneralUnifier type2 returnType
+                      return (apply (sub3 `compose` sub2) newEnv, apply sub3 type2, InfiniteTVarCases)
+                IpeCustomTypePattern {} -> throwE "TODO: Implement custom type patterns"
+                IpeLiteralStringPattern pat ->
+                  case handledCases of
+                    FiniteTVarStrCases cases ->
+                      if pat `elem` cases
+                        then throwE $ "number " ++ show pat ++ " is already pattern matched."
+                        else do
+                          (sub2, type2) <- inferHelper env branchExpr
+                          sub3 <- mostGeneralUnifier type2 returnType
+                          sub4 <- mostGeneralUnifier (TVar tvar) TStr
+                          return (apply (sub4 `compose` sub3 `compose` sub2) currEnv, apply sub3 type2, FiniteTVarStrCases $ pat : cases)
+                    _ -> throwE "can't pattern match on a number with a number pattern after an infinite pattern match."
+                IpeLiteralNumberPattern pat ->
+                  case handledCases of
+                    FiniteTVarNumCases cases ->
+                      if pat `elem` cases
+                        then throwE $ "number " ++ show pat ++ " is already pattern matched."
+                        else do
+                          (sub2, type2) <- inferHelper env branchExpr
+                          sub3 <- mostGeneralUnifier type2 returnType
+                          sub4 <- mostGeneralUnifier (TVar tvar) TNum
+                          return (apply (sub4 `compose` sub3 `compose` sub2) currEnv, apply sub3 type2, FiniteTVarNumCases $ pat : cases)
+                    _ -> throwE "can't pattern match on a number with a number pattern after an infinite pattern match."
+          )
+          (apply sub1 env, returnT, UnknownTVarCases)
+          branches
+
+      case handledCases of
+        FiniteTVarNumCases _ -> throwE ""
+        FiniteTVarStrCases _ -> throwE ""
+        _ -> return (Map.empty, returnType)
+    TNum -> do
+      returnT <- newTypeVar "a"
+      (_, returnType, handledCases) <-
+        Control.Monad.foldM
+          ( \(currEnv, returnType, handledCases) (branchPattern, branchExpr) ->
+              case branchPattern of
+                IpeWildCardPattern -> do
+                  case handledCases of
+                    InfiniteCases -> throwE "can't pattern match on a number with an infinite pattern match after an infinite pattern match."
+                    FiniteCases _ -> do
+                      (sub2, type2) <- inferHelper env branchExpr
+                      sub3 <- mostGeneralUnifier type2 returnType
+                      return (apply (sub3 `compose` sub2) currEnv, apply sub3 type2, InfiniteCases)
+                IpeVariablePattern varName -> do
+                  case handledCases of
+                    InfiniteCases -> throwE "can't pattern match on a number with an infinite pattern match after an infinite pattern match."
+                    FiniteCases _ -> do
+                      let TypeEnv env' = currEnv
+                      let newEnv = TypeEnv $ Map.insert (T.unpack varName) (Scheme [T.unpack varName] TNum) env'
+                      (sub2, type2) <- inferHelper newEnv branchExpr
+                      sub3 <- mostGeneralUnifier type2 returnType
+                      return (apply (sub3 `compose` sub2) newEnv, apply sub3 type2, InfiniteCases)
+                IpeCustomTypePattern {} -> throwE "can't pattern match on a number with a custom type pattern."
+                IpeLiteralStringPattern _ -> throwE "can't pattern match on a number with a string pattern."
+                IpeLiteralNumberPattern pat ->
+                  case handledCases of
+                    InfiniteCases -> throwE "can't pattern match on a number with a number pattern after an infinite pattern match."
+                    FiniteCases cases ->
+                      if pat `elem` cases
+                        then throwE $ "number " ++ show pat ++ " is already pattern matched."
+                        else do
+                          (sub2, type2) <- inferHelper env branchExpr
+                          sub3 <- mostGeneralUnifier type2 returnType
+                          return (apply (sub3 `compose` sub2) currEnv, apply sub3 type2, FiniteCases $ pat : cases)
+          )
+          (apply sub1 env, returnT, FiniteCases [])
+          branches
+
+      case handledCases of
+        FiniteCases _ -> throwE "can't pattern match on a number with a finite pattern match without matching all possible cases."
+        InfiniteCases -> return (Map.empty, returnType)
+    TStr -> do
+      returnT <- newTypeVar "a"
+      (_, returnType, handledCases) <-
+        Control.Monad.foldM
+          ( \(currEnv, returnType, handledCases) (branchPattern, branchExpr) ->
+              case branchPattern of
+                IpeWildCardPattern -> do
+                  case handledCases of
+                    InfiniteCases -> throwE "can't pattern match on a string with an infinite pattern match after an infinite pattern match."
+                    FiniteCases _ -> do
+                      (sub2, type2) <- inferHelper env branchExpr
+                      sub3 <- mostGeneralUnifier type2 returnType
+                      return (apply (sub3 `compose` sub2) currEnv, apply sub3 type2, InfiniteCases)
+                IpeVariablePattern varName -> do
+                  case handledCases of
+                    InfiniteCases -> throwE "can't pattern match on a string with an infinite pattern match after an infinite pattern match."
+                    FiniteCases _ -> do
+                      let TypeEnv env' = currEnv
+                      let newEnv = TypeEnv $ Map.insert (T.unpack varName) (Scheme [T.unpack varName] TStr) env'
+                      (sub2, type2) <- inferHelper newEnv branchExpr
+                      sub3 <- mostGeneralUnifier type2 returnType
+                      return (apply (sub3 `compose` sub2) newEnv, apply sub3 type2, InfiniteCases)
+                IpeCustomTypePattern {} -> throwE "can't pattern match on a string with a custom type pattern."
+                IpeLiteralStringPattern pat ->
+                  case handledCases of
+                    InfiniteCases -> throwE "can't pattern match on a string with a number pattern after an infinite pattern match."
+                    FiniteCases cases ->
+                      if pat `elem` cases
+                        then throwE $ "string " ++ show pat ++ " is already pattern matched."
+                        else do
+                          (sub2, type2) <- inferHelper env branchExpr
+                          sub3 <- mostGeneralUnifier type2 returnType
+                          return (apply (sub3 `compose` sub2) currEnv, apply sub3 type2, FiniteCases $ pat : cases)
+                IpeLiteralNumberPattern _ -> throwE "can't pattern match on a string with a number pattern."
+          )
+          (apply sub1 env, returnT, FiniteCases [])
+          branches
+
+      case handledCases of
+        FiniteCases _ -> throwE "can't pattern match on a number with a finite pattern match without matching all possible cases."
+        InfiniteCases -> return (Map.empty, returnType)
 inferHelper _ (IpeString _) = return (Map.empty, TStr)
 inferHelper (TypeEnv env) (IpeFunctionCallOrValue (FunctionCallOrValue path name recordPath args)) =
   case Map.lookup fullName env of
