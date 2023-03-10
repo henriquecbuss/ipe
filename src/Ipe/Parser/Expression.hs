@@ -158,7 +158,7 @@ matchExpression = do
 
   return $ Ipe.Grammar.IpeMatch expression matchCases
 
-matchCase :: Parser (Ipe.Grammar.IpeMatchPattern, Ipe.Grammar.Expression)
+matchCase :: Parser (Ipe.Grammar.IpeMatchPattern, [(Text, Ipe.Grammar.Expression)], Ipe.Grammar.Expression)
 matchCase = do
   Control.Monad.void $ Ipe.Parser.symbol "|"
 
@@ -166,9 +166,11 @@ matchCase = do
 
   Control.Monad.void $ Ipe.Parser.symbol "->"
 
+  attributions <- Parsec.Common.many $ Parsec.Common.try functionAttribution
+
   expression <- Ipe.Parser.Expression.parser
 
-  return (pattern_, expression)
+  return (pattern_, attributions, expression)
 
 matchPattern :: Bool -> Parser Ipe.Grammar.IpeMatchPattern
 matchPattern acceptArgs =

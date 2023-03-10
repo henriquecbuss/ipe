@@ -182,7 +182,8 @@ inferHelper env (IpeMatch matchExpr branches) = do
 
       (_, returnType, handledCases) <-
         Control.Monad.foldM
-          ( \(currEnv, returnType, handledCases) (branchPattern, branchExpr) ->
+          ( \(currEnv, returnType, handledCases) (branchPattern, branchAttributions, branchExpr) ->
+              -- TODO - Handle attributions
               case branchPattern of
                 IpeWildCardPattern -> do
                   case handledCases of
@@ -255,7 +256,8 @@ inferHelper env (IpeMatch matchExpr branches) = do
       returnT <- newTypeVar "a"
       (_, returnType, handledCases) <-
         Control.Monad.foldM
-          ( \(currEnv, returnType, handledCases) (branchPattern, branchExpr) ->
+          ( \(currEnv, returnType, handledCases) (branchPattern, attributions, branchExpr) ->
+              -- TODO - Handle attributions
               case branchPattern of
                 IpeWildCardPattern -> do
                   case handledCases of
@@ -296,7 +298,8 @@ inferHelper env (IpeMatch matchExpr branches) = do
       returnT <- newTypeVar "a"
       (_, returnType, handledCases) <-
         Control.Monad.foldM
-          ( \(currEnv, returnType, handledCases) (branchPattern, branchExpr) ->
+          ( \(currEnv, returnType, handledCases) (branchPattern, attributions, branchExpr) ->
+              -- TODO - Handle attributions
               case branchPattern of
                 IpeWildCardPattern -> do
                   case handledCases of

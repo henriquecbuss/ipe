@@ -338,7 +338,7 @@ matchSpec =
           TypeChecker.run
             ( IpeMatch
                 (IpeNumber x)
-                [ (IpeWildCardPattern, IpeNumber x)
+                [ (IpeWildCardPattern, [], IpeNumber x)
                 ]
             )
             `shouldBe` Right TypeChecker.TNum
@@ -348,7 +348,7 @@ matchSpec =
           TypeChecker.run
             ( IpeMatch
                 (IpeNumber x)
-                [ (IpeLiteralNumberPattern x, IpeNumber x)
+                [ (IpeLiteralNumberPattern x, [], IpeNumber x)
                 ]
             )
             `shouldBe` Left "can't pattern match on a number with a finite pattern match without matching all possible cases."
@@ -358,8 +358,8 @@ matchSpec =
           TypeChecker.run
             ( IpeMatch
                 (IpeNumber x)
-                [ (IpeLiteralNumberPattern x, IpeNumber x),
-                  (IpeLiteralNumberPattern x, IpeNumber x)
+                [ (IpeLiteralNumberPattern x, [], IpeNumber x),
+                  (IpeLiteralNumberPattern x, [], IpeNumber x)
                 ]
             )
             `shouldBe` Left ("number " ++ show x ++ " is already pattern matched.")
@@ -370,7 +370,7 @@ matchSpec =
           TypeChecker.run
             ( IpeMatch
                 (IpeString $ T.pack x)
-                [ (IpeWildCardPattern, IpeString $ T.pack x)
+                [ (IpeWildCardPattern, [], IpeString $ T.pack x)
                 ]
             )
             `shouldBe` Right TypeChecker.TStr
@@ -380,7 +380,7 @@ matchSpec =
           TypeChecker.run
             ( IpeMatch
                 (IpeString $ T.pack x)
-                [ (IpeLiteralStringPattern $ T.pack x, IpeString $ T.pack x)
+                [ (IpeLiteralStringPattern $ T.pack x, [], IpeString $ T.pack x)
                 ]
             )
             `shouldBe` Left "can't pattern match on a number with a finite pattern match without matching all possible cases."
@@ -390,8 +390,8 @@ matchSpec =
           TypeChecker.run
             ( IpeMatch
                 (IpeString $ T.pack x)
-                [ (IpeLiteralStringPattern $ T.pack x, IpeString $ T.pack x),
-                  (IpeLiteralStringPattern $ T.pack x, IpeString $ T.pack x)
+                [ (IpeLiteralStringPattern $ T.pack x, [], IpeString $ T.pack x),
+                  (IpeLiteralStringPattern $ T.pack x, [], IpeString $ T.pack x)
                 ]
             )
             `shouldBe` Left ("string " ++ show x ++ " is already pattern matched.")
