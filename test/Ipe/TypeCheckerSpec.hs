@@ -62,7 +62,7 @@ binaryOperationSpec =
     prop "should not type check adding a number and something else" $
       \x y ->
         TypeChecker.run (IpeBinaryOperation Add (IpeNumber x) (IpeString $ T.pack y))
-          `shouldBe` Left "can't add Number and String. I can only add two Numbers."
+          `shouldBe` Left "can't match expected type\n\tNumber\nwith actual type\n\tString"
 
     prop "should type check subtracting two numbers" $
       \x y ->
@@ -72,7 +72,7 @@ binaryOperationSpec =
     prop "should not type check subtracting a number and something else" $
       \x y ->
         TypeChecker.run (IpeBinaryOperation Subtract (IpeNumber x) (IpeString $ T.pack y))
-          `shouldBe` Left "can't subtract Number and String. I can only subtract two Numbers."
+          `shouldBe` Left "can't match expected type\n\tNumber\nwith actual type\n\tString"
 
     prop "should type check dividing two numbers" $
       \x y ->
@@ -82,7 +82,7 @@ binaryOperationSpec =
     prop "should not type check dividing a number and something else" $
       \x y ->
         TypeChecker.run (IpeBinaryOperation Divide (IpeString $ T.pack x) (IpeNumber y))
-          `shouldBe` Left "can't divide String and Number. I can only divide two Numbers."
+          `shouldBe` Left "can't match expected type\n\tNumber\nwith actual type\n\tString"
 
     prop "should type check multiplying two numbers" $
       \x y ->
@@ -92,7 +92,7 @@ binaryOperationSpec =
     prop "should not type check multiplying a number and something else" $
       \x y ->
         TypeChecker.run (IpeBinaryOperation Multiply (IpeString $ T.pack x) (IpeNumber y))
-          `shouldBe` Left "can't multiply String and Number. I can only multiply two Numbers."
+          `shouldBe` Left "can't match expected type\n\tNumber\nwith actual type\n\tString"
 
     prop "should type check exponentiation with two numbers" $
       \x y ->
@@ -102,7 +102,7 @@ binaryOperationSpec =
     prop "should type check exponentiation with a number and something else" $
       \x y ->
         TypeChecker.run (IpeBinaryOperation Exponentiation (IpeNumber x) (IpeString $ T.pack y))
-          `shouldBe` Left "can't potentiate Number and String. I can only potentiate two Numbers."
+          `shouldBe` Left "can't match expected type\n\tNumber\nwith actual type\n\tString"
 
     prop "should type check basic pipe right" $
       \x ->
@@ -283,7 +283,7 @@ functionDefinitionSpec =
                   (IpeBinaryOperation Add (IpeNumber x) (simpleVariable "y"))
               )
           )
-          `shouldBe` Left "can't add Number and String. I can only add two Numbers."
+          `shouldBe` Left "can't match expected type\n\tNumber\nwith actual type\n\tString"
 
     prop "should type check a function that has a few attributions in its body" $
       \a b c d e ->
@@ -328,6 +328,24 @@ functionDefinitionSpec =
               )
        in TypeChecker.runWith initialState (simpleRecordAccessor "x" ["a", "c", "d"] [])
             `shouldBe` Right TypeChecker.TNum
+
+    prop "should type check a function based on its body" $
+      \x y ->
+        TypeChecker.run
+          ( IpeFunction
+              ["a"]
+              ( IpeFunctionBody
+                  [ ("y", IpeNumber y),
+                    ("x", IpeNumber x)
+                  ]
+                  ( IpeBinaryOperation
+                      Add
+                      (simpleVariable "a")
+                      (IpeBinaryOperation Add (simpleVariable "x") (simpleVariable "y"))
+                  )
+              )
+          )
+          `shouldBe` Right (TypeChecker.TFun TypeChecker.TNum TypeChecker.TNum)
 
 matchSpec :: Spec
 matchSpec =
@@ -383,7 +401,7 @@ matchSpec =
                 [ (IpeLiteralStringPattern $ T.pack x, [], IpeString $ T.pack x)
                 ]
             )
-            `shouldBe` Left "can't pattern match on a number with a finite pattern match without matching all possible cases."
+            `shouldBe` Left "can't pattern match on a string with a finite pattern match without matching all possible cases."
 
       prop "should not allow duplicate matching" $
         \x ->
@@ -395,3 +413,19 @@ matchSpec =
                 ]
             )
             `shouldBe` Left ("string " ++ show x ++ " is already pattern matched.")
+
+    prop "should infer based on branch attributions" $
+      \x y z ->
+        TypeChecker.run
+          ( IpeMatch
+              (IpeString $ T.pack x)
+              [ ( IpeWildCardPattern,
+                  [ ("y", IpeNumber y),
+                    ("z", IpeNumber z),
+                    ("returnType", IpeBinaryOperation Add (simpleVariable "y") (simpleVariable "z"))
+                  ],
+                  simpleVariable "returnType"
+                )
+              ]
+          )
+          `shouldBe` Right TypeChecker.TNum
