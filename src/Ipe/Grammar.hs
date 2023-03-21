@@ -141,7 +141,7 @@ data TypeAnnotation = TypeAnnotation
 data Expression
   = IpeBinaryOperation IpeBinaryOperator Expression Expression
   | IpeNumber Float
-  | IpeMatch Expression [(IpeMatchPattern, Expression)]
+  | IpeMatch Expression [(IpeMatchPattern, [(Text, Expression)], Expression)]
   | IpeString Text
   | IpeFunctionCallOrValue FunctionCallOrValue
   | IpeFunction [Text] IpeFunctionBody
@@ -169,7 +169,7 @@ data IpeBinaryOperator
 data IpeMatchPattern
   = IpeWildCardPattern
   | IpeVariablePattern Text
-  | IpeCustomTypePattern [Text] Text [IpeMatchPattern]
+  | IpeCustomTypePattern [Text] Text [Text] -- path + constructor name + arguments
   | IpeLiteralNumberPattern Float
   | IpeLiteralStringPattern Text
   deriving (Eq, Show)

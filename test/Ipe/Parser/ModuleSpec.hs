@@ -78,7 +78,7 @@ parserSpec =
                                   [ ( Ipe.Grammar.IpeCustomTypePattern
                                         []
                                         "Just"
-                                        [ Ipe.Grammar.IpeVariablePattern "parsedString"
+                                        [ "parsedString"
                                         ],
                                       [],
                                       Ipe.Grammar.IpeFunctionCallOrValue
@@ -329,7 +329,7 @@ parserSpec =
                                   [ ( Ipe.Grammar.IpeCustomTypePattern
                                         []
                                         "Just"
-                                        [ Ipe.Grammar.IpeVariablePattern "parsedString"
+                                        [ "parsedString"
                                         ],
                                       [],
                                       Ipe.Grammar.IpeFunctionCallOrValue
@@ -436,7 +436,7 @@ parserSpec =
                                   [ ( Ipe.Grammar.IpeCustomTypePattern
                                         []
                                         "OpaqueTypeConstructor"
-                                        [ Ipe.Grammar.IpeVariablePattern "number"
+                                        [ "number"
                                         ],
                                       [],
                                       Ipe.Grammar.IpeFunctionCallOrValue
@@ -460,7 +460,7 @@ parserSpec =
                                     ( Ipe.Grammar.IpeCustomTypePattern
                                         []
                                         "OpaqueTypeConstructor2"
-                                        [Ipe.Grammar.IpeVariablePattern "rootModuleType"],
+                                        ["rootModuleType"],
                                       [],
                                       Ipe.Grammar.IpeFunctionCallOrValue
                                         ( Ipe.Grammar.FunctionCallOrValue
@@ -621,7 +621,7 @@ parserSpec =
                                   [ ( Ipe.Grammar.IpeCustomTypePattern
                                         []
                                         "Just"
-                                        [ Ipe.Grammar.IpeVariablePattern "parsedString"
+                                        [ "parsedString"
                                         ],
                                       [],
                                       Ipe.Grammar.IpeFunctionCallOrValue
@@ -728,7 +728,7 @@ parserSpec =
                                   [ ( Ipe.Grammar.IpeCustomTypePattern
                                         []
                                         "OpaqueTypeConstructor"
-                                        [ Ipe.Grammar.IpeVariablePattern "number"
+                                        [ "number"
                                         ],
                                       [],
                                       Ipe.Grammar.IpeFunctionCallOrValue
@@ -752,7 +752,7 @@ parserSpec =
                                     ( Ipe.Grammar.IpeCustomTypePattern
                                         []
                                         "OpaqueTypeConstructor2"
-                                        [Ipe.Grammar.IpeVariablePattern "rootModuleType"],
+                                        ["rootModuleType"],
                                       [],
                                       Ipe.Grammar.IpeFunctionCallOrValue
                                         ( Ipe.Grammar.FunctionCallOrValue

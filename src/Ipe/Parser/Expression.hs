@@ -190,7 +190,7 @@ customTypePattern acceptArgs = do
 
   args <-
     if acceptArgs
-      then Parsec.Common.many . Parsec.Common.try . Ipe.Parser.lexeme $ matchPattern False
+      then Parsec.Common.many . Parsec.Common.try . Ipe.Parser.lexeme $ Ipe.Parser.lowercaseIdentifier
       else return []
 
   return $

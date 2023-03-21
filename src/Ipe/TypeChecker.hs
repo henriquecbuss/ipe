@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Ipe.TypeChecker (Type (..), run, runWith) where
@@ -32,6 +33,7 @@ data Type
   | TStr
   | TFun Type Type
   | TRec [(String, Type)]
+  | TCustom String [Type] [(String, [Type])] -- name + type variables + constructors
   -- TODO - Better show implementation?
   deriving (Eq)
 
@@ -42,6 +44,7 @@ instance Show Type where
   show (TFun input output) = "(" ++ show input ++ " -> " ++ show output ++ ")"
   show (TRec []) = "{}"
   show (TRec fields) = "{ " ++ Data.List.intercalate ", " (map (\(name, t) -> name ++ ": " ++ show t) fields) ++ " }"
+  show (TCustom name typeVars _) = "(" ++ name ++ (if null typeVars then "" else " " ++ unwords (map show typeVars)) ++ ")"
 
 instance Types Type where
   freeTypeVariables (TVar var) = Set.singleton var
@@ -49,6 +52,7 @@ instance Types Type where
   freeTypeVariables TStr = Set.empty
   freeTypeVariables (TFun input output) = Set.union (freeTypeVariables input) (freeTypeVariables output)
   freeTypeVariables (TRec fields) = Set.unions (map (freeTypeVariables . snd) fields)
+  freeTypeVariables (TCustom _ typeVars _) = Set.unions (map freeTypeVariables typeVars)
 
   apply subs (TVar var) = case Map.lookup var subs of
     Nothing -> TVar var
@@ -57,6 +61,7 @@ instance Types Type where
   apply _ TNum = TNum
   apply _ TStr = TStr
   apply subs (TRec fields) = TRec (map (Data.Bifunctor.second (apply subs)) fields)
+  apply subs (TCustom name typeVars constructors) = TCustom name (map (apply subs) typeVars) constructors
 
 data Scheme = Scheme [String] Type
 
@@ -82,6 +87,7 @@ data TVarCases
   = InfiniteTVarCases
   | FiniteTVarStrCases [Text]
   | FiniteTVarNumCases [Float]
+  | FiniteTVarCustomCases [Text]
   | NoTVarCases
 
 -- HELPER FUNCTIONS
@@ -128,6 +134,14 @@ mostGeneralUnifier (TRec fields1) (TRec fields2)
           return $ foldr compose Map.empty subs
         else throwE $ "can't match expected record\n\t" ++ show (TRec fields1) ++ "\nwith actual record\n\t" ++ show (TRec fields2)
   | otherwise = throwE $ "can't match expected record\n\t" ++ show (TRec fields1) ++ "\nwith actual record\n\t" ++ show (TRec fields2)
+mostGeneralUnifier (TCustom name1 typeVars1 _) (TCustom name2 typeVars2 _)
+  | name1 /= name2 = throwE $ "can't match expected type\n\t" ++ name1 ++ "\nwith actual type\n\t" ++ name2
+  | length typeVars1 /= length typeVars2 = throwE $ "can't match expected type\n\t" ++ name1 ++ "\nwith actual type\n\t" ++ name2 ++ "\n(number of type variables does not match)"
+  | otherwise =
+      Control.Monad.foldM
+        (\acc (t1, t2) -> mostGeneralUnifier (apply acc t1) (apply acc t2))
+        Map.empty
+        $ zip typeVars1 typeVars2
 mostGeneralUnifier t1 t2 = throwE $ "can't match expected type\n\t" ++ show t1 ++ "\nwith actual type\n\t" ++ show t2
 
 varBind :: String -> Type -> TypeInferenceMonad Substitution
@@ -135,6 +149,27 @@ varBind var t
   | t == TVar var = return Map.empty
   | var `Set.member` freeTypeVariables t = throwE $ "occurs check fails: " ++ var ++ " in " ++ show t
   | otherwise = return $ Map.singleton var t
+
+customTypeFromConstructorName :: String -> TypeEnv -> Maybe (Type, [Type])
+customTypeFromConstructorName constructorName (TypeEnv env) =
+  findMap
+    ( \case
+        t@(TCustom _ _ constructors) ->
+          (\(_, ts) -> (t, ts))
+            <$> Data.List.find
+              (\(constructor, _) -> constructor == constructorName)
+              constructors
+        _ -> Nothing
+    )
+    $ map (\(Scheme _ t) -> t)
+    $ Map.elems env
+
+findMap :: (a -> Maybe b) -> [a] -> Maybe b
+findMap _ [] = Nothing
+findMap f (x : xs) =
+  case f x of
+    Just y -> Just y
+    Nothing -> findMap f xs
 
 -- MAIN FUNCTIONS
 
@@ -199,7 +234,6 @@ inferHelper env (IpeMatch matchExpr branches) = do
   (sub1, type1) <- inferHelper env matchExpr
 
   case type1 of
-    -- TODO - Support custom types
     TFun _ _ -> throwE "can't pattern match on a function. You need to apply all arguments to it first."
     TRec _ -> throwE "can't pattern match on a record. If you want to access a field, use the dot operator."
     TVar tvar -> do
@@ -207,45 +241,7 @@ inferHelper env (IpeMatch matchExpr branches) = do
 
       (_, returnType, handledCases) <-
         Control.Monad.foldM
-          ( \(currEnv, returnType, handledCases) (branchPattern, branchAttributions, branchExpr) ->
-              case branchPattern of
-                IpeWildCardPattern ->
-                  case handledCases of
-                    InfiniteTVarCases -> throwE "can't pattern match with an infinite pattern match after an infinite pattern match."
-                    FiniteTVarStrCases _ ->
-                      handleAttributions sub1 currEnv branchAttributions branchExpr returnType InfiniteTVarCases
-                    FiniteTVarNumCases _ ->
-                      handleAttributions sub1 currEnv branchAttributions branchExpr returnType InfiniteTVarCases
-                    NoTVarCases ->
-                      handleAttributions sub1 currEnv branchAttributions branchExpr returnType InfiniteTVarCases
-                IpeVariablePattern varName -> do
-                  let TypeEnv env' = currEnv
-                  let envWithVarName = TypeEnv $ Map.insert (T.unpack varName) (Scheme [T.unpack varName] (TVar tvar)) env'
-
-                  case handledCases of
-                    InfiniteTVarCases -> throwE "can't pattern match with an infinite pattern match after an infinite pattern match."
-                    NoTVarCases ->
-                      handleAttributions sub1 envWithVarName branchAttributions branchExpr returnType InfiniteTVarCases
-                    FiniteTVarStrCases _ ->
-                      handleAttributions sub1 envWithVarName branchAttributions branchExpr returnType InfiniteTVarCases
-                    FiniteTVarNumCases _ ->
-                      handleAttributions sub1 envWithVarName branchAttributions branchExpr returnType InfiniteTVarCases
-                IpeCustomTypePattern {} -> throwE "TODO: Implement custom type patterns"
-                IpeLiteralStringPattern pat ->
-                  case handledCases of
-                    FiniteTVarStrCases cases ->
-                      if pat `elem` cases
-                        then throwE $ "number " ++ show pat ++ " is already pattern matched."
-                        else handleAttributions sub1 currEnv branchAttributions branchExpr returnType (FiniteTVarStrCases $ pat : cases)
-                    _ -> throwE "can't pattern match on a number with a number pattern after an infinite pattern match."
-                IpeLiteralNumberPattern pat ->
-                  case handledCases of
-                    FiniteTVarNumCases cases ->
-                      if pat `elem` cases
-                        then throwE $ "number " ++ show pat ++ " is already pattern matched."
-                        else handleAttributions sub1 currEnv branchAttributions branchExpr returnType (FiniteTVarNumCases $ pat : cases)
-                    _ -> throwE "can't pattern match on a number with a number pattern after an infinite pattern match."
-          )
+          (handleTVarPatternBranch tvar sub1)
           (apply sub1 env, returnT, NoTVarCases)
           branches
 
@@ -322,10 +318,14 @@ inferHelper env (IpeMatch matchExpr branches) = do
       case handledCases of
         FiniteCases _ -> throwE "can't pattern match on a string with a finite pattern match without matching all possible cases."
         InfiniteCases -> return (Map.empty, returnType)
+    TCustom name typeVars constructors ->
+      -- TODO - Check if all branches are constructors for this custom type
+      -- TODO - Check for exhaustiveness
+      return undefined
 inferHelper _ (IpeString _) = return (Map.empty, TStr)
 inferHelper (TypeEnv env) (IpeFunctionCallOrValue (FunctionCallOrValue path name recordPath args)) =
   case Map.lookup fullName env of
-    Nothing -> throwE $ "unbound variable: " ++ fullName ++ ". env: \n\t" ++ show env
+    Nothing -> throwE $ "unbound variable: " ++ fullName
     Just valType -> do
       t <- instantiate valType
       typeToUse <- findRecordEnd t recordPath
@@ -398,6 +398,61 @@ inferHelper env (IpeRecord fields) = do
       (return ([], env))
       fields
   return (Map.empty, TRec finalFields)
+
+handleTVarPatternBranch ::
+  String ->
+  Substitution ->
+  (TypeEnv, Type, TVarCases) ->
+  (IpeMatchPattern, [(Text, Expression)], Expression) ->
+  TypeInferenceMonad (TypeEnv, Type, TVarCases)
+handleTVarPatternBranch tvar initialSub (currEnv, returnType, handledCases) (branchPattern, branchAttributions, branchExpr) =
+  case branchPattern of
+    IpeWildCardPattern ->
+      case handledCases of
+        InfiniteTVarCases -> throwE "can't pattern match with an infinite pattern match after an infinite pattern match."
+        FiniteTVarStrCases _ ->
+          handleAttributions initialSub currEnv branchAttributions branchExpr returnType InfiniteTVarCases
+        FiniteTVarNumCases _ ->
+          handleAttributions initialSub currEnv branchAttributions branchExpr returnType InfiniteTVarCases
+        NoTVarCases ->
+          handleAttributions initialSub currEnv branchAttributions branchExpr returnType InfiniteTVarCases
+    IpeVariablePattern varName -> do
+      let TypeEnv env' = currEnv
+      let envWithVarName = TypeEnv $ Map.insert (T.unpack varName) (Scheme [T.unpack varName] (TVar tvar)) env'
+
+      case handledCases of
+        InfiniteTVarCases -> throwE "can't pattern match with an infinite pattern match after an infinite pattern match."
+        NoTVarCases ->
+          handleAttributions initialSub envWithVarName branchAttributions branchExpr returnType InfiniteTVarCases
+        FiniteTVarStrCases _ ->
+          handleAttributions initialSub envWithVarName branchAttributions branchExpr returnType InfiniteTVarCases
+        FiniteTVarNumCases _ ->
+          handleAttributions initialSub envWithVarName branchAttributions branchExpr returnType InfiniteTVarCases
+    IpeCustomTypePattern path name args -> do
+      let constructorName = T.unpack $ T.intercalate "." (path ++ [name])
+
+      case customTypeFromConstructorName constructorName currEnv of
+        Nothing -> throwE $ "constructor " ++ constructorName ++ " is not defined."
+        Just (parentType, requiredArgs) ->
+          undefined
+    IpeLiteralStringPattern pat ->
+      case handledCases of
+        FiniteTVarStrCases cases ->
+          if pat `elem` cases
+            then throwE $ "string " ++ show pat ++ " is already pattern matched."
+            else handleAttributions initialSub currEnv branchAttributions branchExpr returnType (FiniteTVarStrCases $ pat : cases)
+        NoTVarCases ->
+          handleAttributions initialSub currEnv branchAttributions branchExpr returnType (FiniteTVarStrCases [pat])
+        _ -> throwE "can't pattern match on a string with a string pattern after an infinite pattern match."
+    IpeLiteralNumberPattern pat ->
+      case handledCases of
+        FiniteTVarNumCases cases ->
+          if pat `elem` cases
+            then throwE $ "number " ++ show pat ++ " is already pattern matched."
+            else handleAttributions initialSub currEnv branchAttributions branchExpr returnType (FiniteTVarNumCases $ pat : cases)
+        NoTVarCases ->
+          handleAttributions initialSub currEnv branchAttributions branchExpr returnType (FiniteTVarNumCases [pat])
+        _ -> throwE "can't pattern match on a number with a number pattern after an infinite pattern match."
 
 inferAttribution :: Text -> Expression -> TypeEnv -> TypeInferenceMonad (Substitution, Type, TypeEnv)
 inferAttribution attributionName attributionExpr env = do

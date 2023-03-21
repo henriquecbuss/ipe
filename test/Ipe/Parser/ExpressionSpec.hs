@@ -1135,7 +1135,7 @@ patternMatchSpec = do
         "match x with\n\
         \  | SomeConstructor ->\n\
         \     a\n\
-        \  | OtherConstructor Arg ->\n\
+        \  | OtherConstructor arg ->\n\
         \     2"
         `shouldParse` Ipe.Grammar.IpeMatch
           ( Ipe.Grammar.IpeFunctionCallOrValue
@@ -1161,81 +1161,10 @@ patternMatchSpec = do
             ( Ipe.Grammar.IpeCustomTypePattern
                 []
                 "OtherConstructor"
-                [ Ipe.Grammar.IpeCustomTypePattern [] "Arg" []
+                [ "arg"
                 ],
               [],
               Ipe.Grammar.IpeNumber 2
-            )
-          ]
-
-    it "should parse a custom type pattern that has some complex arguments" $
-      Parsec.Common.parse
-        Ipe.Parser.Expression.parser
-        ""
-        "match x with\n\
-        \ | SomeConstructor a 5 -> a\n\
-        \ | OtherConstructor (NestedConstructor 'abc') -> 2\n\
-        \ | Imported.ThirdConstructor (Level1 (Level2 x)) 5 'abc' -> 3 + x"
-        `shouldParse` Ipe.Grammar.IpeMatch
-          ( Ipe.Grammar.IpeFunctionCallOrValue
-              ( Ipe.Grammar.FunctionCallOrValue
-                  { Ipe.Grammar.functionCallOrValuePath = [],
-                    Ipe.Grammar.functionCallOrValueName = "x",
-                    Ipe.Grammar.functionCallOrValueRecordAccessors = [],
-                    Ipe.Grammar.functionCallOrValueArguments = []
-                  }
-              )
-          )
-          [ ( Ipe.Grammar.IpeCustomTypePattern
-                []
-                "SomeConstructor"
-                [ Ipe.Grammar.IpeVariablePattern "a",
-                  Ipe.Grammar.IpeLiteralNumberPattern 5
-                ],
-              [],
-              Ipe.Grammar.IpeFunctionCallOrValue
-                ( Ipe.Grammar.FunctionCallOrValue
-                    { Ipe.Grammar.functionCallOrValuePath = [],
-                      Ipe.Grammar.functionCallOrValueName = "a",
-                      Ipe.Grammar.functionCallOrValueRecordAccessors = [],
-                      Ipe.Grammar.functionCallOrValueArguments = []
-                    }
-                )
-            ),
-            ( Ipe.Grammar.IpeCustomTypePattern
-                []
-                "OtherConstructor"
-                [Ipe.Grammar.IpeCustomTypePattern [] "NestedConstructor" [Ipe.Grammar.IpeLiteralStringPattern "abc"]],
-              [],
-              Ipe.Grammar.IpeNumber 2
-            ),
-            ( Ipe.Grammar.IpeCustomTypePattern
-                ["Imported"]
-                "ThirdConstructor"
-                [ Ipe.Grammar.IpeCustomTypePattern
-                    []
-                    "Level1"
-                    [ Ipe.Grammar.IpeCustomTypePattern
-                        []
-                        "Level2"
-                        [Ipe.Grammar.IpeVariablePattern "x"]
-                    ],
-                  Ipe.Grammar.IpeLiteralNumberPattern 5,
-                  Ipe.Grammar.IpeLiteralStringPattern "abc"
-                ],
-              [],
-              Ipe.Grammar.IpeBinaryOperation
-                Ipe.Grammar.Add
-                (Ipe.Grammar.IpeNumber 3)
-                ( Ipe.Grammar.IpeFunctionCallOrValue
-                    ( Ipe.Grammar.FunctionCallOrValue
-                        { Ipe.Grammar.functionCallOrValuePath = [],
-                          Ipe.Grammar.functionCallOrValueName = "x",
-                          Ipe.Grammar.functionCallOrValueRecordAccessors = [],
-                          Ipe.Grammar.functionCallOrValueArguments = []
-                        }
-                    )
-                )
             )
           ]
 
