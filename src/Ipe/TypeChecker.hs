@@ -320,7 +320,6 @@ inferHelper env (IpeMatch matchExpr branches) = do
         FiniteCases _ -> throwE "can't pattern match on a string with a finite pattern match without matching all possible cases."
         InfiniteCases -> return (Map.empty, returnType)
     TCustom name typeVars constructors -> do
-      -- TODO - substitute typeVars
       returnT <- newTypeVar "a"
 
       (_, returnType, handledCases) <-
@@ -379,7 +378,6 @@ inferHelper env (IpeMatch matchExpr branches) = do
 
       case handledCases of
         FiniteCases _ -> throwE $ "can't pattern match on a custom type (" ++ name ++ ") with a finite pattern match without matching all possible cases."
-        -- TODO - Should this be Map.empty?
         InfiniteCases -> return (Map.empty, returnType)
 inferHelper _ (IpeString _) = return (Map.empty, TStr)
 inferHelper (TypeEnv env) (IpeFunctionCallOrValue (FunctionCallOrValue path name recordPath args)) =
