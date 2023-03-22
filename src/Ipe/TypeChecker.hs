@@ -409,7 +409,7 @@ inferHelper (TypeEnv env) (IpeFunctionCallOrValue (FunctionCallOrValue path name
   where
     fullName = T.unpack (T.intercalate "." (path ++ [name]))
 inferHelper _ (IpeFunction [] _) = throwE "function must have at least one argument"
-inferHelper env (IpeFunction args (IpeFunctionBody functionBodyAttributions fnReturn)) = do
+inferHelper env (IpeFunction args (IpeFunctionBody attrs fnReturn)) = do
   argTypeVars <-
     foldr
       ( \_ vars -> do
@@ -438,7 +438,7 @@ inferHelper env (IpeFunction args (IpeFunctionBody functionBodyAttributions fnRe
           return ((newSub, newType) : oldSubsAndTypes, newEnv)
       )
       (return ([], env''))
-      functionBodyAttributions
+      attrs
 
   (sub, type1) <- inferHelper envAfterAttributions fnReturn
 
