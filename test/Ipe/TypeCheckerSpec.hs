@@ -500,3 +500,94 @@ matchSpec =
                   ]
               )
               `shouldBe` Left "can't pattern match on a custom type (Module.CustomType) with a finite pattern match without matching all possible cases."
+
+    prop "should type check pattern matching on custom types" $
+      \a ->
+        let initialState =
+              Map.fromList
+                [ ( "Module.CustomType",
+                    TypeChecker.TCustom
+                      "Module.CustomType"
+                      []
+                      [ ("Module.ConstructorOne", []),
+                        ("Module.ConstructorTwo", [TypeChecker.TNum, TypeChecker.TStr])
+                      ]
+                  ),
+                  ( "x",
+                    TypeChecker.TCustom
+                      "Module.CustomType"
+                      []
+                      [ ("Module.ConstructorOne", []),
+                        ("Module.ConstructorTwo", [TypeChecker.TNum, TypeChecker.TStr])
+                      ]
+                  )
+                ]
+         in TypeChecker.runWith
+              initialState
+              ( IpeMatch
+                  (simpleVariable "x")
+                  [ (IpeCustomTypePattern ["Module"] "ConstructorOne" [], [], IpeNumber a),
+                    (IpeCustomTypePattern ["Module"] "ConstructorTwo" ["a", "b"], [], simpleVariable "a")
+                  ]
+              )
+              `shouldBe` Right TypeChecker.TNum
+
+    prop "should check for exhaustiveness pattern matching on custom types" $
+      \a ->
+        let initialState =
+              Map.fromList
+                [ ( "Module.CustomType",
+                    TypeChecker.TCustom
+                      "Module.CustomType"
+                      []
+                      [ ("Module.ConstructorOne", []),
+                        ("Module.ConstructorTwo", [TypeChecker.TNum, TypeChecker.TStr])
+                      ]
+                  ),
+                  ( "x",
+                    TypeChecker.TCustom
+                      "Module.CustomType"
+                      []
+                      [ ("Module.ConstructorOne", []),
+                        ("Module.ConstructorTwo", [TypeChecker.TNum, TypeChecker.TStr])
+                      ]
+                  )
+                ]
+         in TypeChecker.runWith
+              initialState
+              ( IpeMatch
+                  (simpleVariable "x")
+                  [ (IpeCustomTypePattern ["Module"] "ConstructorOne" [], [], IpeNumber a)
+                  ]
+              )
+              `shouldBe` Left "can't pattern match on a custom type (Module.CustomType) with a finite pattern match without matching all possible cases."
+
+    it "should infer type arguments when pattern matching on custom types" $
+      let initialState =
+            Map.fromList
+              [ ( "Module.CustomType",
+                  TypeChecker.TCustom
+                    "Module.CustomType"
+                    [TypeChecker.TVar "someVar"]
+                    [ ("Module.ConstructorOne", [TypeChecker.TVar "someVar"]),
+                      ("Module.ConstructorTwo", [TypeChecker.TNum, TypeChecker.TStr])
+                    ]
+                ),
+                ( "x",
+                  TypeChecker.TCustom
+                    "Module.CustomType"
+                    [TypeChecker.TVar "someVar"]
+                    [ ("Module.ConstructorOne", [TypeChecker.TVar "someVar"]),
+                      ("Module.ConstructorTwo", [TypeChecker.TNum, TypeChecker.TStr])
+                    ]
+                )
+              ]
+       in TypeChecker.runWith
+            initialState
+            ( IpeMatch
+                (simpleVariable "x")
+                [ (IpeCustomTypePattern ["Module"] "ConstructorOne" ["a"], [], simpleVariable "a"),
+                  (IpeCustomTypePattern ["Module"] "ConstructorTwo" ["a", "b"], [], simpleVariable "a")
+                ]
+            )
+            `shouldBe` Right TypeChecker.TNum

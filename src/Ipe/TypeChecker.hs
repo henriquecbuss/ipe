@@ -306,7 +306,7 @@ inferHelper env (IpeMatch matchExpr branches) = do
                 IpeCustomTypePattern {} -> throwE "can't pattern match on a string with a custom type pattern."
                 IpeLiteralStringPattern pat ->
                   case handledCases of
-                    InfiniteCases -> throwE "can't pattern match on a string with a number pattern after an infinite pattern match."
+                    InfiniteCases -> throwE "can't pattern match on a string with a string pattern after an infinite pattern match."
                     FiniteCases cases ->
                       if pat `elem` cases
                         then throwE $ "string " ++ show pat ++ " is already pattern matched."
@@ -319,10 +319,68 @@ inferHelper env (IpeMatch matchExpr branches) = do
       case handledCases of
         FiniteCases _ -> throwE "can't pattern match on a string with a finite pattern match without matching all possible cases."
         InfiniteCases -> return (Map.empty, returnType)
-    TCustom name typeVars constructors ->
-      -- TODO - Check if all branches are constructors for this custom type
-      -- TODO - Check for exhaustiveness
-      return undefined
+    TCustom name typeVars constructors -> do
+      -- TODO - substitute typeVars
+      returnT <- newTypeVar "a"
+
+      (_, returnType, handledCases) <-
+        Control.Monad.foldM
+          ( \(currEnv, returnType, handledCases) (branchPattern, branchAttributions, branchExpr) ->
+              case branchPattern of
+                IpeWildCardPattern -> do
+                  case handledCases of
+                    InfiniteCases -> throwE $ "can't pattern match on a custom type (" ++ name ++ ") with an infinite pattern match after an infinite pattern match."
+                    FiniteCases _ ->
+                      handleAttributions sub1 currEnv branchAttributions branchExpr returnType InfiniteCases
+                IpeVariablePattern varName -> do
+                  case handledCases of
+                    InfiniteCases -> throwE $ "can't pattern match on a custom type (" ++ name ++ ") with an infinite pattern match after an infinite pattern match."
+                    FiniteCases _ -> do
+                      let TypeEnv env' = currEnv
+                      let envWithVarName = TypeEnv $ Map.insert (T.unpack varName) (Scheme [T.unpack varName] (TCustom name typeVars constructors)) env'
+
+                      handleAttributions sub1 envWithVarName branchAttributions branchExpr returnType InfiniteCases
+                IpeCustomTypePattern path constructorName variables ->
+                  case handledCases of
+                    InfiniteCases -> throwE $ "can't pattern match on a custom type (" ++ name ++ ") with a custom type (" ++ name ++ ") pattern after an infinite pattern match."
+                    FiniteCases matchedConstructors -> do
+                      let patternConstructorName = T.unpack $ T.intercalate "." (path ++ [constructorName])
+                      case customTypeFromConstructorName patternConstructorName currEnv of
+                        Nothing -> throwE $ "constructor " ++ patternConstructorName ++ " is not defined."
+                        Just (otherName, _, otherRequiredConstructors, otherRequiredArgs)
+                          | otherName /= name -> throwE $ "can't pattern match on a custom type (" ++ name ++ ") with another custom type (" ++ otherName ++ ") pattern."
+                          | length variables /= length otherRequiredArgs -> throwE $ "expected " ++ show (length otherRequiredArgs) ++ " arguments to match on constructor " ++ patternConstructorName ++ ", but got " ++ show (length variables) ++ "."
+                          | patternConstructorName `elem` matchedConstructors -> throwE $ "constructor " ++ patternConstructorName ++ " is already pattern matched."
+                          | otherwise -> do
+                              let newEnv =
+                                    foldr
+                                      ( \(argName, argType) (TypeEnv e) ->
+                                          TypeEnv $
+                                            Map.insert
+                                              (T.unpack argName)
+                                              (Scheme [T.unpack argName] argType)
+                                              e
+                                      )
+                                      currEnv
+                                      $ zip variables otherRequiredArgs
+                              let newHandledCases =
+                                    if length matchedConstructors == length otherRequiredConstructors - 1
+                                      then InfiniteCases
+                                      else FiniteCases $ patternConstructorName : matchedConstructors
+
+                              (e, t, h) <- handleAttributions sub1 newEnv branchAttributions branchExpr returnType newHandledCases
+
+                              return (e, t, h)
+                IpeLiteralStringPattern _ -> throwE $ "can't pattern match on a custom type (" ++ name ++ ") with a string pattern."
+                IpeLiteralNumberPattern _ -> throwE $ "can't pattern match on a custom type (" ++ name ++ ") with a number pattern."
+          )
+          (apply sub1 env, returnT, FiniteCases [])
+          branches
+
+      case handledCases of
+        FiniteCases _ -> throwE $ "can't pattern match on a custom type (" ++ name ++ ") with a finite pattern match without matching all possible cases."
+        -- TODO - Should this be Map.empty?
+        InfiniteCases -> return (Map.empty, returnType)
 inferHelper _ (IpeString _) = return (Map.empty, TStr)
 inferHelper (TypeEnv env) (IpeFunctionCallOrValue (FunctionCallOrValue path name recordPath args)) =
   case Map.lookup fullName env of
