@@ -1,11 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Ipe.TypeCheckerSpec (spec) where
+module Ipe.TypeChecker.ExpressionSpec (spec) where
 
 import qualified Data.Map as Map
 import qualified Data.Text as T
 import Ipe.Grammar
-import qualified Ipe.TypeChecker as TypeChecker
+import qualified Ipe.TypeChecker.Expression as ExprTypeChecker
 import Test.Hspec
 import Test.Hspec.QuickCheck
 
@@ -34,104 +34,104 @@ numberAndStringSpec :: Spec
 numberAndStringSpec =
   describe "when dealing with numbers and strings" $ do
     it "should type check a basic number" $
-      TypeChecker.run (IpeNumber 1)
-        `shouldBe` Right TypeChecker.TNum
+      ExprTypeChecker.run (IpeNumber 1)
+        `shouldBe` Right ExprTypeChecker.TNum
 
     prop "should type check any float" $
       \x ->
-        TypeChecker.run (IpeNumber x)
-          `shouldBe` Right TypeChecker.TNum
+        ExprTypeChecker.run (IpeNumber x)
+          `shouldBe` Right ExprTypeChecker.TNum
 
     it "should type check a basic string" $
-      TypeChecker.run (IpeString "hello")
-        `shouldBe` Right TypeChecker.TStr
+      ExprTypeChecker.run (IpeString "hello")
+        `shouldBe` Right ExprTypeChecker.TStr
 
     prop "should type check any string" $
       \x ->
-        TypeChecker.run (IpeString $ T.pack x)
-          `shouldBe` Right TypeChecker.TStr
+        ExprTypeChecker.run (IpeString $ T.pack x)
+          `shouldBe` Right ExprTypeChecker.TStr
 
 binaryOperationSpec :: Spec
 binaryOperationSpec =
   describe "when dealing with binary operations" $ do
     prop "should type check adding two numbers" $
       \x y ->
-        TypeChecker.run (IpeBinaryOperation Add (IpeNumber x) (IpeNumber y))
-          `shouldBe` Right TypeChecker.TNum
+        ExprTypeChecker.run (IpeBinaryOperation Add (IpeNumber x) (IpeNumber y))
+          `shouldBe` Right ExprTypeChecker.TNum
 
     prop "should not type check adding a number and something else" $
       \x y ->
-        TypeChecker.run (IpeBinaryOperation Add (IpeNumber x) (IpeString $ T.pack y))
+        ExprTypeChecker.run (IpeBinaryOperation Add (IpeNumber x) (IpeString $ T.pack y))
           `shouldBe` Left "can't match expected type\n\tNumber\nwith actual type\n\tString"
 
     prop "should type check subtracting two numbers" $
       \x y ->
-        TypeChecker.run (IpeBinaryOperation Subtract (IpeNumber x) (IpeNumber y))
-          `shouldBe` Right TypeChecker.TNum
+        ExprTypeChecker.run (IpeBinaryOperation Subtract (IpeNumber x) (IpeNumber y))
+          `shouldBe` Right ExprTypeChecker.TNum
 
     prop "should not type check subtracting a number and something else" $
       \x y ->
-        TypeChecker.run (IpeBinaryOperation Subtract (IpeNumber x) (IpeString $ T.pack y))
+        ExprTypeChecker.run (IpeBinaryOperation Subtract (IpeNumber x) (IpeString $ T.pack y))
           `shouldBe` Left "can't match expected type\n\tNumber\nwith actual type\n\tString"
 
     prop "should type check dividing two numbers" $
       \x y ->
-        TypeChecker.run (IpeBinaryOperation Divide (IpeNumber x) (IpeNumber y))
-          `shouldBe` Right TypeChecker.TNum
+        ExprTypeChecker.run (IpeBinaryOperation Divide (IpeNumber x) (IpeNumber y))
+          `shouldBe` Right ExprTypeChecker.TNum
 
     prop "should not type check dividing a number and something else" $
       \x y ->
-        TypeChecker.run (IpeBinaryOperation Divide (IpeString $ T.pack x) (IpeNumber y))
+        ExprTypeChecker.run (IpeBinaryOperation Divide (IpeString $ T.pack x) (IpeNumber y))
           `shouldBe` Left "can't match expected type\n\tNumber\nwith actual type\n\tString"
 
     prop "should type check multiplying two numbers" $
       \x y ->
-        TypeChecker.run (IpeBinaryOperation Multiply (IpeNumber x) (IpeNumber y))
-          `shouldBe` Right TypeChecker.TNum
+        ExprTypeChecker.run (IpeBinaryOperation Multiply (IpeNumber x) (IpeNumber y))
+          `shouldBe` Right ExprTypeChecker.TNum
 
     prop "should not type check multiplying a number and something else" $
       \x y ->
-        TypeChecker.run (IpeBinaryOperation Multiply (IpeString $ T.pack x) (IpeNumber y))
+        ExprTypeChecker.run (IpeBinaryOperation Multiply (IpeString $ T.pack x) (IpeNumber y))
           `shouldBe` Left "can't match expected type\n\tNumber\nwith actual type\n\tString"
 
     prop "should type check exponentiation with two numbers" $
       \x y ->
-        TypeChecker.run (IpeBinaryOperation Exponentiation (IpeNumber x) (IpeNumber y))
-          `shouldBe` Right TypeChecker.TNum
+        ExprTypeChecker.run (IpeBinaryOperation Exponentiation (IpeNumber x) (IpeNumber y))
+          `shouldBe` Right ExprTypeChecker.TNum
 
     prop "should type check exponentiation with a number and something else" $
       \x y ->
-        TypeChecker.run (IpeBinaryOperation Exponentiation (IpeNumber x) (IpeString $ T.pack y))
+        ExprTypeChecker.run (IpeBinaryOperation Exponentiation (IpeNumber x) (IpeString $ T.pack y))
           `shouldBe` Left "can't match expected type\n\tNumber\nwith actual type\n\tString"
 
     prop "should type check basic pipe right" $
       \x ->
-        let initialState = Map.singleton "pipeRightFn" (TypeChecker.TFun TypeChecker.TNum TypeChecker.TNum)
-         in TypeChecker.runWith
+        let initialState = Map.singleton "pipeRightFn" (ExprTypeChecker.TFun ExprTypeChecker.TNum ExprTypeChecker.TNum)
+         in ExprTypeChecker.runWith
               initialState
               ( IpeBinaryOperation
                   PipeRight
                   (IpeNumber x)
                   (simpleVariable "pipeRightFn")
               )
-              `shouldBe` Right TypeChecker.TNum
+              `shouldBe` Right ExprTypeChecker.TNum
 
     prop "should type check basic pipe left" $
       \x ->
-        let initialState = Map.singleton "pipeLeftFn" (TypeChecker.TFun TypeChecker.TNum TypeChecker.TNum)
-         in TypeChecker.runWith
+        let initialState = Map.singleton "pipeLeftFn" (ExprTypeChecker.TFun ExprTypeChecker.TNum ExprTypeChecker.TNum)
+         in ExprTypeChecker.runWith
               initialState
               ( IpeBinaryOperation
                   PipeLeft
                   (simpleVariable "pipeLeftFn")
                   (IpeNumber x)
               )
-              `shouldBe` Right TypeChecker.TNum
+              `shouldBe` Right ExprTypeChecker.TNum
 
     prop "should not type check basic pipe right with invalid argument type" $
       \x ->
-        let initialState = Map.singleton "pipeRightFn" (TypeChecker.TFun TypeChecker.TStr TypeChecker.TNum)
-         in TypeChecker.runWith
+        let initialState = Map.singleton "pipeRightFn" (ExprTypeChecker.TFun ExprTypeChecker.TStr ExprTypeChecker.TNum)
+         in ExprTypeChecker.runWith
               initialState
               ( IpeBinaryOperation
                   PipeRight
@@ -142,8 +142,8 @@ binaryOperationSpec =
 
     prop "should not type check basic pipe left with invalid argument type" $
       \x ->
-        let initialState = Map.singleton "pipeLeftFn" (TypeChecker.TFun TypeChecker.TStr TypeChecker.TNum)
-         in TypeChecker.runWith
+        let initialState = Map.singleton "pipeLeftFn" (ExprTypeChecker.TFun ExprTypeChecker.TStr ExprTypeChecker.TNum)
+         in ExprTypeChecker.runWith
               initialState
               ( IpeBinaryOperation
                   PipeLeft
@@ -156,28 +156,28 @@ functionCallOrValueSpec :: Spec
 functionCallOrValueSpec =
   describe "when dealing with function calls or values" $ do
     it "should type check a simple value" $
-      TypeChecker.runWith (Map.fromList [("x", TypeChecker.TNum)]) (simpleVariable "x")
-        `shouldBe` Right TypeChecker.TNum
+      ExprTypeChecker.runWith (Map.fromList [("x", ExprTypeChecker.TNum)]) (simpleVariable "x")
+        `shouldBe` Right ExprTypeChecker.TNum
 
     prop "should type check a simple function call with one argument" $
       \x ->
-        TypeChecker.runWith (Map.fromList [("x", TypeChecker.TFun TypeChecker.TNum TypeChecker.TNum)]) (simpleFunction "x" [Ipe.Grammar.IpeNumber x])
-          `shouldBe` Right TypeChecker.TNum
+        ExprTypeChecker.runWith (Map.fromList [("x", ExprTypeChecker.TFun ExprTypeChecker.TNum ExprTypeChecker.TNum)]) (simpleFunction "x" [Ipe.Grammar.IpeNumber x])
+          `shouldBe` Right ExprTypeChecker.TNum
 
     prop "should not type check a simple function call with one mis-typed argument" $
       \x ->
-        TypeChecker.runWith (Map.fromList [("x", TypeChecker.TFun TypeChecker.TNum TypeChecker.TNum)]) (simpleFunction "x" [Ipe.Grammar.IpeString $ T.pack x])
+        ExprTypeChecker.runWith (Map.fromList [("x", ExprTypeChecker.TFun ExprTypeChecker.TNum ExprTypeChecker.TNum)]) (simpleFunction "x" [Ipe.Grammar.IpeString $ T.pack x])
           `shouldBe` Left "can't match expected type\n\tNumber\nwith actual type\n\tString"
 
     prop "should type check a function call with a few arguments" $
       \x y ->
-        TypeChecker.runWith
+        ExprTypeChecker.runWith
           ( Map.fromList
-              [ ("a", TypeChecker.TFun TypeChecker.TNum (TypeChecker.TFun TypeChecker.TNum (TypeChecker.TFun TypeChecker.TNum (TypeChecker.TFun TypeChecker.TNum (TypeChecker.TFun TypeChecker.TStr TypeChecker.TNum))))),
-                ("b", TypeChecker.TNum),
-                ("c", TypeChecker.TFun TypeChecker.TNum TypeChecker.TNum),
-                ("d", TypeChecker.TNum),
-                ("e", TypeChecker.TNum)
+              [ ("a", ExprTypeChecker.TFun ExprTypeChecker.TNum (ExprTypeChecker.TFun ExprTypeChecker.TNum (ExprTypeChecker.TFun ExprTypeChecker.TNum (ExprTypeChecker.TFun ExprTypeChecker.TNum (ExprTypeChecker.TFun ExprTypeChecker.TStr ExprTypeChecker.TNum))))),
+                ("b", ExprTypeChecker.TNum),
+                ("c", ExprTypeChecker.TFun ExprTypeChecker.TNum ExprTypeChecker.TNum),
+                ("d", ExprTypeChecker.TNum),
+                ("e", ExprTypeChecker.TNum)
               ]
           )
           ( simpleFunction
@@ -189,17 +189,17 @@ functionCallOrValueSpec =
                 IpeString $ T.pack y
               ]
           )
-          `shouldBe` Right TypeChecker.TNum
+          `shouldBe` Right ExprTypeChecker.TNum
 
     prop "should type check the structure of a simple flat record" $
       \x y ->
-        TypeChecker.run (IpeRecord [("x", IpeNumber x), ("y", IpeString $ T.pack y)])
-          `shouldBe` Right (TypeChecker.TRec [("x", TypeChecker.TNum), ("y", TypeChecker.TStr)])
+        ExprTypeChecker.run (IpeRecord [("x", IpeNumber x), ("y", IpeString $ T.pack y)])
+          `shouldBe` Right (ExprTypeChecker.TRec [("x", ExprTypeChecker.TNum), ("y", ExprTypeChecker.TStr)])
 
     prop "should type check the structure of a complex nested record" $
       \a e f h l ->
-        TypeChecker.runWith
-          (Map.singleton "d" (TypeChecker.TVar "dVar"))
+        ExprTypeChecker.runWith
+          (Map.singleton "d" (ExprTypeChecker.TVar "dVar"))
           ( IpeRecord
               [ ("a", IpeNumber a),
                 ( "b",
@@ -219,24 +219,24 @@ functionCallOrValueSpec =
               ]
           )
           `shouldBe` Right
-            ( TypeChecker.TRec
-                [ ("a", TypeChecker.TNum),
+            ( ExprTypeChecker.TRec
+                [ ("a", ExprTypeChecker.TNum),
                   ( "b",
-                    TypeChecker.TRec
+                    ExprTypeChecker.TRec
                       [ ( "c",
-                          TypeChecker.TRec
-                            [ ("d", TypeChecker.TVar "dVar"),
-                              ("e", TypeChecker.TNum)
+                          ExprTypeChecker.TRec
+                            [ ("d", ExprTypeChecker.TVar "dVar"),
+                              ("e", ExprTypeChecker.TNum)
                             ]
                         ),
-                        ("f", TypeChecker.TStr),
-                        ("g", TypeChecker.TRec [])
+                        ("f", ExprTypeChecker.TStr),
+                        ("g", ExprTypeChecker.TRec [])
                       ]
                   ),
-                  ("h", TypeChecker.TStr),
+                  ("h", ExprTypeChecker.TStr),
                   ( "k",
-                    TypeChecker.TRec
-                      [ ("l", TypeChecker.TNum)
+                    ExprTypeChecker.TRec
+                      [ ("l", ExprTypeChecker.TNum)
                       ]
                   )
                 ]
@@ -246,22 +246,22 @@ functionDefinitionSpec :: Spec
 functionDefinitionSpec =
   describe "when dealing with function definitions" $ do
     it "should type check the identity function" $
-      TypeChecker.run (IpeFunction ["x"] (IpeFunctionBody [] (simpleVariable "x")))
-        `shouldBe` Right (TypeChecker.TFun (TypeChecker.TVar "a0") (TypeChecker.TVar "a0"))
+      ExprTypeChecker.run (IpeFunction ["x"] (IpeFunctionBody [] (simpleVariable "x")))
+        `shouldBe` Right (ExprTypeChecker.TFun (ExprTypeChecker.TVar "a0") (ExprTypeChecker.TVar "a0"))
 
     prop "should type check a function that returns a number" $
       \x ->
-        TypeChecker.run (IpeFunction ["x"] (IpeFunctionBody [] (IpeNumber x)))
-          `shouldBe` Right (TypeChecker.TFun (TypeChecker.TVar "a0") TypeChecker.TNum)
+        ExprTypeChecker.run (IpeFunction ["x"] (IpeFunctionBody [] (IpeNumber x)))
+          `shouldBe` Right (ExprTypeChecker.TFun (ExprTypeChecker.TVar "a0") ExprTypeChecker.TNum)
 
     prop "should type check a function that returns an addition" $
       \x y ->
-        TypeChecker.run (IpeFunction ["x", "y"] (IpeFunctionBody [] (IpeBinaryOperation Add (IpeNumber x) (IpeNumber y))))
-          `shouldBe` Right (TypeChecker.TFun (TypeChecker.TVar "a0") (TypeChecker.TFun (TypeChecker.TVar "a1") TypeChecker.TNum))
+        ExprTypeChecker.run (IpeFunction ["x", "y"] (IpeFunctionBody [] (IpeBinaryOperation Add (IpeNumber x) (IpeNumber y))))
+          `shouldBe` Right (ExprTypeChecker.TFun (ExprTypeChecker.TVar "a0") (ExprTypeChecker.TFun (ExprTypeChecker.TVar "a1") ExprTypeChecker.TNum))
 
     prop "should type check a function that has a body" $
       \x ->
-        TypeChecker.run
+        ExprTypeChecker.run
           ( IpeFunction
               ["x"]
               ( IpeFunctionBody
@@ -270,11 +270,11 @@ functionDefinitionSpec =
                   (IpeBinaryOperation Add (IpeNumber x) (simpleVariable "y"))
               )
           )
-          `shouldBe` Right (TypeChecker.TFun (TypeChecker.TVar "a0") TypeChecker.TNum)
+          `shouldBe` Right (ExprTypeChecker.TFun (ExprTypeChecker.TVar "a0") ExprTypeChecker.TNum)
 
     prop "should not type check adding a number and a variable that is a String" $
       \x y ->
-        TypeChecker.run
+        ExprTypeChecker.run
           ( IpeFunction
               ["x"]
               ( IpeFunctionBody
@@ -287,7 +287,7 @@ functionDefinitionSpec =
 
     prop "should type check a function that has a few attributions in its body" $
       \a b c d e ->
-        TypeChecker.run
+        ExprTypeChecker.run
           ( IpeFunction
               ["x"]
               ( IpeFunctionBody
@@ -300,38 +300,38 @@ functionDefinitionSpec =
                   (IpeBinaryOperation Add (simpleVariable "a") (simpleVariable "c"))
               )
           )
-          `shouldBe` Right (TypeChecker.TFun (TypeChecker.TVar "a0") TypeChecker.TNum)
+          `shouldBe` Right (ExprTypeChecker.TFun (ExprTypeChecker.TVar "a0") ExprTypeChecker.TNum)
 
     prop "should type check calling a function from inside a record" $
       \x y ->
-        let initialState = Map.singleton "x" (TypeChecker.TRec [("a", TypeChecker.TFun TypeChecker.TNum (TypeChecker.TFun TypeChecker.TStr TypeChecker.TNum))])
-         in TypeChecker.runWith initialState (simpleRecordAccessor "x" ["a"] [IpeNumber x, IpeString $ T.pack y])
-              `shouldBe` Right TypeChecker.TNum
+        let initialState = Map.singleton "x" (ExprTypeChecker.TRec [("a", ExprTypeChecker.TFun ExprTypeChecker.TNum (ExprTypeChecker.TFun ExprTypeChecker.TStr ExprTypeChecker.TNum))])
+         in ExprTypeChecker.runWith initialState (simpleRecordAccessor "x" ["a"] [IpeNumber x, IpeString $ T.pack y])
+              `shouldBe` Right ExprTypeChecker.TNum
 
     it "should type check calling a value from inside a nested record" $
       let initialState =
             Map.singleton
               "x"
-              ( TypeChecker.TRec
+              ( ExprTypeChecker.TRec
                   [ ( "a",
-                      TypeChecker.TRec
-                        [ ("b", TypeChecker.TNum),
+                      ExprTypeChecker.TRec
+                        [ ("b", ExprTypeChecker.TNum),
                           ( "c",
-                            TypeChecker.TRec
-                              [ ("d", TypeChecker.TNum)
+                            ExprTypeChecker.TRec
+                              [ ("d", ExprTypeChecker.TNum)
                               ]
                           )
                         ]
                     ),
-                    ("e", TypeChecker.TNum)
+                    ("e", ExprTypeChecker.TNum)
                   ]
               )
-       in TypeChecker.runWith initialState (simpleRecordAccessor "x" ["a", "c", "d"] [])
-            `shouldBe` Right TypeChecker.TNum
+       in ExprTypeChecker.runWith initialState (simpleRecordAccessor "x" ["a", "c", "d"] [])
+            `shouldBe` Right ExprTypeChecker.TNum
 
     prop "should type check a function based on its body" $
       \x y ->
-        TypeChecker.run
+        ExprTypeChecker.run
           ( IpeFunction
               ["a"]
               ( IpeFunctionBody
@@ -345,7 +345,7 @@ functionDefinitionSpec =
                   )
               )
           )
-          `shouldBe` Right (TypeChecker.TFun TypeChecker.TNum TypeChecker.TNum)
+          `shouldBe` Right (ExprTypeChecker.TFun ExprTypeChecker.TNum ExprTypeChecker.TNum)
 
 matchSpec :: Spec
 matchSpec =
@@ -353,17 +353,17 @@ matchSpec =
     describe "when pattern matching on numbers" $ do
       prop "should type check a simple case expression" $
         \x ->
-          TypeChecker.run
+          ExprTypeChecker.run
             ( IpeMatch
                 (IpeNumber x)
                 [ (IpeWildCardPattern, [], IpeNumber x)
                 ]
             )
-            `shouldBe` Right TypeChecker.TNum
+            `shouldBe` Right ExprTypeChecker.TNum
 
       prop "should check for exhaustiveness" $
         \x ->
-          TypeChecker.run
+          ExprTypeChecker.run
             ( IpeMatch
                 (IpeNumber x)
                 [ (IpeLiteralNumberPattern x, [], IpeNumber x)
@@ -373,7 +373,7 @@ matchSpec =
 
       prop "should not allow duplicate matching" $
         \x ->
-          TypeChecker.run
+          ExprTypeChecker.run
             ( IpeMatch
                 (IpeNumber x)
                 [ (IpeLiteralNumberPattern x, [], IpeNumber x),
@@ -385,17 +385,17 @@ matchSpec =
     describe "when pattern matching on strings" $ do
       prop "should type check a simple case expression" $
         \x ->
-          TypeChecker.run
+          ExprTypeChecker.run
             ( IpeMatch
                 (IpeString $ T.pack x)
                 [ (IpeWildCardPattern, [], IpeString $ T.pack x)
                 ]
             )
-            `shouldBe` Right TypeChecker.TStr
+            `shouldBe` Right ExprTypeChecker.TStr
 
       prop "should check for exhaustiveness" $
         \x ->
-          TypeChecker.run
+          ExprTypeChecker.run
             ( IpeMatch
                 (IpeString $ T.pack x)
                 [ (IpeLiteralStringPattern $ T.pack x, [], IpeString $ T.pack x)
@@ -405,7 +405,7 @@ matchSpec =
 
       prop "should not allow duplicate matching" $
         \x ->
-          TypeChecker.run
+          ExprTypeChecker.run
             ( IpeMatch
                 (IpeString $ T.pack x)
                 [ (IpeLiteralStringPattern $ T.pack x, [], IpeString $ T.pack x),
@@ -416,7 +416,7 @@ matchSpec =
 
     prop "should infer based on branch attributions" $
       \x y z ->
-        TypeChecker.run
+        ExprTypeChecker.run
           ( IpeMatch
               (IpeString $ T.pack x)
               [ ( IpeWildCardPattern,
@@ -428,12 +428,12 @@ matchSpec =
                 )
               ]
           )
-          `shouldBe` Right TypeChecker.TNum
+          `shouldBe` Right ExprTypeChecker.TNum
 
     prop "should check that all branches are the same type" $
       \b c d ->
-        TypeChecker.runWith
-          (Map.singleton "x" (TypeChecker.TVar "a0"))
+        ExprTypeChecker.runWith
+          (Map.singleton "x" (ExprTypeChecker.TVar "a0"))
           ( IpeMatch
               (simpleVariable "x")
               [ (IpeLiteralStringPattern $ T.pack b, [], Ipe.Grammar.IpeNumber d),
@@ -444,31 +444,31 @@ matchSpec =
 
     prop "should infer type based on patterns" $
       \b ->
-        TypeChecker.runWith
-          (Map.singleton "x" (TypeChecker.TVar "a0"))
+        ExprTypeChecker.runWith
+          (Map.singleton "x" (ExprTypeChecker.TVar "a0"))
           ( IpeMatch
               (simpleVariable "x")
               [ (IpeLiteralStringPattern $ T.pack b, [], simpleVariable "x"),
                 (IpeWildCardPattern, [], simpleVariable "x")
               ]
           )
-          `shouldBe` Right TypeChecker.TStr
+          `shouldBe` Right ExprTypeChecker.TStr
 
     prop "should type check when using custom types" $
       \a ->
         let initialState =
               Map.fromList
                 [ ( "Module.CustomType",
-                    TypeChecker.TCustom
+                    ExprTypeChecker.TCustom
                       "Module.CustomType"
                       []
                       [ ("Module.ConstructorOne", []),
-                        ("Module.ConstructorTwo", [TypeChecker.TNum, TypeChecker.TStr])
+                        ("Module.ConstructorTwo", [ExprTypeChecker.TNum, ExprTypeChecker.TStr])
                       ]
                   ),
-                  ("x", TypeChecker.TVar "a0")
+                  ("x", ExprTypeChecker.TVar "a0")
                 ]
-         in TypeChecker.runWith
+         in ExprTypeChecker.runWith
               initialState
               ( IpeMatch
                   (simpleVariable "x")
@@ -476,23 +476,23 @@ matchSpec =
                     (IpeCustomTypePattern ["Module"] "ConstructorTwo" ["a", "b"], [], simpleVariable "a")
                   ]
               )
-              `shouldBe` Right TypeChecker.TNum
+              `shouldBe` Right ExprTypeChecker.TNum
 
     prop "should check for exhaustiveness when using custom types" $
       \a ->
         let initialState =
               Map.fromList
                 [ ( "Module.CustomType",
-                    TypeChecker.TCustom
+                    ExprTypeChecker.TCustom
                       "Module.CustomType"
                       []
                       [ ("Module.ConstructorOne", []),
-                        ("Module.ConstructorTwo", [TypeChecker.TNum, TypeChecker.TStr])
+                        ("Module.ConstructorTwo", [ExprTypeChecker.TNum, ExprTypeChecker.TStr])
                       ]
                   ),
-                  ("x", TypeChecker.TVar "a0")
+                  ("x", ExprTypeChecker.TVar "a0")
                 ]
-         in TypeChecker.runWith
+         in ExprTypeChecker.runWith
               initialState
               ( IpeMatch
                   (simpleVariable "x")
@@ -506,23 +506,23 @@ matchSpec =
         let initialState =
               Map.fromList
                 [ ( "Module.CustomType",
-                    TypeChecker.TCustom
+                    ExprTypeChecker.TCustom
                       "Module.CustomType"
                       []
                       [ ("Module.ConstructorOne", []),
-                        ("Module.ConstructorTwo", [TypeChecker.TNum, TypeChecker.TStr])
+                        ("Module.ConstructorTwo", [ExprTypeChecker.TNum, ExprTypeChecker.TStr])
                       ]
                   ),
                   ( "x",
-                    TypeChecker.TCustom
+                    ExprTypeChecker.TCustom
                       "Module.CustomType"
                       []
                       [ ("Module.ConstructorOne", []),
-                        ("Module.ConstructorTwo", [TypeChecker.TNum, TypeChecker.TStr])
+                        ("Module.ConstructorTwo", [ExprTypeChecker.TNum, ExprTypeChecker.TStr])
                       ]
                   )
                 ]
-         in TypeChecker.runWith
+         in ExprTypeChecker.runWith
               initialState
               ( IpeMatch
                   (simpleVariable "x")
@@ -530,30 +530,30 @@ matchSpec =
                     (IpeCustomTypePattern ["Module"] "ConstructorTwo" ["a", "b"], [], simpleVariable "a")
                   ]
               )
-              `shouldBe` Right TypeChecker.TNum
+              `shouldBe` Right ExprTypeChecker.TNum
 
     prop "should check for exhaustiveness pattern matching on custom types" $
       \a ->
         let initialState =
               Map.fromList
                 [ ( "Module.CustomType",
-                    TypeChecker.TCustom
+                    ExprTypeChecker.TCustom
                       "Module.CustomType"
                       []
                       [ ("Module.ConstructorOne", []),
-                        ("Module.ConstructorTwo", [TypeChecker.TNum, TypeChecker.TStr])
+                        ("Module.ConstructorTwo", [ExprTypeChecker.TNum, ExprTypeChecker.TStr])
                       ]
                   ),
                   ( "x",
-                    TypeChecker.TCustom
+                    ExprTypeChecker.TCustom
                       "Module.CustomType"
                       []
                       [ ("Module.ConstructorOne", []),
-                        ("Module.ConstructorTwo", [TypeChecker.TNum, TypeChecker.TStr])
+                        ("Module.ConstructorTwo", [ExprTypeChecker.TNum, ExprTypeChecker.TStr])
                       ]
                   )
                 ]
-         in TypeChecker.runWith
+         in ExprTypeChecker.runWith
               initialState
               ( IpeMatch
                   (simpleVariable "x")
@@ -566,23 +566,23 @@ matchSpec =
       let initialState =
             Map.fromList
               [ ( "Module.CustomType",
-                  TypeChecker.TCustom
+                  ExprTypeChecker.TCustom
                     "Module.CustomType"
-                    [TypeChecker.TVar "someVar"]
-                    [ ("Module.ConstructorOne", [TypeChecker.TVar "someVar"]),
-                      ("Module.ConstructorTwo", [TypeChecker.TNum, TypeChecker.TStr])
+                    [ExprTypeChecker.TVar "someVar"]
+                    [ ("Module.ConstructorOne", [ExprTypeChecker.TVar "someVar"]),
+                      ("Module.ConstructorTwo", [ExprTypeChecker.TNum, ExprTypeChecker.TStr])
                     ]
                 ),
                 ( "x",
-                  TypeChecker.TCustom
+                  ExprTypeChecker.TCustom
                     "Module.CustomType"
-                    [TypeChecker.TVar "someVar"]
-                    [ ("Module.ConstructorOne", [TypeChecker.TVar "someVar"]),
-                      ("Module.ConstructorTwo", [TypeChecker.TNum, TypeChecker.TStr])
+                    [ExprTypeChecker.TVar "someVar"]
+                    [ ("Module.ConstructorOne", [ExprTypeChecker.TVar "someVar"]),
+                      ("Module.ConstructorTwo", [ExprTypeChecker.TNum, ExprTypeChecker.TStr])
                     ]
                 )
               ]
-       in TypeChecker.runWith
+       in ExprTypeChecker.runWith
             initialState
             ( IpeMatch
                 (simpleVariable "x")
@@ -590,4 +590,4 @@ matchSpec =
                   (IpeCustomTypePattern ["Module"] "ConstructorTwo" ["a", "b"], [], simpleVariable "a")
                 ]
             )
-            `shouldBe` Right TypeChecker.TNum
+            `shouldBe` Right ExprTypeChecker.TNum
