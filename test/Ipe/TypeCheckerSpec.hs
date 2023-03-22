@@ -453,3 +453,50 @@ matchSpec =
               ]
           )
           `shouldBe` Right TypeChecker.TStr
+
+    prop "should type check when using custom types" $
+      \a ->
+        let initialState =
+              Map.fromList
+                [ ( "Module.CustomType",
+                    TypeChecker.TCustom
+                      "Module.CustomType"
+                      []
+                      [ ("Module.ConstructorOne", []),
+                        ("Module.ConstructorTwo", [TypeChecker.TNum, TypeChecker.TStr])
+                      ]
+                  ),
+                  ("x", TypeChecker.TVar "a0")
+                ]
+         in TypeChecker.runWith
+              initialState
+              ( IpeMatch
+                  (simpleVariable "x")
+                  [ (IpeCustomTypePattern ["Module"] "ConstructorOne" [], [], IpeNumber a),
+                    (IpeCustomTypePattern ["Module"] "ConstructorTwo" ["a", "b"], [], simpleVariable "a")
+                  ]
+              )
+              `shouldBe` Right TypeChecker.TNum
+
+    prop "should check for exhaustiveness when using custom types" $
+      \a ->
+        let initialState =
+              Map.fromList
+                [ ( "Module.CustomType",
+                    TypeChecker.TCustom
+                      "Module.CustomType"
+                      []
+                      [ ("Module.ConstructorOne", []),
+                        ("Module.ConstructorTwo", [TypeChecker.TNum, TypeChecker.TStr])
+                      ]
+                  ),
+                  ("x", TypeChecker.TVar "a0")
+                ]
+         in TypeChecker.runWith
+              initialState
+              ( IpeMatch
+                  (simpleVariable "x")
+                  [ (IpeCustomTypePattern ["Module"] "ConstructorOne" [], [], IpeNumber a)
+                  ]
+              )
+              `shouldBe` Left "can't pattern match on a custom type (Module.CustomType) with a finite pattern match without matching all possible cases."

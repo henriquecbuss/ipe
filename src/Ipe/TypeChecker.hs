@@ -150,12 +150,12 @@ varBind var t
   | var `Set.member` freeTypeVariables t = throwE $ "occurs check fails: " ++ var ++ " in " ++ show t
   | otherwise = return $ Map.singleton var t
 
-customTypeFromConstructorName :: String -> TypeEnv -> Maybe (Type, [Type])
+customTypeFromConstructorName :: String -> TypeEnv -> Maybe (String, Type, [(String, [Type])], [Type])
 customTypeFromConstructorName constructorName (TypeEnv env) =
   findMap
     ( \case
-        t@(TCustom _ _ constructors) ->
-          (\(_, ts) -> (t, ts))
+        t@(TCustom name _ constructors) ->
+          (\(_, ts) -> (name, t, constructors, ts))
             <$> Data.List.find
               (\(constructor, _) -> constructor == constructorName)
               constructors
@@ -438,8 +438,37 @@ handleTVarPatternBranch branchType initialSub (currEnv, returnType, handledCases
 
       case customTypeFromConstructorName constructorName currEnv of
         Nothing -> throwE $ "constructor " ++ constructorName ++ " is not defined."
-        Just (parentType, requiredArgs) ->
-          undefined
+        Just (parentName, parentType, requiredConstructors, requiredArgs) ->
+          if length args /= length requiredArgs
+            then throwE $ "expected " ++ show (length requiredArgs) ++ " arguments to match on constructor " ++ constructorName ++ ", but got " ++ show (length args) ++ "."
+            else do
+              branchSub <- mostGeneralUnifier parentType branchType
+
+              let newEnv =
+                    foldr
+                      ( \(argName, argType) (TypeEnv env) ->
+                          TypeEnv $
+                            Map.insert
+                              (T.unpack argName)
+                              (Scheme [T.unpack argName] argType)
+                              env
+                      )
+                      currEnv
+                      $ zip args requiredArgs
+
+              let newSub = branchSub `compose` initialSub
+
+              case handledCases of
+                InfiniteTVarCases -> throwE $ "can't pattern match on a " ++ parentName ++ " with a " ++ parentName ++ " pattern after an infinite pattern match."
+                FiniteTVarStrCases _ -> throwE $ parentName ++ " type does not match the type from previous branches, which was String."
+                FiniteTVarNumCases _ -> throwE $ parentName ++ " type does not match the type from previous branches, which was Number."
+                FiniteTVarCustomCases previousName matchedConstructors
+                  | previousName /= parentName -> throwE $ parentName ++ " type does not match the type from previous branches, which was " ++ previousName ++ "."
+                  | constructorName `elem` matchedConstructors -> throwE $ "constructor " ++ constructorName ++ " is already pattern matched."
+                  | length matchedConstructors == length requiredConstructors - 1 -> handleAttributions newSub (apply newSub newEnv) branchAttributions branchExpr (apply newSub returnType) InfiniteTVarCases
+                  | otherwise -> handleAttributions newSub (apply newSub newEnv) branchAttributions branchExpr (apply newSub returnType) (FiniteTVarCustomCases parentName (constructorName : matchedConstructors))
+                NoTVarCases ->
+                  handleAttributions newSub (apply newSub newEnv) branchAttributions branchExpr (apply newSub returnType) (FiniteTVarCustomCases parentName [constructorName])
     IpeLiteralStringPattern pat ->
       case handledCases of
         FiniteTVarStrCases cases ->
