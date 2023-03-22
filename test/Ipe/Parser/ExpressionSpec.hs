@@ -545,7 +545,7 @@ lambdaFunctionSpec =
         `shouldParse` Ipe.Grammar.IpeFunction
           ["x"]
           ( Ipe.Grammar.IpeFunctionBody
-              { Ipe.Grammar.attributions = [],
+              { Ipe.Grammar.functionBodyAttributions = [],
                 Ipe.Grammar.functionReturn =
                   Ipe.Grammar.IpeBinaryOperation
                     Ipe.Grammar.Add
@@ -574,7 +574,7 @@ lambdaFunctionSpec =
         `shouldParse` Ipe.Grammar.IpeFunction
           ["x"]
           ( Ipe.Grammar.IpeFunctionBody
-              { Ipe.Grammar.attributions =
+              { Ipe.Grammar.functionBodyAttributions =
                   [ ( "y",
                       Ipe.Grammar.IpeBinaryOperation
                         Ipe.Grammar.Add
@@ -656,7 +656,7 @@ lambdaFunctionSpec =
         `shouldParse` Ipe.Grammar.IpeFunction
           ["x", "y", "z"]
           ( Ipe.Grammar.IpeFunctionBody
-              { Ipe.Grammar.attributions =
+              { Ipe.Grammar.functionBodyAttributions =
                   [ ( "a",
                       Ipe.Grammar.IpeBinaryOperation
                         Ipe.Grammar.Add

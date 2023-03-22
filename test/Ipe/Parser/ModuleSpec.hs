@@ -54,7 +54,7 @@ parserSpec =
                       Ipe.Grammar.IpeFunction
                         ["stringValue"]
                         ( Ipe.Grammar.IpeFunctionBody
-                            { Ipe.Grammar.attributions = [],
+                            { Ipe.Grammar.functionBodyAttributions = [],
                               Ipe.Grammar.functionReturn =
                                 Ipe.Grammar.IpeMatch
                                   ( Ipe.Grammar.IpeFunctionCallOrValue
@@ -305,7 +305,7 @@ parserSpec =
                       Ipe.Grammar.IpeFunction
                         ["stringValue"]
                         ( Ipe.Grammar.IpeFunctionBody
-                            { Ipe.Grammar.attributions = [],
+                            { Ipe.Grammar.functionBodyAttributions = [],
                               Ipe.Grammar.functionReturn =
                                 Ipe.Grammar.IpeMatch
                                   ( Ipe.Grammar.IpeFunctionCallOrValue
@@ -421,7 +421,7 @@ parserSpec =
                       Ipe.Grammar.IpeFunction
                         ["opaqueType"]
                         ( Ipe.Grammar.IpeFunctionBody
-                            { Ipe.Grammar.attributions = [],
+                            { Ipe.Grammar.functionBodyAttributions = [],
                               Ipe.Grammar.functionReturn =
                                 Ipe.Grammar.IpeMatch
                                   ( Ipe.Grammar.IpeFunctionCallOrValue
@@ -597,7 +597,7 @@ parserSpec =
                       Ipe.Grammar.IpeFunction
                         ["stringValue"]
                         ( Ipe.Grammar.IpeFunctionBody
-                            { Ipe.Grammar.attributions = [],
+                            { Ipe.Grammar.functionBodyAttributions = [],
                               Ipe.Grammar.functionReturn =
                                 Ipe.Grammar.IpeMatch
                                   ( Ipe.Grammar.IpeFunctionCallOrValue
@@ -713,7 +713,7 @@ parserSpec =
                       Ipe.Grammar.IpeFunction
                         ["opaqueType"]
                         ( Ipe.Grammar.IpeFunctionBody
-                            { Ipe.Grammar.attributions = [],
+                            { Ipe.Grammar.functionBodyAttributions = [],
                               Ipe.Grammar.functionReturn =
                                 Ipe.Grammar.IpeMatch
                                   ( Ipe.Grammar.IpeFunctionCallOrValue

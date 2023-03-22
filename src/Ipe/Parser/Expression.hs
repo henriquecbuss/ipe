@@ -116,7 +116,7 @@ function = do
     Ipe.Grammar.IpeFunction
       arguments
       ( Ipe.Grammar.IpeFunctionBody
-          { Ipe.Grammar.attributions = attributions,
+          { Ipe.Grammar.functionBodyAttributions = attributions,
             Ipe.Grammar.functionReturn = returnExpr
           }
       )

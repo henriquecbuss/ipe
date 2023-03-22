@@ -110,7 +110,7 @@ data IpeType
 -- | A function body, which allows any amount of attributions, like
 -- `x = 1 + 1`, and a return expression
 data IpeFunctionBody = IpeFunctionBody
-  { attributions :: [(Text, Expression)],
+  { functionBodyAttributions :: [(Text, Expression)],
     functionReturn :: Expression
   }
   deriving (Eq, Show)
