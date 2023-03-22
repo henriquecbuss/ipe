@@ -34,7 +34,6 @@ data Type
   | TFun Type Type
   | TRec [(String, Type)]
   | TCustom String [Type] [(String, [Type])] -- name + type variables + constructors
-  -- TODO - Better show implementation?
   deriving (Eq)
 
 instance Show Type where
@@ -44,7 +43,8 @@ instance Show Type where
   show (TFun input output) = "(" ++ show input ++ " -> " ++ show output ++ ")"
   show (TRec []) = "{}"
   show (TRec fields) = "{ " ++ Data.List.intercalate ", " (map (\(name, t) -> name ++ ": " ++ show t) fields) ++ " }"
-  show (TCustom name typeVars _) = "(" ++ name ++ (if null typeVars then "" else " " ++ unwords (map show typeVars)) ++ ")"
+  show (TCustom name [] _) = name
+  show (TCustom name typeVars _) = "(" ++ name ++ (" " ++ unwords (map show typeVars)) ++ ")"
 
 instance Types Type where
   freeTypeVariables (TVar var) = Set.singleton var
