@@ -429,3 +429,27 @@ matchSpec =
               ]
           )
           `shouldBe` Right TypeChecker.TNum
+
+    prop "should check that all branches are the same type" $
+      \b c d ->
+        TypeChecker.runWith
+          (Map.singleton "x" (TypeChecker.TVar "a0"))
+          ( IpeMatch
+              (simpleVariable "x")
+              [ (IpeLiteralStringPattern $ T.pack b, [], Ipe.Grammar.IpeNumber d),
+                (IpeLiteralNumberPattern c, [], Ipe.Grammar.IpeNumber d)
+              ]
+          )
+          `shouldBe` Left "Number type does not match the type from previous branches, which was String."
+
+    prop "should infer type based on patterns" $
+      \b ->
+        TypeChecker.runWith
+          (Map.singleton "x" (TypeChecker.TVar "a0"))
+          ( IpeMatch
+              (simpleVariable "x")
+              [ (IpeLiteralStringPattern $ T.pack b, [], simpleVariable "x"),
+                (IpeWildCardPattern, [], simpleVariable "x")
+              ]
+          )
+          `shouldBe` Right TypeChecker.TStr

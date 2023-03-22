@@ -87,7 +87,7 @@ data TVarCases
   = InfiniteTVarCases
   | FiniteTVarStrCases [Text]
   | FiniteTVarNumCases [Float]
-  | FiniteTVarCustomCases [Text]
+  | FiniteTVarCustomCases String [String]
   | NoTVarCases
 
 -- HELPER FUNCTIONS
@@ -241,13 +241,14 @@ inferHelper env (IpeMatch matchExpr branches) = do
 
       (_, returnType, handledCases) <-
         Control.Monad.foldM
-          (handleTVarPatternBranch tvar sub1)
+          (handleTVarPatternBranch (TVar tvar) sub1)
           (apply sub1 env, returnT, NoTVarCases)
           branches
 
       case handledCases of
         FiniteTVarNumCases _ -> throwE "can't pattern match on a number with a finite pattern match without matching all possible cases."
         FiniteTVarStrCases _ -> throwE "can't pattern match on a string with a finite pattern match without matching all possible cases."
+        FiniteTVarCustomCases typeName _ -> throwE $ "can't pattern match on a custom type (" ++ typeName ++ ") with a finite pattern match without matching all possible cases."
         _ -> return (Map.empty, returnType)
     TNum -> do
       returnT <- newTypeVar "a"
@@ -400,12 +401,12 @@ inferHelper env (IpeRecord fields) = do
   return (Map.empty, TRec finalFields)
 
 handleTVarPatternBranch ::
-  String ->
+  Type ->
   Substitution ->
   (TypeEnv, Type, TVarCases) ->
   (IpeMatchPattern, [(Text, Expression)], Expression) ->
   TypeInferenceMonad (TypeEnv, Type, TVarCases)
-handleTVarPatternBranch tvar initialSub (currEnv, returnType, handledCases) (branchPattern, branchAttributions, branchExpr) =
+handleTVarPatternBranch branchType initialSub (currEnv, returnType, handledCases) (branchPattern, branchAttributions, branchExpr) =
   case branchPattern of
     IpeWildCardPattern ->
       case handledCases of
@@ -414,11 +415,13 @@ handleTVarPatternBranch tvar initialSub (currEnv, returnType, handledCases) (bra
           handleAttributions initialSub currEnv branchAttributions branchExpr returnType InfiniteTVarCases
         FiniteTVarNumCases _ ->
           handleAttributions initialSub currEnv branchAttributions branchExpr returnType InfiniteTVarCases
+        FiniteTVarCustomCases _ _ ->
+          handleAttributions initialSub currEnv branchAttributions branchExpr returnType InfiniteTVarCases
         NoTVarCases ->
           handleAttributions initialSub currEnv branchAttributions branchExpr returnType InfiniteTVarCases
     IpeVariablePattern varName -> do
       let TypeEnv env' = currEnv
-      let envWithVarName = TypeEnv $ Map.insert (T.unpack varName) (Scheme [T.unpack varName] (TVar tvar)) env'
+      let envWithVarName = TypeEnv $ Map.insert (T.unpack varName) (Scheme [T.unpack varName] branchType) env'
 
       case handledCases of
         InfiniteTVarCases -> throwE "can't pattern match with an infinite pattern match after an infinite pattern match."
@@ -426,6 +429,8 @@ handleTVarPatternBranch tvar initialSub (currEnv, returnType, handledCases) (bra
           handleAttributions initialSub envWithVarName branchAttributions branchExpr returnType InfiniteTVarCases
         FiniteTVarStrCases _ ->
           handleAttributions initialSub envWithVarName branchAttributions branchExpr returnType InfiniteTVarCases
+        FiniteTVarCustomCases _ _ ->
+          handleAttributions initialSub currEnv branchAttributions branchExpr returnType InfiniteTVarCases
         FiniteTVarNumCases _ ->
           handleAttributions initialSub envWithVarName branchAttributions branchExpr returnType InfiniteTVarCases
     IpeCustomTypePattern path name args -> do
@@ -440,19 +445,41 @@ handleTVarPatternBranch tvar initialSub (currEnv, returnType, handledCases) (bra
         FiniteTVarStrCases cases ->
           if pat `elem` cases
             then throwE $ "string " ++ show pat ++ " is already pattern matched."
-            else handleAttributions initialSub currEnv branchAttributions branchExpr returnType (FiniteTVarStrCases $ pat : cases)
-        NoTVarCases ->
-          handleAttributions initialSub currEnv branchAttributions branchExpr returnType (FiniteTVarStrCases [pat])
-        _ -> throwE "can't pattern match on a string with a string pattern after an infinite pattern match."
+            else do
+              sub1 <- mostGeneralUnifier branchType TStr
+              let newSub = sub1 `compose` initialSub
+
+              handleAttributions newSub (apply newSub currEnv) branchAttributions branchExpr (apply newSub returnType) (FiniteTVarStrCases $ pat : cases)
+        NoTVarCases -> do
+          sub1 <- mostGeneralUnifier branchType TStr
+          let newSub = sub1 `compose` initialSub
+
+          handleAttributions newSub (apply newSub currEnv) branchAttributions branchExpr (apply newSub returnType) (FiniteTVarStrCases [pat])
+        FiniteTVarNumCases _ ->
+          throwE "String type does not match the type from previous branches, which was Number."
+        FiniteTVarCustomCases typeName _ ->
+          throwE $ "String type does not match the type from previous branches, which was " ++ typeName ++ "."
+        InfiniteTVarCases -> throwE "can't pattern match on a String with a String pattern after an infinite pattern match."
     IpeLiteralNumberPattern pat ->
       case handledCases of
         FiniteTVarNumCases cases ->
           if pat `elem` cases
             then throwE $ "number " ++ show pat ++ " is already pattern matched."
-            else handleAttributions initialSub currEnv branchAttributions branchExpr returnType (FiniteTVarNumCases $ pat : cases)
-        NoTVarCases ->
-          handleAttributions initialSub currEnv branchAttributions branchExpr returnType (FiniteTVarNumCases [pat])
-        _ -> throwE "can't pattern match on a number with a number pattern after an infinite pattern match."
+            else do
+              sub1 <- mostGeneralUnifier branchType TNum
+              let newSub = sub1 `compose` initialSub
+
+              handleAttributions newSub (apply newSub currEnv) branchAttributions branchExpr (apply newSub returnType) (FiniteTVarNumCases $ pat : cases)
+        NoTVarCases -> do
+          sub1 <- mostGeneralUnifier branchType TNum
+          let newSub = sub1 `compose` initialSub
+
+          handleAttributions newSub (apply newSub currEnv) branchAttributions branchExpr (apply newSub returnType) (FiniteTVarNumCases [pat])
+        FiniteTVarStrCases _ ->
+          throwE "Number type does not match the type from previous branches, which was String."
+        FiniteTVarCustomCases typeName _ ->
+          throwE $ "Number type does not match the type from previous branches, which was " ++ typeName ++ "."
+        InfiniteTVarCases -> throwE "can't pattern match on a Number with a Number pattern after an infinite pattern match."
 
 inferAttribution :: Text -> Expression -> TypeEnv -> TypeInferenceMonad (Substitution, Type, TypeEnv)
 inferAttribution attributionName attributionExpr env = do
@@ -487,7 +514,7 @@ infer env expression = do
   return $ apply subst type_
 
 run :: Expression -> Either String Type
-run expression = runMonad (infer Map.empty expression)
+run = runWith Map.empty
 
 runWith :: Map.Map String Type -> Expression -> Either String Type
 runWith initialVars expression = runMonad (infer env expression)
