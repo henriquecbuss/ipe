@@ -11,7 +11,7 @@ import Test.Hspec.QuickCheck
 
 spec :: Spec
 spec =
-  describe "the expression type checker2" $ do
+  describe "the expression type checker" $ do
     numberAndStringSpec
     binaryOperationSpec
     functionCallOrValueSpec
