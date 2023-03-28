@@ -7,8 +7,9 @@ module Ipe.TypeChecker.Module (run, Error (..)) where
 import Control.Monad (mapAndUnzipM)
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Except (ExceptT, runExceptT, throwE)
-import Control.Monad.Trans.State (State, get, modify, runState)
+import Control.Monad.Trans.State (State, evalState, get, modify)
 import qualified Data.Bifunctor
+import Data.Functor ((<&>))
 import qualified Data.List as List
 import qualified Data.Map as Map
 import qualified Data.Maybe as Maybe
@@ -16,14 +17,24 @@ import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.Text (Text)
 import qualified Data.Text as T
-import Ipe.Grammar (CustomTypeConstructor (..), IpeType (..), Module (..), ModuleDefinition (..), TypeAlias (..), TypeDefinition (..), TypeOpaque (..), TypeUnion (..))
+import Ipe.Grammar
+  ( CustomTypeConstructor (..),
+    IpeType (..),
+    Module (..),
+    TopLevelDefinition (..),
+    TypeAlias (..),
+    TypeAnnotation (..),
+    TypeDefinition (..),
+    TypeOpaque (..),
+    TypeUnion (..),
+  )
 import Ipe.TypeChecker (Type (..), freeTypeVariables)
+import qualified Ipe.TypeChecker
+import qualified Ipe.TypeChecker.Expression
 
 run :: Module -> Either Error (Map.Map Text Type)
 run currModule =
-  case runState (runExceptT (runHelper currModule)) initialState of
-    (Left err, _) -> Left err
-    (Right _, s) -> Right s
+  evalState (runExceptT (runHelper currModule)) initialState
 
 initialState :: Map.Map Text Type
 initialState =
@@ -32,13 +43,21 @@ initialState =
       ("String", TStr)
     ]
 
-runHelper :: Module -> CollectionMonad ()
-runHelper currModule@(Module {typeDefinitions}) = do
+runHelper :: Module -> CollectionMonad (Map.Map Text Type)
+runHelper currModule@(Module {typeDefinitions, topLevelDefinitions}) = do
+  -- TODO - Gather imports
+
   mapM_ (addTypeDefinition currModule) typeDefinitions
+
+  mapM_ (addTopLevelDefinition currModule) topLevelDefinitions
+
+  lift get
 
 data Error
   = NotAllVariablesDeclared [Text] [Text] -- required + given
   | UnknownType Text
+  | TopLevelDefinitionError Text Ipe.TypeChecker.Error
+  | AnnotationNameMismatch Text Text -- expected + actual
   deriving (Eq)
 
 instance Show Error where
@@ -52,6 +71,10 @@ instance Show Error where
         ]
   show (UnknownType typeName) =
     "Unknown type: " ++ T.unpack typeName
+  show (TopLevelDefinitionError tldName err) =
+    "Error in top level definition " <> show tldName <> ":\n\n\t" <> show err
+  show (AnnotationNameMismatch expected actual) =
+    "The type annotation for this definition doesn't match the name of the definition! Expected: " <> show expected <> ", but got: " <> show actual
 
 type CollectionMonad a = ExceptT Error (State (Map.Map Text Type)) a
 
@@ -226,3 +249,67 @@ nameFromTypeDefinition t =
       typeUnionDefinitionName
     TypeOpaqueDefinition (TypeOpaque {typeOpaqueDefinitionName}) ->
       typeOpaqueDefinitionName
+
+addTopLevelDefinition :: Module -> TopLevelDefinition -> CollectionMonad Type
+addTopLevelDefinition
+  currModule
+  originalTld@( TopLevelDefinition
+                  { topLevelDefinitionName,
+                    topLevelDefinitionValue,
+                    topLevelDefinitionTypeAnnotation
+                  }
+                ) = do
+    existingType <- getFromCollection topLevelDefinitionName
+
+    case existingType of
+      Just x -> return x
+      Nothing -> do
+        availableTypes <- Map.mapKeys T.unpack <$> lift get
+
+        inferredType <- case Ipe.TypeChecker.Expression.runWith availableTypes topLevelDefinitionValue of
+          Left err@(Ipe.TypeChecker.UnboundVariable unboundVarName) ->
+            case findTopLevelDefinition currModule unboundVarName of
+              Nothing -> throwE $ TopLevelDefinitionError topLevelDefinitionName err
+              Just newTld -> do
+                _ <- addTopLevelDefinition currModule newTld
+                addTopLevelDefinition currModule originalTld
+          Left err -> throwE $ TopLevelDefinitionError topLevelDefinitionName err
+          Right t -> return t
+
+        case topLevelDefinitionTypeAnnotation of
+          Nothing -> addToCollection topLevelDefinitionName inferredType
+          Just annotation@(TypeAnnotation {typeAnnotationName}) ->
+            if typeAnnotationName /= topLevelDefinitionName
+              then throwE $ AnnotationNameMismatch topLevelDefinitionName typeAnnotationName
+              else do
+                annotationType <- typeAnnotationToType currModule annotation
+
+                let unifiedType = Ipe.TypeChecker.runMonad (Ipe.TypeChecker.mostGeneralUnifier inferredType annotationType)
+
+                case unifiedType of
+                  Left err -> throwE $ TopLevelDefinitionError topLevelDefinitionName err
+                  Right substitution -> do
+                    addToCollection topLevelDefinitionName (Ipe.TypeChecker.apply substitution annotationType)
+
+findTopLevelDefinition :: Module -> String -> Maybe TopLevelDefinition
+findTopLevelDefinition (Module {topLevelDefinitions}) tldName =
+  List.find
+    ( \(TopLevelDefinition {topLevelDefinitionName}) ->
+        T.pack tldName == topLevelDefinitionName
+    )
+    topLevelDefinitions
+
+typeAnnotationToType :: Module -> TypeAnnotation -> CollectionMonad Type
+typeAnnotationToType currModule (TypeAnnotation {typeAnnotationArguments, typeAnnotationReturnType})
+  | null typeAnnotationArguments = ipeTypeToType currModule typeAnnotationReturnType <&> snd
+  | otherwise = do
+      (_, returnType) <- ipeTypeToType currModule typeAnnotationReturnType
+
+      List.foldr
+        ( \arg acc -> do
+            (_, argType) <- ipeTypeToType currModule arg
+
+            TFun argType <$> acc
+        )
+        (return returnType)
+        typeAnnotationArguments
