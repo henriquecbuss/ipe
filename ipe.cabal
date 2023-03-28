@@ -37,6 +37,7 @@ library
       Ipe.Parser.TypeDefinition
       Ipe.TypeChecker
       Ipe.TypeChecker.Expression
+      Ipe.TypeChecker.Module
   other-modules:
       Paths_ipe
   hs-source-dirs:
