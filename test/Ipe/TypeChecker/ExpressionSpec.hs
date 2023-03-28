@@ -5,6 +5,7 @@ module Ipe.TypeChecker.ExpressionSpec (spec) where
 import qualified Data.Map as Map
 import qualified Data.Text as T
 import Ipe.Grammar
+import Ipe.TypeChecker (Error (..))
 import qualified Ipe.TypeChecker.Expression as ExprTypeChecker
 import Test.Hspec
 import Test.Hspec.QuickCheck
@@ -62,7 +63,7 @@ binaryOperationSpec =
     prop "should not type check adding a number and something else" $
       \x y ->
         ExprTypeChecker.run (IpeBinaryOperation Add (IpeNumber x) (IpeString $ T.pack y))
-          `shouldBe` Left "can't match expected type\n\tNumber\nwith actual type\n\tString"
+          `shouldBe` Left (NoMatch ExprTypeChecker.TNum ExprTypeChecker.TStr)
 
     prop "should type check subtracting two numbers" $
       \x y ->
@@ -72,7 +73,7 @@ binaryOperationSpec =
     prop "should not type check subtracting a number and something else" $
       \x y ->
         ExprTypeChecker.run (IpeBinaryOperation Subtract (IpeNumber x) (IpeString $ T.pack y))
-          `shouldBe` Left "can't match expected type\n\tNumber\nwith actual type\n\tString"
+          `shouldBe` Left (NoMatch ExprTypeChecker.TNum ExprTypeChecker.TStr)
 
     prop "should type check dividing two numbers" $
       \x y ->
@@ -82,7 +83,7 @@ binaryOperationSpec =
     prop "should not type check dividing a number and something else" $
       \x y ->
         ExprTypeChecker.run (IpeBinaryOperation Divide (IpeString $ T.pack x) (IpeNumber y))
-          `shouldBe` Left "can't match expected type\n\tNumber\nwith actual type\n\tString"
+          `shouldBe` Left (NoMatch ExprTypeChecker.TNum ExprTypeChecker.TStr)
 
     prop "should type check multiplying two numbers" $
       \x y ->
@@ -92,7 +93,7 @@ binaryOperationSpec =
     prop "should not type check multiplying a number and something else" $
       \x y ->
         ExprTypeChecker.run (IpeBinaryOperation Multiply (IpeString $ T.pack x) (IpeNumber y))
-          `shouldBe` Left "can't match expected type\n\tNumber\nwith actual type\n\tString"
+          `shouldBe` Left (NoMatch ExprTypeChecker.TNum ExprTypeChecker.TStr)
 
     prop "should type check exponentiation with two numbers" $
       \x y ->
@@ -102,7 +103,7 @@ binaryOperationSpec =
     prop "should type check exponentiation with a number and something else" $
       \x y ->
         ExprTypeChecker.run (IpeBinaryOperation Exponentiation (IpeNumber x) (IpeString $ T.pack y))
-          `shouldBe` Left "can't match expected type\n\tNumber\nwith actual type\n\tString"
+          `shouldBe` Left (NoMatch ExprTypeChecker.TNum ExprTypeChecker.TStr)
 
     prop "should type check basic pipe right" $
       \x ->
@@ -138,7 +139,7 @@ binaryOperationSpec =
                   (IpeNumber x)
                   (simpleVariable "pipeRightFn")
               )
-              `shouldBe` Left "can't match expected type\n\tNumber\nwith actual type\n\tString"
+              `shouldBe` Left (NoMatch ExprTypeChecker.TNum ExprTypeChecker.TStr)
 
     prop "should not type check basic pipe left with invalid argument type" $
       \x ->
@@ -150,7 +151,7 @@ binaryOperationSpec =
                   (simpleVariable "pipeLeftFn")
                   (IpeNumber x)
               )
-              `shouldBe` Left "can't match expected type\n\tNumber\nwith actual type\n\tString"
+              `shouldBe` Left (NoMatch ExprTypeChecker.TNum ExprTypeChecker.TStr)
 
 functionCallOrValueSpec :: Spec
 functionCallOrValueSpec =
@@ -167,7 +168,7 @@ functionCallOrValueSpec =
     prop "should not type check a simple function call with one mis-typed argument" $
       \x ->
         ExprTypeChecker.runWith (Map.fromList [("x", ExprTypeChecker.TFun ExprTypeChecker.TNum ExprTypeChecker.TNum)]) (simpleFunction "x" [Ipe.Grammar.IpeString $ T.pack x])
-          `shouldBe` Left "can't match expected type\n\tNumber\nwith actual type\n\tString"
+          `shouldBe` Left (NoMatch ExprTypeChecker.TNum ExprTypeChecker.TStr)
 
     prop "should type check a function call with a few arguments" $
       \x y ->
@@ -283,7 +284,7 @@ functionDefinitionSpec =
                   (IpeBinaryOperation Add (IpeNumber x) (simpleVariable "y"))
               )
           )
-          `shouldBe` Left "can't match expected type\n\tNumber\nwith actual type\n\tString"
+          `shouldBe` Left (NoMatch ExprTypeChecker.TNum ExprTypeChecker.TStr)
 
     prop "should type check a function that has a few attributions in its body" $
       \a b c d e ->
@@ -369,7 +370,7 @@ matchSpec =
                 [ (IpeLiteralNumberPattern x, [], IpeNumber x)
                 ]
             )
-            `shouldBe` Left "can't pattern match on a number with a finite pattern match without matching all possible cases."
+            `shouldBe` Left MissingPatternMatchCases
 
       prop "should not allow duplicate matching" $
         \x ->
@@ -380,7 +381,7 @@ matchSpec =
                   (IpeLiteralNumberPattern x, [], IpeNumber x)
                 ]
             )
-            `shouldBe` Left ("number " ++ show x ++ " is already pattern matched.")
+            `shouldBe` Left DuplicatePatternMatch
 
     describe "when pattern matching on strings" $ do
       prop "should type check a simple case expression" $
@@ -401,7 +402,7 @@ matchSpec =
                 [ (IpeLiteralStringPattern $ T.pack x, [], IpeString $ T.pack x)
                 ]
             )
-            `shouldBe` Left "can't pattern match on a string with a finite pattern match without matching all possible cases."
+            `shouldBe` Left MissingPatternMatchCases
 
       prop "should not allow duplicate matching" $
         \x ->
@@ -412,7 +413,7 @@ matchSpec =
                   (IpeLiteralStringPattern $ T.pack x, [], IpeString $ T.pack x)
                 ]
             )
-            `shouldBe` Left ("string " ++ show x ++ " is already pattern matched.")
+            `shouldBe` Left DuplicatePatternMatch
 
     prop "should infer based on branch attributions" $
       \x y z ->
@@ -440,7 +441,7 @@ matchSpec =
                 (IpeLiteralNumberPattern c, [], Ipe.Grammar.IpeNumber d)
               ]
           )
-          `shouldBe` Left "Number type does not match the type from previous branches, which was String."
+          `shouldBe` Left InvalidTypeForPatternMatch
 
     prop "should infer type based on patterns" $
       \b ->
@@ -499,7 +500,7 @@ matchSpec =
                   [ (IpeCustomTypePattern ["Module"] "ConstructorOne" [], [], IpeNumber a)
                   ]
               )
-              `shouldBe` Left "can't pattern match on a custom type (Module.CustomType) with a finite pattern match without matching all possible cases."
+              `shouldBe` Left MissingPatternMatchCases
 
     prop "should type check pattern matching on custom types" $
       \a ->
@@ -560,7 +561,7 @@ matchSpec =
                   [ (IpeCustomTypePattern ["Module"] "ConstructorOne" [], [], IpeNumber a)
                   ]
               )
-              `shouldBe` Left "can't pattern match on a custom type (Module.CustomType) with a finite pattern match without matching all possible cases."
+              `shouldBe` Left MissingPatternMatchCases
 
     it "should infer type arguments when pattern matching on custom types" $
       let initialState =

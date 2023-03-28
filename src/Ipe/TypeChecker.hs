@@ -5,6 +5,7 @@ module Ipe.TypeChecker
     TypeInferenceMonad,
     TypeEnv (..),
     Scheme (..),
+    Error (..),
     Substitution,
     runMonad,
     customTypeFromConstructorName,
@@ -29,6 +30,7 @@ import qualified Data.Bifunctor
 import qualified Data.List
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import qualified Ipe.Grammar
 
 -- TYPES
 
@@ -92,7 +94,25 @@ instance Types TypeEnv where
 
 data InferenceState = InferenceState {lastVarIndex :: Int, currentSubstitution :: Substitution}
 
-type TypeInferenceMonad a = ExceptT String (State InferenceState) a
+type TypeInferenceMonad a = ExceptT Error (State InferenceState) a
+
+data Error
+  = NoMatch Type Type -- expected + actual
+  | PossiblyInfiniteType String Type
+  | InvalidOperation Ipe.Grammar.IpeBinaryOperator Type Type
+  | PatternMatchOnFunction
+  | PatternMatchOnRecord
+  | MissingPatternMatchCases
+  | PatternMatchOnHandledPatternMatch
+  | InvalidTypeForPatternMatch
+  | DuplicatePatternMatch
+  | ConstructorNotFound String
+  | InvalidNumberOfArguments Int Int
+  | UnboundVariable String
+  | MissingRecordField [(String, Type)] String
+  | TooManyArguments Type Type
+  | NoArguments
+  deriving (Show, Eq)
 
 -- HELPER FUNCTIONS
 
@@ -128,7 +148,7 @@ mostGeneralUnifier (TVar var) t = varBind var t
 mostGeneralUnifier t (TVar var) = varBind var t
 mostGeneralUnifier TNum TNum = return Map.empty
 mostGeneralUnifier TStr TStr = return Map.empty
-mostGeneralUnifier (TRec fields1) (TRec fields2)
+mostGeneralUnifier t1@(TRec fields1) t2@(TRec fields2)
   | length fields1 == length fields2 = do
       let (names1, types1) = unzip fields1
       let (names2, types2) = unzip fields2
@@ -136,22 +156,22 @@ mostGeneralUnifier (TRec fields1) (TRec fields2)
         then do
           subs <- Control.Monad.zipWithM mostGeneralUnifier types1 types2
           return $ foldr compose Map.empty subs
-        else throwE $ "can't match expected record\n\t" ++ show (TRec fields1) ++ "\nwith actual record\n\t" ++ show (TRec fields2)
-  | otherwise = throwE $ "can't match expected record\n\t" ++ show (TRec fields1) ++ "\nwith actual record\n\t" ++ show (TRec fields2)
-mostGeneralUnifier (TCustom name1 typeVars1 _) (TCustom name2 typeVars2 _)
-  | name1 /= name2 = throwE $ "can't match expected type\n\t" ++ name1 ++ "\nwith actual type\n\t" ++ name2
-  | length typeVars1 /= length typeVars2 = throwE $ "can't match expected type\n\t" ++ name1 ++ "\nwith actual type\n\t" ++ name2 ++ "\n(number of type variables does not match)"
+        else throwE $ NoMatch t1 t2
+  | otherwise = throwE $ NoMatch t1 t2
+mostGeneralUnifier t1@(TCustom name1 typeVars1 _) t2@(TCustom name2 typeVars2 _)
+  | name1 /= name2 = throwE $ NoMatch t1 t2
+  | length typeVars1 /= length typeVars2 = throwE $ NoMatch t1 t2
   | otherwise =
       Control.Monad.foldM
-        (\acc (t1, t2) -> mostGeneralUnifier (apply acc t1) (apply acc t2))
+        (\acc (first, second) -> mostGeneralUnifier (apply acc first) (apply acc second))
         Map.empty
         $ zip typeVars1 typeVars2
-mostGeneralUnifier t1 t2 = throwE $ "can't match expected type\n\t" ++ show t1 ++ "\nwith actual type\n\t" ++ show t2
+mostGeneralUnifier t1 t2 = throwE $ NoMatch t1 t2
 
 varBind :: String -> Type -> TypeInferenceMonad Substitution
 varBind var t
   | t == TVar var = return Map.empty
-  | var `Set.member` freeTypeVariables t = throwE $ "occurs check fails: " ++ var ++ " in " ++ show t
+  | var `Set.member` freeTypeVariables t = throwE $ PossiblyInfiniteType var t
   | otherwise = return $ Map.singleton var t
 
 customTypeFromConstructorName :: String -> TypeEnv -> Maybe (String, Type, [(String, [Type])], [Type])
@@ -177,7 +197,7 @@ findMap f (x : xs) =
 
 -- MAIN FUNCTIONS
 
-runMonad :: TypeInferenceMonad a -> Either String a
+runMonad :: TypeInferenceMonad a -> Either Error a
 runMonad t =
   evalState (runExceptT t) initialInferenceState
 

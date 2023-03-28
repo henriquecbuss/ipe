@@ -10,7 +10,8 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Ipe.Grammar (Expression (..), FunctionCallOrValue (..), IpeBinaryOperator (..), IpeFunctionBody (..), IpeMatchPattern (..))
 import Ipe.TypeChecker
-  ( Scheme (..),
+  ( Error (..),
+    Scheme (..),
     Substitution,
     Type (..),
     TypeEnv (..),
@@ -39,7 +40,6 @@ inferHelper :: TypeEnv -> Expression -> TypeInferenceMonad (Substitution, Type)
 inferHelper env (IpeBinaryOperation operator exp1 exp2) = do
   (sub1, type1) <- inferHelper env exp1
   (sub2, type2) <- inferHelper (apply sub1 env) exp2
-  let errorStr functionName expectedType = "can't " ++ functionName ++ " " ++ show type1 ++ " and " ++ show type2 ++ ". I can only " ++ functionName ++ " two " ++ expectedType ++ "."
   case (operator, type1, type2) of
     (Add, TNum, _) -> do
       sub3 <- mostGeneralUnifier (apply sub2 type1) (apply sub2 type2)
@@ -47,50 +47,50 @@ inferHelper env (IpeBinaryOperation operator exp1 exp2) = do
     (Add, _, TNum) -> do
       sub3 <- mostGeneralUnifier (apply sub2 type2) (apply sub2 type1)
       return (sub3 `compose` sub2, apply (sub3 `compose` sub2) type1)
-    (Add, _, _) -> throwE $ errorStr "add" "Numbers"
+    (Add, _, _) -> throwE $ InvalidOperation Add type1 type2
     (Subtract, TNum, _) -> do
       sub3 <- mostGeneralUnifier (apply sub2 type1) (apply sub2 type2)
       return (sub3 `compose` sub2, apply (sub3 `compose` sub2) type2)
     (Subtract, _, TNum) -> do
       sub3 <- mostGeneralUnifier (apply sub2 type2) (apply sub2 type1)
       return (sub3 `compose` sub2, apply (sub3 `compose` sub2) type1)
-    (Subtract, _, _) -> throwE $ errorStr "subtract" "Numbers"
+    (Subtract, _, _) -> throwE $ InvalidOperation Subtract type1 type2
     (Divide, TNum, _) -> do
       sub3 <- mostGeneralUnifier (apply sub2 type1) (apply sub2 type2)
       return (sub3 `compose` sub2, apply (sub3 `compose` sub2) type2)
     (Divide, _, TNum) -> do
       sub3 <- mostGeneralUnifier (apply sub2 type2) (apply sub2 type1)
       return (sub3 `compose` sub2, apply (sub3 `compose` sub2) type1)
-    (Divide, _, _) -> throwE $ errorStr "divide" "Numbers"
+    (Divide, _, _) -> throwE $ InvalidOperation Divide type1 type2
     (Multiply, TNum, _) -> do
       sub3 <- mostGeneralUnifier (apply sub2 type1) (apply sub2 type2)
       return (sub3 `compose` sub2, apply (sub3 `compose` sub2) type2)
     (Multiply, _, TNum) -> do
       sub3 <- mostGeneralUnifier (apply sub2 type2) (apply sub2 type1)
       return (sub3 `compose` sub2, apply (sub3 `compose` sub2) type1)
-    (Multiply, _, _) -> throwE $ errorStr "multiply" "Numbers"
+    (Multiply, _, _) -> throwE $ InvalidOperation Multiply type1 type2
     (Exponentiation, TNum, _) -> do
       sub3 <- mostGeneralUnifier (apply sub2 type1) (apply sub2 type2)
       return (sub3 `compose` sub2, apply (sub3 `compose` sub2) type2)
     (Exponentiation, _, TNum) -> do
       sub3 <- mostGeneralUnifier (apply sub2 type2) (apply sub2 type1)
       return (sub3 `compose` sub2, apply (sub3 `compose` sub2) type1)
-    (Exponentiation, _, _) -> throwE $ errorStr "potentiate" "Numbers"
+    (Exponentiation, _, _) -> throwE $ InvalidOperation Exponentiation type1 type2
     (PipeRight, pipeInput, TFun fnInput fnOutput) -> do
       sub <- mostGeneralUnifier pipeInput fnInput
       return (sub `compose` sub2 `compose` sub1, fnOutput)
-    (PipeRight, _, _) -> throwE "can't pipe right. I can only pipe right if the right side is a function."
+    (PipeRight, _, _) -> throwE $ InvalidOperation PipeRight type1 type2
     (PipeLeft, TFun fnInput fnOutput, pipeInput) -> do
       sub <- mostGeneralUnifier pipeInput fnInput
       return (sub `compose` sub2 `compose` sub1, fnOutput)
-    (PipeLeft, _, _) -> throwE "can't pipe left. I can only pipe left if the left side is a function."
+    (PipeLeft, _, _) -> throwE $ InvalidOperation PipeLeft type1 type2
 inferHelper _ (IpeNumber _) = return (Map.empty, TNum)
 inferHelper env (IpeMatch matchExpr branches) = do
   (sub1, type1) <- inferHelper env matchExpr
 
   case type1 of
-    TFun _ _ -> throwE "can't pattern match on a function. You need to apply all arguments to it first."
-    TRec _ -> throwE "can't pattern match on a record. If you want to access a field, use the dot operator."
+    TFun _ _ -> throwE PatternMatchOnFunction
+    TRec _ -> throwE PatternMatchOnRecord
     TVar tvar -> do
       returnT <- newTypeVar "a"
 
@@ -101,9 +101,9 @@ inferHelper env (IpeMatch matchExpr branches) = do
           branches
 
       case handledCases of
-        FiniteTVarNumCases _ -> throwE "can't pattern match on a number with a finite pattern match without matching all possible cases."
-        FiniteTVarStrCases _ -> throwE "can't pattern match on a string with a finite pattern match without matching all possible cases."
-        FiniteTVarCustomCases typeName _ -> throwE $ "can't pattern match on a custom type (" ++ typeName ++ ") with a finite pattern match without matching all possible cases."
+        FiniteTVarNumCases _ -> throwE MissingPatternMatchCases
+        FiniteTVarStrCases _ -> throwE MissingPatternMatchCases
+        FiniteTVarCustomCases _ _ -> throwE MissingPatternMatchCases
         _ -> return (Map.empty, returnType)
     TNum -> do
       returnT <- newTypeVar "a"
@@ -113,31 +113,31 @@ inferHelper env (IpeMatch matchExpr branches) = do
               case branchPattern of
                 IpeWildCardPattern -> do
                   case handledCases of
-                    InfiniteCases -> throwE "can't pattern match on a number with an infinite pattern match after an infinite pattern match."
+                    InfiniteCases -> throwE PatternMatchOnHandledPatternMatch
                     FiniteCases _ -> do
                       handleAttributions sub1 currEnv branchAttributions branchExpr returnType InfiniteCases
                 IpeVariablePattern varName -> do
                   case handledCases of
-                    InfiniteCases -> throwE "can't pattern match on a number with an infinite pattern match after an infinite pattern match."
+                    InfiniteCases -> throwE PatternMatchOnHandledPatternMatch
                     FiniteCases _ -> do
                       let TypeEnv env' = currEnv
                       let envWithVarName = TypeEnv $ Map.insert (T.unpack varName) (Scheme [T.unpack varName] TNum) env'
                       handleAttributions sub1 envWithVarName branchAttributions branchExpr returnType InfiniteCases
-                IpeCustomTypePattern {} -> throwE "can't pattern match on a number with a custom type pattern."
-                IpeLiteralStringPattern _ -> throwE "can't pattern match on a number with a string pattern."
+                IpeCustomTypePattern {} -> throwE InvalidTypeForPatternMatch
+                IpeLiteralStringPattern _ -> throwE InvalidTypeForPatternMatch
                 IpeLiteralNumberPattern pat ->
                   case handledCases of
-                    InfiniteCases -> throwE "can't pattern match on a number with a number pattern after an infinite pattern match."
+                    InfiniteCases -> throwE PatternMatchOnHandledPatternMatch
                     FiniteCases cases ->
                       if pat `elem` cases
-                        then throwE $ "number " ++ show pat ++ " is already pattern matched."
+                        then throwE DuplicatePatternMatch
                         else handleAttributions sub1 currEnv branchAttributions branchExpr returnType (FiniteCases $ pat : cases)
           )
           (apply sub1 env, returnT, FiniteCases [])
           branches
 
       case handledCases of
-        FiniteCases _ -> throwE "can't pattern match on a number with a finite pattern match without matching all possible cases."
+        FiniteCases _ -> throwE MissingPatternMatchCases
         InfiniteCases -> return (Map.empty, returnType)
     TStr -> do
       returnT <- newTypeVar "a"
@@ -147,32 +147,32 @@ inferHelper env (IpeMatch matchExpr branches) = do
               case branchPattern of
                 IpeWildCardPattern -> do
                   case handledCases of
-                    InfiniteCases -> throwE "can't pattern match on a string with an infinite pattern match after an infinite pattern match."
+                    InfiniteCases -> throwE PatternMatchOnHandledPatternMatch
                     FiniteCases _ ->
                       handleAttributions sub1 currEnv branchAttributions branchExpr returnType InfiniteCases
                 IpeVariablePattern varName -> do
                   case handledCases of
-                    InfiniteCases -> throwE "can't pattern match on a string with an infinite pattern match after an infinite pattern match."
+                    InfiniteCases -> throwE PatternMatchOnHandledPatternMatch
                     FiniteCases _ -> do
                       let TypeEnv env' = currEnv
                       let envWithVarName = TypeEnv $ Map.insert (T.unpack varName) (Scheme [T.unpack varName] TStr) env'
 
                       handleAttributions sub1 envWithVarName branchAttributions branchExpr returnType InfiniteCases
-                IpeCustomTypePattern {} -> throwE "can't pattern match on a string with a custom type pattern."
+                IpeCustomTypePattern {} -> throwE InvalidTypeForPatternMatch
                 IpeLiteralStringPattern pat ->
                   case handledCases of
-                    InfiniteCases -> throwE "can't pattern match on a string with a string pattern after an infinite pattern match."
+                    InfiniteCases -> throwE PatternMatchOnHandledPatternMatch
                     FiniteCases cases ->
                       if pat `elem` cases
-                        then throwE $ "string " ++ show pat ++ " is already pattern matched."
+                        then throwE DuplicatePatternMatch
                         else handleAttributions sub1 currEnv branchAttributions branchExpr returnType (FiniteCases $ pat : cases)
-                IpeLiteralNumberPattern _ -> throwE "can't pattern match on a string with a number pattern."
+                IpeLiteralNumberPattern _ -> throwE InvalidTypeForPatternMatch
           )
           (apply sub1 env, returnT, FiniteCases [])
           branches
 
       case handledCases of
-        FiniteCases _ -> throwE "can't pattern match on a string with a finite pattern match without matching all possible cases."
+        FiniteCases _ -> throwE MissingPatternMatchCases
         InfiniteCases -> return (Map.empty, returnType)
     TCustom name typeVars constructors -> do
       returnT <- newTypeVar "a"
@@ -183,12 +183,12 @@ inferHelper env (IpeMatch matchExpr branches) = do
               case branchPattern of
                 IpeWildCardPattern -> do
                   case handledCases of
-                    InfiniteCases -> throwE $ "can't pattern match on a custom type (" ++ name ++ ") with an infinite pattern match after an infinite pattern match."
+                    InfiniteCases -> throwE PatternMatchOnHandledPatternMatch
                     FiniteCases _ ->
                       handleAttributions sub1 currEnv branchAttributions branchExpr returnType InfiniteCases
                 IpeVariablePattern varName -> do
                   case handledCases of
-                    InfiniteCases -> throwE $ "can't pattern match on a custom type (" ++ name ++ ") with an infinite pattern match after an infinite pattern match."
+                    InfiniteCases -> throwE PatternMatchOnHandledPatternMatch
                     FiniteCases _ -> do
                       let TypeEnv env' = currEnv
                       let envWithVarName = TypeEnv $ Map.insert (T.unpack varName) (Scheme [T.unpack varName] (TCustom name typeVars constructors)) env'
@@ -196,15 +196,15 @@ inferHelper env (IpeMatch matchExpr branches) = do
                       handleAttributions sub1 envWithVarName branchAttributions branchExpr returnType InfiniteCases
                 IpeCustomTypePattern path constructorName variables ->
                   case handledCases of
-                    InfiniteCases -> throwE $ "can't pattern match on a custom type (" ++ name ++ ") with a custom type (" ++ name ++ ") pattern after an infinite pattern match."
+                    InfiniteCases -> throwE PatternMatchOnHandledPatternMatch
                     FiniteCases matchedConstructors -> do
                       let patternConstructorName = T.unpack $ T.intercalate "." (path ++ [constructorName])
                       case customTypeFromConstructorName patternConstructorName currEnv of
-                        Nothing -> throwE $ "constructor " ++ patternConstructorName ++ " is not defined."
+                        Nothing -> throwE $ ConstructorNotFound patternConstructorName
                         Just (otherName, _, otherRequiredConstructors, otherRequiredArgs)
-                          | otherName /= name -> throwE $ "can't pattern match on a custom type (" ++ name ++ ") with another custom type (" ++ otherName ++ ") pattern."
-                          | length variables /= length otherRequiredArgs -> throwE $ "expected " ++ show (length otherRequiredArgs) ++ " arguments to match on constructor " ++ patternConstructorName ++ ", but got " ++ show (length variables) ++ "."
-                          | patternConstructorName `elem` matchedConstructors -> throwE $ "constructor " ++ patternConstructorName ++ " is already pattern matched."
+                          | otherName /= name -> throwE InvalidTypeForPatternMatch
+                          | length variables /= length otherRequiredArgs -> throwE $ InvalidNumberOfArguments (length variables) (length otherRequiredArgs)
+                          | patternConstructorName `elem` matchedConstructors -> throwE DuplicatePatternMatch
                           | otherwise -> do
                               let newEnv =
                                     foldr
@@ -225,19 +225,19 @@ inferHelper env (IpeMatch matchExpr branches) = do
                               (e, t, h) <- handleAttributions sub1 newEnv branchAttributions branchExpr returnType newHandledCases
 
                               return (e, t, h)
-                IpeLiteralStringPattern _ -> throwE $ "can't pattern match on a custom type (" ++ name ++ ") with a string pattern."
-                IpeLiteralNumberPattern _ -> throwE $ "can't pattern match on a custom type (" ++ name ++ ") with a number pattern."
+                IpeLiteralStringPattern _ -> throwE InvalidTypeForPatternMatch
+                IpeLiteralNumberPattern _ -> throwE InvalidTypeForPatternMatch
           )
           (apply sub1 env, returnT, FiniteCases [])
           branches
 
       case handledCases of
-        FiniteCases _ -> throwE $ "can't pattern match on a custom type (" ++ name ++ ") with a finite pattern match without matching all possible cases."
+        FiniteCases _ -> throwE MissingPatternMatchCases
         InfiniteCases -> return (Map.empty, returnType)
 inferHelper _ (IpeString _) = return (Map.empty, TStr)
 inferHelper (TypeEnv env) (IpeFunctionCallOrValue (FunctionCallOrValue path name recordPath args)) =
   case Map.lookup fullName env of
-    Nothing -> throwE $ "unbound variable: " ++ fullName
+    Nothing -> throwE $ UnboundVariable fullName
     Just valType -> do
       t <- instantiate valType
       typeToUse <- findRecordEnd t recordPath
@@ -250,7 +250,7 @@ inferHelper (TypeEnv env) (IpeFunctionCallOrValue (FunctionCallOrValue path name
           let (names, types) = unzip fields
           let maybeIndex = Data.List.elemIndex (T.unpack $ head currPath) names
           case maybeIndex of
-            Nothing -> throwE $ "record " ++ show (TRec fields) ++ " does not have a field named " ++ T.unpack (head currPath)
+            Nothing -> throwE $ MissingRecordField fields (T.unpack (head currPath))
             Just index -> findRecordEnd (types !! index) (tail currPath)
         findRecordEnd inputType _ = return inputType
 
@@ -260,10 +260,10 @@ inferHelper (TypeEnv env) (IpeFunctionCallOrValue (FunctionCallOrValue path name
             TFun inputType outputType -> do
               sub <- mostGeneralUnifier inputType argType
               return (sub `compose` argSub `compose` previousSub, apply sub outputType)
-            _ -> throwE $ fullName ++ " is already a " ++ show type_ ++ ", so it can't be called as a function. You tried giving it a " ++ show argType ++ "."
+            _ -> throwE $ TooManyArguments type_ argType
   where
     fullName = T.unpack (T.intercalate "." (path ++ [name]))
-inferHelper _ (IpeFunction [] _) = throwE "function must have at least one argument"
+inferHelper _ (IpeFunction [] _) = throwE NoArguments
 inferHelper env (IpeFunction args (IpeFunctionBody attrs fnReturn)) = do
   argTypeVars <-
     foldr
@@ -321,7 +321,7 @@ handleTVarPatternBranch branchType initialSub (currEnv, returnType, handledCases
   case branchPattern of
     IpeWildCardPattern ->
       case handledCases of
-        InfiniteTVarCases -> throwE "can't pattern match with an infinite pattern match after an infinite pattern match."
+        InfiniteTVarCases -> throwE PatternMatchOnHandledPatternMatch
         FiniteTVarStrCases _ ->
           handleAttributions initialSub currEnv branchAttributions branchExpr returnType InfiniteTVarCases
         FiniteTVarNumCases _ ->
@@ -335,7 +335,7 @@ handleTVarPatternBranch branchType initialSub (currEnv, returnType, handledCases
       let envWithVarName = TypeEnv $ Map.insert (T.unpack varName) (Scheme [T.unpack varName] branchType) env'
 
       case handledCases of
-        InfiniteTVarCases -> throwE "can't pattern match with an infinite pattern match after an infinite pattern match."
+        InfiniteTVarCases -> throwE PatternMatchOnHandledPatternMatch
         NoTVarCases ->
           handleAttributions initialSub envWithVarName branchAttributions branchExpr returnType InfiniteTVarCases
         FiniteTVarStrCases _ ->
@@ -348,10 +348,10 @@ handleTVarPatternBranch branchType initialSub (currEnv, returnType, handledCases
       let constructorName = T.unpack $ T.intercalate "." (path ++ [name])
 
       case customTypeFromConstructorName constructorName currEnv of
-        Nothing -> throwE $ "constructor " ++ constructorName ++ " is not defined."
+        Nothing -> throwE $ ConstructorNotFound constructorName
         Just (parentName, parentType, requiredConstructors, requiredArgs) ->
           if length args /= length requiredArgs
-            then throwE $ "expected " ++ show (length requiredArgs) ++ " arguments to match on constructor " ++ constructorName ++ ", but got " ++ show (length args) ++ "."
+            then throwE $ InvalidNumberOfArguments (length args) (length requiredArgs)
             else do
               branchSub <- mostGeneralUnifier parentType branchType
 
@@ -370,12 +370,12 @@ handleTVarPatternBranch branchType initialSub (currEnv, returnType, handledCases
               let newSub = branchSub `compose` initialSub
 
               case handledCases of
-                InfiniteTVarCases -> throwE $ "can't pattern match on a " ++ parentName ++ " with a " ++ parentName ++ " pattern after an infinite pattern match."
-                FiniteTVarStrCases _ -> throwE $ parentName ++ " type does not match the type from previous branches, which was String."
-                FiniteTVarNumCases _ -> throwE $ parentName ++ " type does not match the type from previous branches, which was Number."
+                InfiniteTVarCases -> throwE PatternMatchOnHandledPatternMatch
+                FiniteTVarStrCases _ -> throwE InvalidTypeForPatternMatch
+                FiniteTVarNumCases _ -> throwE InvalidTypeForPatternMatch
                 FiniteTVarCustomCases previousName matchedConstructors
-                  | previousName /= parentName -> throwE $ parentName ++ " type does not match the type from previous branches, which was " ++ previousName ++ "."
-                  | constructorName `elem` matchedConstructors -> throwE $ "constructor " ++ constructorName ++ " is already pattern matched."
+                  | previousName /= parentName -> throwE InvalidTypeForPatternMatch
+                  | constructorName `elem` matchedConstructors -> throwE DuplicatePatternMatch
                   | length matchedConstructors == length requiredConstructors - 1 -> handleAttributions newSub (apply newSub newEnv) branchAttributions branchExpr (apply newSub returnType) InfiniteTVarCases
                   | otherwise -> handleAttributions newSub (apply newSub newEnv) branchAttributions branchExpr (apply newSub returnType) (FiniteTVarCustomCases parentName (constructorName : matchedConstructors))
                 NoTVarCases ->
@@ -384,7 +384,7 @@ handleTVarPatternBranch branchType initialSub (currEnv, returnType, handledCases
       case handledCases of
         FiniteTVarStrCases cases ->
           if pat `elem` cases
-            then throwE $ "string " ++ show pat ++ " is already pattern matched."
+            then throwE DuplicatePatternMatch
             else do
               sub1 <- mostGeneralUnifier branchType TStr
               let newSub = sub1 `compose` initialSub
@@ -395,16 +395,14 @@ handleTVarPatternBranch branchType initialSub (currEnv, returnType, handledCases
           let newSub = sub1 `compose` initialSub
 
           handleAttributions newSub (apply newSub currEnv) branchAttributions branchExpr (apply newSub returnType) (FiniteTVarStrCases [pat])
-        FiniteTVarNumCases _ ->
-          throwE "String type does not match the type from previous branches, which was Number."
-        FiniteTVarCustomCases typeName _ ->
-          throwE $ "String type does not match the type from previous branches, which was " ++ typeName ++ "."
-        InfiniteTVarCases -> throwE "can't pattern match on a String with a String pattern after an infinite pattern match."
+        FiniteTVarNumCases _ -> throwE InvalidTypeForPatternMatch
+        FiniteTVarCustomCases _ _ -> throwE InvalidTypeForPatternMatch
+        InfiniteTVarCases -> throwE PatternMatchOnHandledPatternMatch
     IpeLiteralNumberPattern pat ->
       case handledCases of
         FiniteTVarNumCases cases ->
           if pat `elem` cases
-            then throwE $ "number " ++ show pat ++ " is already pattern matched."
+            then throwE DuplicatePatternMatch
             else do
               sub1 <- mostGeneralUnifier branchType TNum
               let newSub = sub1 `compose` initialSub
@@ -416,10 +414,10 @@ handleTVarPatternBranch branchType initialSub (currEnv, returnType, handledCases
 
           handleAttributions newSub (apply newSub currEnv) branchAttributions branchExpr (apply newSub returnType) (FiniteTVarNumCases [pat])
         FiniteTVarStrCases _ ->
-          throwE "Number type does not match the type from previous branches, which was String."
-        FiniteTVarCustomCases typeName _ ->
-          throwE $ "Number type does not match the type from previous branches, which was " ++ typeName ++ "."
-        InfiniteTVarCases -> throwE "can't pattern match on a Number with a Number pattern after an infinite pattern match."
+          throwE InvalidTypeForPatternMatch
+        FiniteTVarCustomCases _ _ ->
+          throwE InvalidTypeForPatternMatch
+        InfiniteTVarCases -> throwE PatternMatchOnHandledPatternMatch
 
 inferAttribution :: Text -> Expression -> TypeEnv -> TypeInferenceMonad (Substitution, Type, TypeEnv)
 inferAttribution attributionName attributionExpr env = do
@@ -453,10 +451,10 @@ infer env expression = do
   (subst, type_) <- inferHelper (TypeEnv env) expression
   return $ apply subst type_
 
-run :: Expression -> Either String Type
+run :: Expression -> Either Error Type
 run = runWith Map.empty
 
-runWith :: Map.Map String Type -> Expression -> Either String Type
+runWith :: Map.Map String Type -> Expression -> Either Error Type
 runWith initialVars expression = runMonad (infer env expression)
   where
     env = Map.mapWithKey (\k -> Scheme [k]) initialVars
