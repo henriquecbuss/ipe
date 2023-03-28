@@ -60,6 +60,54 @@ addingTypeDefinitions =
             }
         )
         `shouldBe` Left (ModTypeChecker.NotAllVariablesDeclared ["a", "b"] ["a"])
+
+    it "should replace variables with concrete values" $
+      ModTypeChecker.run
+        ( sampleModule
+            { typeDefinitions =
+                [ TypeAliasDefinition . typeAlias "AliasTest" [] $
+                    ConcreteType [] "UnionTest" [ConcreteType [] "Number" []],
+                  TypeUnionDefinition $
+                    typeUnion
+                      "UnionTest"
+                      ["a"]
+                      [("A", [ParameterType "a"])]
+                ]
+            }
+        )
+        `shouldBe` Right
+          ( Map.fromList
+              [ ("Number", TNum),
+                ("String", TStr),
+                ("AliasTest", TCustom "UnionTest" [TNum] [("A", [TNum])]),
+                ("UnionTest", TCustom "UnionTest" [TVar "a"] [("A", [TVar "a"])]),
+                ("A", TFun (TVar "a") (TCustom "UnionTest" [TVar "a"] [("A", [TVar "a"])]))
+              ]
+          )
+
+    it "should replace variables with other variables" $
+      ModTypeChecker.run
+        ( sampleModule
+            { typeDefinitions =
+                [ TypeAliasDefinition . typeAlias "AliasTest" ["newName"] $
+                    ConcreteType [] "UnionTest" [ParameterType "newName"],
+                  TypeUnionDefinition $
+                    typeUnion
+                      "UnionTest"
+                      ["a"]
+                      [("A", [ParameterType "a"])]
+                ]
+            }
+        )
+        `shouldBe` Right
+          ( Map.fromList
+              [ ("Number", TNum),
+                ("String", TStr),
+                ("AliasTest", TCustom "UnionTest" [TVar "newName"] [("A", [TVar "newName"])]),
+                ("UnionTest", TCustom "UnionTest" [TVar "a"] [("A", [TVar "a"])]),
+                ("A", TFun (TVar "a") (TCustom "UnionTest" [TVar "a"] [("A", [TVar "a"])]))
+              ]
+          )
   where
     sampleModule :: Module
     sampleModule =

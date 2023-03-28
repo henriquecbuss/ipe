@@ -16,8 +16,8 @@ import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.Text (Text)
 import qualified Data.Text as T
-import Ipe.Grammar (CustomTypeConstructor (..), IpeType (..), Module (..), TypeAlias (..), TypeDefinition (..), TypeOpaque (..), TypeUnion (..))
-import Ipe.TypeChecker (Type (..))
+import Ipe.Grammar (CustomTypeConstructor (..), IpeType (..), Module (..), ModuleDefinition (..), TypeAlias (..), TypeDefinition (..), TypeOpaque (..), TypeUnion (..))
+import Ipe.TypeChecker (Type (..), freeTypeVariables)
 
 run :: Module -> Either Error (Map.Map Text Type)
 run currModule =
@@ -63,14 +63,62 @@ getFromCollection :: Text -> CollectionMonad (Maybe Type)
 getFromCollection name =
   lift $ Map.lookup name <$> get
 
+applyArg :: Module -> IpeType -> Text -> Type -> CollectionMonad Type
+applyArg currModule argType argName (TVar varName) =
+  if T.pack varName == argName
+    then snd <$> ipeTypeToType currModule argType
+    else return (TVar varName)
+applyArg currModule argType argName (TFun input output) = do
+  inputReplaced <- applyArg currModule argType argName input
+  outputReplaced <- applyArg currModule argType argName output
+
+  return $ TFun inputReplaced outputReplaced
+applyArg currModule argType argName (TRec fields) = do
+  TRec
+    <$> mapM
+      ( \(fieldName, fieldType) -> do
+          replacedFieldType <- applyArg currModule argType argName fieldType
+          return (fieldName, replacedFieldType)
+      )
+      fields
+applyArg currModule argType argName (TCustom name typeVars constructors) = do
+  replacedTypeVars <- mapM (applyArg currModule argType argName) typeVars
+
+  replacedConstructors <-
+    mapM
+      ( \(constructorName, constructorParams) -> do
+          replacedParams <- mapM (applyArg currModule argType argName) constructorParams
+          return (constructorName, replacedParams)
+      )
+      constructors
+
+  return $ TCustom name replacedTypeVars replacedConstructors
+applyArg _ _ _ t = return t
+
+applyArgs :: Module -> [IpeType] -> [Text] -> Type -> CollectionMonad Type
+applyArgs _ [] _ t = return t
+applyArgs _ _ [] t = return t
+applyArgs currModule [arg] [argName] t = applyArg currModule arg argName t
+applyArgs currModule (arg : args) (argName : argNames) t =
+  applyArg currModule arg argName t
+    >>= applyArgs currModule args argNames
+
 addTypeDefinition :: Module -> TypeDefinition -> CollectionMonad Type
 addTypeDefinition currModule t =
   case t of
     TypeAliasDefinition (TypeAlias {typeAliasDefinitionName, typeAliasDefinitionParameters, typeAliasType}) ->
       do
-        (requiredArgs, type_) <- ipeTypeToType currModule typeAliasType
+        (requiredArgs, type_) <-
+          ipeTypeToType
+            currModule
+            typeAliasType
 
-        checkTypeParams requiredArgs (Set.fromList typeAliasDefinitionParameters) type_
+        applyArgs
+          currModule
+          (List.map ParameterType typeAliasDefinitionParameters)
+          (Set.toList requiredArgs)
+          type_
+          >>= checkTypeParams requiredArgs (Set.fromList typeAliasDefinitionParameters)
           >>= addToCollection typeAliasDefinitionName
     TypeUnionDefinition (TypeUnion {typeUnionDefinitionName, typeUnionDefinitionParameters, typeUnionDefinitionConstructors}) ->
       addCustomType currModule typeUnionDefinitionName typeUnionDefinitionParameters typeUnionDefinitionConstructors
@@ -97,11 +145,18 @@ addCustomType currModule name typeParams constructors = do
           (List.map (TVar . T.unpack) typeParams)
           constructorTypes
       )
+      >>= applyArgs
+        currModule
+        (List.map ParameterType typeParams)
+        (Set.toList requiredArgs)
 
   mapM_
     ( \(constructorName, constructorArgs) ->
-        addToCollection (T.pack constructorName) $
-          List.foldr TFun typeDef constructorArgs
+        addToCollection (T.pack constructorName) (List.foldr TFun typeDef constructorArgs)
+          >>= applyArgs
+            currModule
+            (List.map ParameterType typeParams)
+            (Set.toList requiredArgs)
     )
     constructorTypes
 
@@ -118,7 +173,6 @@ ipeTypeToType currModule t =
   case t of
     ParameterType paramName -> return (Set.fromList [paramName], TVar $ T.unpack paramName)
     ConcreteType path name args -> do
-      -- TODO - Apply args
       let fullName = T.intercalate "." (path ++ [name])
       maybeExistingType <- getFromCollection fullName
 
@@ -131,15 +185,23 @@ ipeTypeToType currModule t =
                 )
                 args
 
-      case maybeExistingType of
+      typeDef <- case maybeExistingType of
         Nothing ->
           case findTypeDefinitionByName currModule fullName of
             Nothing -> throwE $ UnknownType fullName
-            Just typeDefinition -> do
-              x <- addTypeDefinition currModule typeDefinition
-              return (requiredArgs, x)
+            Just typeDefinition ->
+              addTypeDefinition currModule typeDefinition
         Just existingType ->
-          return (requiredArgs, existingType)
+          return existingType
+
+      appliedTypeDef <-
+        applyArgs
+          currModule
+          args
+          (List.map T.pack $ Set.toList $ freeTypeVariables typeDef)
+          typeDef
+
+      return (requiredArgs, appliedTypeDef)
     RecordType r -> do
       Data.Bifunctor.bimap Set.unions TRec . List.unzip
         <$> mapM

@@ -15,6 +15,7 @@ module Ipe.TypeChecker
     generalize,
     newTypeVar,
     instantiate,
+    freeTypeVariables,
   )
 where
 
