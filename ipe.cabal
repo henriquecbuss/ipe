@@ -35,6 +35,10 @@ library
       Ipe.Parser.ModuleDefinition
       Ipe.Parser.TopLevelDefinition
       Ipe.Parser.TypeDefinition
+      Ipe.Transformer.Module
+      Ipe.TypeChecker
+      Ipe.TypeChecker.Expression
+      Ipe.TypeChecker.Module
   other-modules:
       Paths_ipe
   hs-source-dirs:
@@ -45,7 +49,9 @@ library
     , containers >=0.6.6 && <1
     , megaparsec >=9.3.0 && <10
     , parser-combinators >=1.3.0 && <2
+    , pretty >=1.1.3.6 && <1.2.0.0
     , text >=2.0.1 && <3
+    , transformers >=0.6.1.0 && <0.7
   default-language: Haskell2010
 
 executable ipe-exe
@@ -71,6 +77,9 @@ test-suite ipe-test
       Ipe.Parser.TopLevelDefinitionSpec
       Ipe.Parser.TypeDefinitionSpec
       Ipe.ParserSpec
+      Ipe.Transformer.ModuleSpec
+      Ipe.TypeChecker.ExpressionSpec
+      Ipe.TypeChecker.ModuleSpec
       Paths_ipe
   hs-source-dirs:
       test

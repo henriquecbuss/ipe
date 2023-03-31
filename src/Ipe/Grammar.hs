@@ -110,7 +110,7 @@ data IpeType
 -- | A function body, which allows any amount of attributions, like
 -- `x = 1 + 1`, and a return expression
 data IpeFunctionBody = IpeFunctionBody
-  { attributions :: [(Text, Expression)],
+  { functionBodyAttributions :: [(Text, Expression)],
     functionReturn :: Expression
   }
   deriving (Eq, Show)
@@ -141,10 +141,11 @@ data TypeAnnotation = TypeAnnotation
 data Expression
   = IpeBinaryOperation IpeBinaryOperator Expression Expression
   | IpeNumber Float
-  | IpeMatch Expression [(IpeMatchPattern, Expression)]
+  | IpeMatch Expression [(IpeMatchPattern, [(Text, Expression)], Expression)]
   | IpeString Text
   | IpeFunctionCallOrValue FunctionCallOrValue
   | IpeFunction [Text] IpeFunctionBody
+  | IpeRecord [(Text, Expression)]
   deriving (Eq, Show)
 
 data FunctionCallOrValue = FunctionCallOrValue
@@ -168,7 +169,7 @@ data IpeBinaryOperator
 data IpeMatchPattern
   = IpeWildCardPattern
   | IpeVariablePattern Text
-  | IpeCustomTypePattern [Text] Text [IpeMatchPattern]
+  | IpeCustomTypePattern [Text] Text [Text] -- path + constructor name + arguments
   | IpeLiteralNumberPattern Float
   | IpeLiteralStringPattern Text
   deriving (Eq, Show)

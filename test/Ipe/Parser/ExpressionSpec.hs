@@ -17,6 +17,7 @@ spec =
     binaryOperatorSpec
     lambdaFunctionSpec
     patternMatchSpec
+    recordSpec
 
 numberSpec :: Spec
 numberSpec = do
@@ -544,7 +545,7 @@ lambdaFunctionSpec =
         `shouldParse` Ipe.Grammar.IpeFunction
           ["x"]
           ( Ipe.Grammar.IpeFunctionBody
-              { Ipe.Grammar.attributions = [],
+              { Ipe.Grammar.functionBodyAttributions = [],
                 Ipe.Grammar.functionReturn =
                   Ipe.Grammar.IpeBinaryOperation
                     Ipe.Grammar.Add
@@ -573,7 +574,7 @@ lambdaFunctionSpec =
         `shouldParse` Ipe.Grammar.IpeFunction
           ["x"]
           ( Ipe.Grammar.IpeFunctionBody
-              { Ipe.Grammar.attributions =
+              { Ipe.Grammar.functionBodyAttributions =
                   [ ( "y",
                       Ipe.Grammar.IpeBinaryOperation
                         Ipe.Grammar.Add
@@ -655,7 +656,7 @@ lambdaFunctionSpec =
         `shouldParse` Ipe.Grammar.IpeFunction
           ["x", "y", "z"]
           ( Ipe.Grammar.IpeFunctionBody
-              { Ipe.Grammar.attributions =
+              { Ipe.Grammar.functionBodyAttributions =
                   [ ( "a",
                       Ipe.Grammar.IpeBinaryOperation
                         Ipe.Grammar.Add
@@ -807,7 +808,27 @@ patternMatchSpec = do
                   }
               )
           )
-          [(Ipe.Grammar.IpeWildCardPattern, Ipe.Grammar.IpeNumber 1)]
+          [(Ipe.Grammar.IpeWildCardPattern, [], Ipe.Grammar.IpeNumber 1)]
+
+    it "should parse a wildcard pattern with a single attribution" $
+      Parsec.Common.parse
+        Ipe.Parser.Expression.parser
+        ""
+        "match x with\n\
+        \ | _ ->\n\
+        \       y = 2;\n\
+        \       1"
+        `shouldParse` Ipe.Grammar.IpeMatch
+          ( Ipe.Grammar.IpeFunctionCallOrValue
+              ( Ipe.Grammar.FunctionCallOrValue
+                  { Ipe.Grammar.functionCallOrValuePath = [],
+                    Ipe.Grammar.functionCallOrValueName = "x",
+                    Ipe.Grammar.functionCallOrValueRecordAccessors = [],
+                    Ipe.Grammar.functionCallOrValueArguments = []
+                  }
+              )
+          )
+          [(Ipe.Grammar.IpeWildCardPattern, [("y", Ipe.Grammar.IpeNumber 2)], Ipe.Grammar.IpeNumber 1)]
 
     it "should parse a single variable pattern" $
       Parsec.Common.parse
@@ -825,7 +846,34 @@ patternMatchSpec = do
                   }
               )
           )
-          [(Ipe.Grammar.IpeVariablePattern "y", Ipe.Grammar.IpeNumber 1)]
+          [(Ipe.Grammar.IpeVariablePattern "y", [], Ipe.Grammar.IpeNumber 1)]
+
+    it "should parse a single variable pattern with multiple attributions" $
+      Parsec.Common.parse
+        Ipe.Parser.Expression.parser
+        ""
+        "match x with\n\
+        \ | y ->\n\
+        \       x = 5;\n\
+        \       z = 6 + 2;\n\
+        \       1"
+        `shouldParse` Ipe.Grammar.IpeMatch
+          ( Ipe.Grammar.IpeFunctionCallOrValue
+              ( Ipe.Grammar.FunctionCallOrValue
+                  { Ipe.Grammar.functionCallOrValuePath = [],
+                    Ipe.Grammar.functionCallOrValueName = "x",
+                    Ipe.Grammar.functionCallOrValueRecordAccessors = [],
+                    Ipe.Grammar.functionCallOrValueArguments = []
+                  }
+              )
+          )
+          [ ( Ipe.Grammar.IpeVariablePattern "y",
+              [ ("x", Ipe.Grammar.IpeNumber 5),
+                ("z", Ipe.Grammar.IpeBinaryOperation Ipe.Grammar.Add (Ipe.Grammar.IpeNumber 6) (Ipe.Grammar.IpeNumber 2))
+              ],
+              Ipe.Grammar.IpeNumber 1
+            )
+          ]
 
     it "should parse a simple custom type pattern" $
       Parsec.Common.parse
@@ -843,7 +891,7 @@ patternMatchSpec = do
                   }
               )
           )
-          [(Ipe.Grammar.IpeCustomTypePattern [] "SomeConstructor" [], Ipe.Grammar.IpeNumber 1)]
+          [(Ipe.Grammar.IpeCustomTypePattern [] "SomeConstructor" [], [], Ipe.Grammar.IpeNumber 1)]
 
     it "should parse a custom type pattern that has some simple arguments" $
       Parsec.Common.parse
@@ -863,9 +911,9 @@ patternMatchSpec = do
                   }
               )
           )
-          [ (Ipe.Grammar.IpeCustomTypePattern [] "SomeConstructor" [], Ipe.Grammar.IpeNumber 1),
-            (Ipe.Grammar.IpeCustomTypePattern [] "OtherConstructor" [], Ipe.Grammar.IpeNumber 2),
-            (Ipe.Grammar.IpeCustomTypePattern [] "ThirdConstructor" [], Ipe.Grammar.IpeNumber 3)
+          [ (Ipe.Grammar.IpeCustomTypePattern [] "SomeConstructor" [], [], Ipe.Grammar.IpeNumber 1),
+            (Ipe.Grammar.IpeCustomTypePattern [] "OtherConstructor" [], [], Ipe.Grammar.IpeNumber 2),
+            (Ipe.Grammar.IpeCustomTypePattern [] "ThirdConstructor" [], [], Ipe.Grammar.IpeNumber 3)
           ]
 
     it "should parse a custom type pattern that has some simple arguments and a final one which is a variable" $
@@ -887,9 +935,10 @@ patternMatchSpec = do
                   }
               )
           )
-          [ (Ipe.Grammar.IpeCustomTypePattern [] "SomeConstructor" [], Ipe.Grammar.IpeNumber 1),
-            (Ipe.Grammar.IpeCustomTypePattern [] "OtherConstructor" [], Ipe.Grammar.IpeNumber 2),
+          [ (Ipe.Grammar.IpeCustomTypePattern [] "SomeConstructor" [], [], Ipe.Grammar.IpeNumber 1),
+            (Ipe.Grammar.IpeCustomTypePattern [] "OtherConstructor" [], [], Ipe.Grammar.IpeNumber 2),
             ( Ipe.Grammar.IpeCustomTypePattern [] "ThirdConstructor" [],
+              [],
               Ipe.Grammar.IpeFunctionCallOrValue
                 ( Ipe.Grammar.FunctionCallOrValue
                     { Ipe.Grammar.functionCallOrValuePath = ["Imported"],
@@ -917,7 +966,7 @@ patternMatchSpec = do
                     }
                 )
             ),
-            (Ipe.Grammar.IpeVariablePattern "x", Ipe.Grammar.IpeNumber 4)
+            (Ipe.Grammar.IpeVariablePattern "x", [], Ipe.Grammar.IpeNumber 4)
           ]
 
     it "should parse a custom type pattern that has some simple arguments and a final one which is a number" $
@@ -939,9 +988,10 @@ patternMatchSpec = do
                   }
               )
           )
-          [ (Ipe.Grammar.IpeCustomTypePattern [] "SomeConstructor" [], Ipe.Grammar.IpeNumber 1),
-            (Ipe.Grammar.IpeCustomTypePattern [] "OtherConstructor" [], Ipe.Grammar.IpeNumber 2),
+          [ (Ipe.Grammar.IpeCustomTypePattern [] "SomeConstructor" [], [], Ipe.Grammar.IpeNumber 1),
+            (Ipe.Grammar.IpeCustomTypePattern [] "OtherConstructor" [], [], Ipe.Grammar.IpeNumber 2),
             ( Ipe.Grammar.IpeCustomTypePattern [] "ThirdConstructor" [],
+              [],
               Ipe.Grammar.IpeFunctionCallOrValue
                 ( Ipe.Grammar.FunctionCallOrValue
                     { Ipe.Grammar.functionCallOrValuePath = ["Imported"],
@@ -969,7 +1019,7 @@ patternMatchSpec = do
                     }
                 )
             ),
-            (Ipe.Grammar.IpeLiteralNumberPattern 1, Ipe.Grammar.IpeNumber 4)
+            (Ipe.Grammar.IpeLiteralNumberPattern 1, [], Ipe.Grammar.IpeNumber 4)
           ]
 
     it "should parse a custom type pattern that has some simple arguments and a final one which is a string" $
@@ -991,9 +1041,10 @@ patternMatchSpec = do
                   }
               )
           )
-          [ (Ipe.Grammar.IpeCustomTypePattern [] "SomeConstructor" [], Ipe.Grammar.IpeNumber 1),
-            (Ipe.Grammar.IpeCustomTypePattern [] "OtherConstructor" [], Ipe.Grammar.IpeNumber 2),
+          [ (Ipe.Grammar.IpeCustomTypePattern [] "SomeConstructor" [], [], Ipe.Grammar.IpeNumber 1),
+            (Ipe.Grammar.IpeCustomTypePattern [] "OtherConstructor" [], [], Ipe.Grammar.IpeNumber 2),
             ( Ipe.Grammar.IpeCustomTypePattern [] "ThirdConstructor" [],
+              [],
               Ipe.Grammar.IpeFunctionCallOrValue
                 ( Ipe.Grammar.FunctionCallOrValue
                     { Ipe.Grammar.functionCallOrValuePath = ["Imported"],
@@ -1021,7 +1072,7 @@ patternMatchSpec = do
                     }
                 )
             ),
-            (Ipe.Grammar.IpeLiteralStringPattern "string", Ipe.Grammar.IpeNumber 4)
+            (Ipe.Grammar.IpeLiteralStringPattern "string", [], Ipe.Grammar.IpeNumber 4)
           ]
 
     it "should parse a custom type pattern that has some simple arguments and a final one which is a wildcard" $
@@ -1043,9 +1094,10 @@ patternMatchSpec = do
                   }
               )
           )
-          [ (Ipe.Grammar.IpeCustomTypePattern [] "SomeConstructor" [], Ipe.Grammar.IpeNumber 1),
-            (Ipe.Grammar.IpeCustomTypePattern [] "OtherConstructor" [], Ipe.Grammar.IpeNumber 2),
+          [ (Ipe.Grammar.IpeCustomTypePattern [] "SomeConstructor" [], [], Ipe.Grammar.IpeNumber 1),
+            (Ipe.Grammar.IpeCustomTypePattern [] "OtherConstructor" [], [], Ipe.Grammar.IpeNumber 2),
             ( Ipe.Grammar.IpeCustomTypePattern [] "ThirdConstructor" [],
+              [],
               Ipe.Grammar.IpeFunctionCallOrValue
                 ( Ipe.Grammar.FunctionCallOrValue
                     { Ipe.Grammar.functionCallOrValuePath = ["Imported"],
@@ -1073,7 +1125,7 @@ patternMatchSpec = do
                     }
                 )
             ),
-            (Ipe.Grammar.IpeWildCardPattern, Ipe.Grammar.IpeNumber 4)
+            (Ipe.Grammar.IpeWildCardPattern, [], Ipe.Grammar.IpeNumber 4)
           ]
 
     it "should parse a custom type pattern that could be confused with an expression" $
@@ -1083,7 +1135,7 @@ patternMatchSpec = do
         "match x with\n\
         \  | SomeConstructor ->\n\
         \     a\n\
-        \  | OtherConstructor Arg ->\n\
+        \  | OtherConstructor arg ->\n\
         \     2"
         `shouldParse` Ipe.Grammar.IpeMatch
           ( Ipe.Grammar.IpeFunctionCallOrValue
@@ -1096,6 +1148,7 @@ patternMatchSpec = do
               )
           )
           [ ( Ipe.Grammar.IpeCustomTypePattern [] "SomeConstructor" [],
+              [],
               Ipe.Grammar.IpeFunctionCallOrValue
                 ( Ipe.Grammar.FunctionCallOrValue
                     { Ipe.Grammar.functionCallOrValuePath = [],
@@ -1108,76 +1161,54 @@ patternMatchSpec = do
             ( Ipe.Grammar.IpeCustomTypePattern
                 []
                 "OtherConstructor"
-                [ Ipe.Grammar.IpeCustomTypePattern [] "Arg" []
+                [ "arg"
                 ],
+              [],
               Ipe.Grammar.IpeNumber 2
             )
           ]
 
-    it "should parse a custom type pattern that has some complex arguments" $
+recordSpec :: Spec
+recordSpec =
+  context "when parsing records" $ do
+    it "should parse a simple flat record" $
       Parsec.Common.parse
         Ipe.Parser.Expression.parser
         ""
-        "match x with\n\
-        \ | SomeConstructor a 5 -> a\n\
-        \ | OtherConstructor (NestedConstructor 'abc') -> 2\n\
-        \ | Imported.ThirdConstructor (Level1 (Level2 x)) 5 'abc' -> 3 + x"
-        `shouldParse` Ipe.Grammar.IpeMatch
-          ( Ipe.Grammar.IpeFunctionCallOrValue
-              ( Ipe.Grammar.FunctionCallOrValue
-                  { Ipe.Grammar.functionCallOrValuePath = [],
-                    Ipe.Grammar.functionCallOrValueName = "x",
-                    Ipe.Grammar.functionCallOrValueRecordAccessors = [],
-                    Ipe.Grammar.functionCallOrValueArguments = []
-                  }
-              )
-          )
-          [ ( Ipe.Grammar.IpeCustomTypePattern
-                []
-                "SomeConstructor"
-                [ Ipe.Grammar.IpeVariablePattern "a",
-                  Ipe.Grammar.IpeLiteralNumberPattern 5
-                ],
-              Ipe.Grammar.IpeFunctionCallOrValue
-                ( Ipe.Grammar.FunctionCallOrValue
-                    { Ipe.Grammar.functionCallOrValuePath = [],
-                      Ipe.Grammar.functionCallOrValueName = "a",
-                      Ipe.Grammar.functionCallOrValueRecordAccessors = [],
-                      Ipe.Grammar.functionCallOrValueArguments = []
-                    }
-                )
+        "{ x = 5, y = 'abc' }"
+        `shouldParse` Ipe.Grammar.IpeRecord
+          [ ("x", Ipe.Grammar.IpeNumber 5),
+            ("y", Ipe.Grammar.IpeString "abc")
+          ]
+
+    it "should parse a complex nested record" $
+      Parsec.Common.parse
+        Ipe.Parser.Expression.parser
+        ""
+        "{ a = 5\n\
+        \, b = { c = { d = d\n\
+        \            , e = 4\n\
+        \            }\n\
+        \      , f = 'abcdef'\n\
+        \      , g = {}\n\
+        \      }\n\
+        \, h = 'abc'\n\
+        \, k = { l = 1 }\n\
+        \}"
+        `shouldParse` Ipe.Grammar.IpeRecord
+          [ ("a", Ipe.Grammar.IpeNumber 5),
+            ( "b",
+              Ipe.Grammar.IpeRecord
+                [ ( "c",
+                    Ipe.Grammar.IpeRecord
+                      [ ("d", Ipe.Grammar.IpeFunctionCallOrValue $ Ipe.Grammar.FunctionCallOrValue [] "d" [] []),
+                        ("e", Ipe.Grammar.IpeNumber 4)
+                      ]
+                  ),
+                  ("f", Ipe.Grammar.IpeString "abcdef"),
+                  ("g", Ipe.Grammar.IpeRecord [])
+                ]
             ),
-            ( Ipe.Grammar.IpeCustomTypePattern
-                []
-                "OtherConstructor"
-                [Ipe.Grammar.IpeCustomTypePattern [] "NestedConstructor" [Ipe.Grammar.IpeLiteralStringPattern "abc"]],
-              Ipe.Grammar.IpeNumber 2
-            ),
-            ( Ipe.Grammar.IpeCustomTypePattern
-                ["Imported"]
-                "ThirdConstructor"
-                [ Ipe.Grammar.IpeCustomTypePattern
-                    []
-                    "Level1"
-                    [ Ipe.Grammar.IpeCustomTypePattern
-                        []
-                        "Level2"
-                        [Ipe.Grammar.IpeVariablePattern "x"]
-                    ],
-                  Ipe.Grammar.IpeLiteralNumberPattern 5,
-                  Ipe.Grammar.IpeLiteralStringPattern "abc"
-                ],
-              Ipe.Grammar.IpeBinaryOperation
-                Ipe.Grammar.Add
-                (Ipe.Grammar.IpeNumber 3)
-                ( Ipe.Grammar.IpeFunctionCallOrValue
-                    ( Ipe.Grammar.FunctionCallOrValue
-                        { Ipe.Grammar.functionCallOrValuePath = [],
-                          Ipe.Grammar.functionCallOrValueName = "x",
-                          Ipe.Grammar.functionCallOrValueRecordAccessors = [],
-                          Ipe.Grammar.functionCallOrValueArguments = []
-                        }
-                    )
-                )
-            )
+            ("h", Ipe.Grammar.IpeString "abc"),
+            ("k", Ipe.Grammar.IpeRecord [("l", Ipe.Grammar.IpeNumber 1)])
           ]

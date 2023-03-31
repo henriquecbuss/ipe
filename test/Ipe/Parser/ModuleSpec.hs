@@ -54,7 +54,7 @@ parserSpec =
                       Ipe.Grammar.IpeFunction
                         ["stringValue"]
                         ( Ipe.Grammar.IpeFunctionBody
-                            { Ipe.Grammar.attributions = [],
+                            { Ipe.Grammar.functionBodyAttributions = [],
                               Ipe.Grammar.functionReturn =
                                 Ipe.Grammar.IpeMatch
                                   ( Ipe.Grammar.IpeFunctionCallOrValue
@@ -78,8 +78,9 @@ parserSpec =
                                   [ ( Ipe.Grammar.IpeCustomTypePattern
                                         []
                                         "Just"
-                                        [ Ipe.Grammar.IpeVariablePattern "parsedString"
+                                        [ "parsedString"
                                         ],
+                                      [],
                                       Ipe.Grammar.IpeFunctionCallOrValue
                                         ( Ipe.Grammar.FunctionCallOrValue
                                             { Ipe.Grammar.functionCallOrValuePath = [],
@@ -111,6 +112,7 @@ parserSpec =
                                         []
                                         "Nothing"
                                         [],
+                                      [],
                                       Ipe.Grammar.IpeBinaryOperation
                                         Ipe.Grammar.PipeRight
                                         ( Ipe.Grammar.IpeFunctionCallOrValue
@@ -303,7 +305,7 @@ parserSpec =
                       Ipe.Grammar.IpeFunction
                         ["stringValue"]
                         ( Ipe.Grammar.IpeFunctionBody
-                            { Ipe.Grammar.attributions = [],
+                            { Ipe.Grammar.functionBodyAttributions = [],
                               Ipe.Grammar.functionReturn =
                                 Ipe.Grammar.IpeMatch
                                   ( Ipe.Grammar.IpeFunctionCallOrValue
@@ -327,8 +329,9 @@ parserSpec =
                                   [ ( Ipe.Grammar.IpeCustomTypePattern
                                         []
                                         "Just"
-                                        [ Ipe.Grammar.IpeVariablePattern "parsedString"
+                                        [ "parsedString"
                                         ],
+                                      [],
                                       Ipe.Grammar.IpeFunctionCallOrValue
                                         ( Ipe.Grammar.FunctionCallOrValue
                                             { Ipe.Grammar.functionCallOrValuePath = [],
@@ -360,6 +363,7 @@ parserSpec =
                                         []
                                         "Nothing"
                                         [],
+                                      [],
                                       Ipe.Grammar.IpeBinaryOperation
                                         Ipe.Grammar.PipeRight
                                         ( Ipe.Grammar.IpeFunctionCallOrValue
@@ -417,7 +421,7 @@ parserSpec =
                       Ipe.Grammar.IpeFunction
                         ["opaqueType"]
                         ( Ipe.Grammar.IpeFunctionBody
-                            { Ipe.Grammar.attributions = [],
+                            { Ipe.Grammar.functionBodyAttributions = [],
                               Ipe.Grammar.functionReturn =
                                 Ipe.Grammar.IpeMatch
                                   ( Ipe.Grammar.IpeFunctionCallOrValue
@@ -432,8 +436,9 @@ parserSpec =
                                   [ ( Ipe.Grammar.IpeCustomTypePattern
                                         []
                                         "OpaqueTypeConstructor"
-                                        [ Ipe.Grammar.IpeVariablePattern "number"
+                                        [ "number"
                                         ],
+                                      [],
                                       Ipe.Grammar.IpeFunctionCallOrValue
                                         ( Ipe.Grammar.FunctionCallOrValue
                                             { Ipe.Grammar.functionCallOrValuePath = ["String"],
@@ -455,7 +460,8 @@ parserSpec =
                                     ( Ipe.Grammar.IpeCustomTypePattern
                                         []
                                         "OpaqueTypeConstructor2"
-                                        [Ipe.Grammar.IpeVariablePattern "rootModuleType"],
+                                        ["rootModuleType"],
+                                      [],
                                       Ipe.Grammar.IpeFunctionCallOrValue
                                         ( Ipe.Grammar.FunctionCallOrValue
                                             { Ipe.Grammar.functionCallOrValuePath = ["Alias", "Module"],
@@ -591,7 +597,7 @@ parserSpec =
                       Ipe.Grammar.IpeFunction
                         ["stringValue"]
                         ( Ipe.Grammar.IpeFunctionBody
-                            { Ipe.Grammar.attributions = [],
+                            { Ipe.Grammar.functionBodyAttributions = [],
                               Ipe.Grammar.functionReturn =
                                 Ipe.Grammar.IpeMatch
                                   ( Ipe.Grammar.IpeFunctionCallOrValue
@@ -615,8 +621,9 @@ parserSpec =
                                   [ ( Ipe.Grammar.IpeCustomTypePattern
                                         []
                                         "Just"
-                                        [ Ipe.Grammar.IpeVariablePattern "parsedString"
+                                        [ "parsedString"
                                         ],
+                                      [],
                                       Ipe.Grammar.IpeFunctionCallOrValue
                                         ( Ipe.Grammar.FunctionCallOrValue
                                             { Ipe.Grammar.functionCallOrValuePath = [],
@@ -648,6 +655,7 @@ parserSpec =
                                         []
                                         "Nothing"
                                         [],
+                                      [],
                                       Ipe.Grammar.IpeBinaryOperation
                                         Ipe.Grammar.PipeRight
                                         ( Ipe.Grammar.IpeFunctionCallOrValue
@@ -705,7 +713,7 @@ parserSpec =
                       Ipe.Grammar.IpeFunction
                         ["opaqueType"]
                         ( Ipe.Grammar.IpeFunctionBody
-                            { Ipe.Grammar.attributions = [],
+                            { Ipe.Grammar.functionBodyAttributions = [],
                               Ipe.Grammar.functionReturn =
                                 Ipe.Grammar.IpeMatch
                                   ( Ipe.Grammar.IpeFunctionCallOrValue
@@ -720,8 +728,9 @@ parserSpec =
                                   [ ( Ipe.Grammar.IpeCustomTypePattern
                                         []
                                         "OpaqueTypeConstructor"
-                                        [ Ipe.Grammar.IpeVariablePattern "number"
+                                        [ "number"
                                         ],
+                                      [],
                                       Ipe.Grammar.IpeFunctionCallOrValue
                                         ( Ipe.Grammar.FunctionCallOrValue
                                             { Ipe.Grammar.functionCallOrValuePath = ["String"],
@@ -743,7 +752,8 @@ parserSpec =
                                     ( Ipe.Grammar.IpeCustomTypePattern
                                         []
                                         "OpaqueTypeConstructor2"
-                                        [Ipe.Grammar.IpeVariablePattern "rootModuleType"],
+                                        ["rootModuleType"],
+                                      [],
                                       Ipe.Grammar.IpeFunctionCallOrValue
                                         ( Ipe.Grammar.FunctionCallOrValue
                                             { Ipe.Grammar.functionCallOrValuePath = ["Alias", "Module"],

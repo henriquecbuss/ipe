@@ -23,7 +23,7 @@ spec = describe "the top level definition parser" $ do
             Ipe.Grammar.IpeFunction
               ["x"]
               ( Ipe.Grammar.IpeFunctionBody
-                  { Ipe.Grammar.attributions = [],
+                  { Ipe.Grammar.functionBodyAttributions = [],
                     Ipe.Grammar.functionReturn =
                       Ipe.Grammar.IpeBinaryOperation
                         Ipe.Grammar.Add
@@ -54,7 +54,7 @@ spec = describe "the top level definition parser" $ do
             Ipe.Grammar.IpeFunction
               ["x", "y"]
               ( Ipe.Grammar.IpeFunctionBody
-                  { Ipe.Grammar.attributions = [],
+                  { Ipe.Grammar.functionBodyAttributions = [],
                     Ipe.Grammar.functionReturn =
                       Ipe.Grammar.IpeBinaryOperation
                         Ipe.Grammar.Add
@@ -118,7 +118,7 @@ spec = describe "the top level definition parser" $ do
             Ipe.Grammar.IpeFunction
               ["x"]
               ( Ipe.Grammar.IpeFunctionBody
-                  { Ipe.Grammar.attributions = [],
+                  { Ipe.Grammar.functionBodyAttributions = [],
                     Ipe.Grammar.functionReturn =
                       Ipe.Grammar.IpeBinaryOperation
                         Ipe.Grammar.Add
@@ -175,7 +175,7 @@ spec = describe "the top level definition parser" $ do
             Ipe.Grammar.IpeFunction
               ["x"]
               ( Ipe.Grammar.IpeFunctionBody
-                  { Ipe.Grammar.attributions = [],
+                  { Ipe.Grammar.functionBodyAttributions = [],
                     Ipe.Grammar.functionReturn =
                       Ipe.Grammar.IpeBinaryOperation
                         Ipe.Grammar.Add
@@ -214,7 +214,7 @@ spec = describe "the top level definition parser" $ do
             Ipe.Grammar.IpeFunction
               ["x", "y"]
               ( Ipe.Grammar.IpeFunctionBody
-                  { Ipe.Grammar.attributions = [],
+                  { Ipe.Grammar.functionBodyAttributions = [],
                     Ipe.Grammar.functionReturn =
                       Ipe.Grammar.IpeBinaryOperation
                         Ipe.Grammar.Add
@@ -297,7 +297,7 @@ spec = describe "the top level definition parser" $ do
             Ipe.Grammar.IpeFunction
               ["x"]
               ( Ipe.Grammar.IpeFunctionBody
-                  { Ipe.Grammar.attributions = [],
+                  { Ipe.Grammar.functionBodyAttributions = [],
                     Ipe.Grammar.functionReturn =
                       Ipe.Grammar.IpeBinaryOperation
                         Ipe.Grammar.Add
@@ -369,7 +369,7 @@ spec = describe "the top level definition parser" $ do
             Ipe.Grammar.IpeFunction
               ["x", "y"]
               ( Ipe.Grammar.IpeFunctionBody
-                  { Ipe.Grammar.attributions = [],
+                  { Ipe.Grammar.functionBodyAttributions = [],
                     Ipe.Grammar.functionReturn =
                       Ipe.Grammar.IpeFunctionCallOrValue
                         ( Ipe.Grammar.FunctionCallOrValue
@@ -407,7 +407,7 @@ spec = describe "the top level definition parser" $ do
             Ipe.Grammar.IpeFunction
               ["x", "y"]
               ( Ipe.Grammar.IpeFunctionBody
-                  { Ipe.Grammar.attributions = [],
+                  { Ipe.Grammar.functionBodyAttributions = [],
                     Ipe.Grammar.functionReturn =
                       Ipe.Grammar.IpeFunctionCallOrValue
                         ( Ipe.Grammar.FunctionCallOrValue

@@ -72,6 +72,7 @@ term acceptArgs =
       Ipe.Parser.lexeme $ Ipe.Grammar.IpeString <$> literalString,
       Ipe.Parser.lexeme function,
       Ipe.Parser.lexeme matchExpression,
+      Ipe.Parser.lexeme record,
       functionCallOrValue acceptArgs
     ]
     <* Parsec.Common.notFollowedBy
@@ -115,7 +116,7 @@ function = do
     Ipe.Grammar.IpeFunction
       arguments
       ( Ipe.Grammar.IpeFunctionBody
-          { Ipe.Grammar.attributions = attributions,
+          { Ipe.Grammar.functionBodyAttributions = attributions,
             Ipe.Grammar.functionReturn = returnExpr
           }
       )
@@ -157,7 +158,7 @@ matchExpression = do
 
   return $ Ipe.Grammar.IpeMatch expression matchCases
 
-matchCase :: Parser (Ipe.Grammar.IpeMatchPattern, Ipe.Grammar.Expression)
+matchCase :: Parser (Ipe.Grammar.IpeMatchPattern, [(Text, Ipe.Grammar.Expression)], Ipe.Grammar.Expression)
 matchCase = do
   Control.Monad.void $ Ipe.Parser.symbol "|"
 
@@ -165,9 +166,11 @@ matchCase = do
 
   Control.Monad.void $ Ipe.Parser.symbol "->"
 
+  attributions <- Parsec.Common.many $ Parsec.Common.try functionAttribution
+
   expression <- Ipe.Parser.Expression.parser
 
-  return (pattern_, expression)
+  return (pattern_, attributions, expression)
 
 matchPattern :: Bool -> Parser Ipe.Grammar.IpeMatchPattern
 matchPattern acceptArgs =
@@ -187,7 +190,7 @@ customTypePattern acceptArgs = do
 
   args <-
     if acceptArgs
-      then Parsec.Common.many . Parsec.Common.try . Ipe.Parser.lexeme $ matchPattern False
+      then Parsec.Common.many . Parsec.Common.try . Ipe.Parser.lexeme $ Ipe.Parser.lowercaseIdentifier
       else return []
 
   return $
@@ -195,6 +198,21 @@ customTypePattern acceptArgs = do
       customTypePath
       customTypeName
       args
+
+record :: Parser Ipe.Grammar.Expression
+record =
+  Parsec.Common.between (Ipe.Parser.symbol "{") (Ipe.Parser.symbol "}") $
+    Ipe.Grammar.IpeRecord <$> Parsec.Common.sepBy parseField (Ipe.Parser.symbol ",")
+  where
+    parseField :: Parser (Text, Ipe.Grammar.Expression)
+    parseField = do
+      name <- Ipe.Parser.lexeme Ipe.Parser.lowercaseIdentifier
+
+      Control.Monad.void $ Ipe.Parser.symbol "="
+
+      expr <- Ipe.Parser.lexeme parser
+
+      return (name, expr)
 
 forbiddenSymbols :: [Text]
 forbiddenSymbols = [":"]
