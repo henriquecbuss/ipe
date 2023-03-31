@@ -5,6 +5,7 @@ import qualified Ipe.Parser.ModuleSpec
 import qualified Ipe.Parser.TopLevelDefinitionSpec
 import qualified Ipe.Parser.TypeDefinitionSpec
 import qualified Ipe.ParserSpec
+import qualified Ipe.Transformer.ModuleSpec
 import qualified Ipe.TypeChecker.ExpressionSpec
 import qualified Ipe.TypeChecker.ModuleSpec
 import qualified Test.Hspec
@@ -19,6 +20,8 @@ main =
     Ipe.Parser.ExpressionSpec.spec
     Ipe.Parser.TopLevelDefinitionSpec.spec
     Ipe.Parser.ModuleSpec.spec
+
+    Ipe.Transformer.ModuleSpec.spec
 
     Ipe.TypeChecker.ExpressionSpec.spec
     Ipe.TypeChecker.ModuleSpec.spec
