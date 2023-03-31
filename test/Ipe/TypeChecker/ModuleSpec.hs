@@ -3,7 +3,9 @@
 module Ipe.TypeChecker.ModuleSpec (spec) where
 
 import qualified Data.Map as Map
+import qualified Data.Maybe as Maybe
 import Data.Text (Text)
+import qualified Data.Text as T
 import Ipe.Grammar
 import Ipe.TypeChecker (Error (..), Type (..))
 import qualified Ipe.TypeChecker as TypeChecker
@@ -14,6 +16,7 @@ spec :: Spec
 spec = describe "the module type checker" $ do
   addingTypeDefinitions
   addingTopLevelDefinitions
+  usingImportedValues
 
 sampleModule :: Module
 sampleModule =
@@ -22,6 +25,35 @@ sampleModule =
       moduleImports = [],
       typeDefinitions = [],
       topLevelDefinitions = []
+    }
+
+sampleModuleWithImport :: Maybe ([Text], Text) -> Module
+sampleModuleWithImport alias =
+  sampleModule
+    { moduleImports =
+        [ ImportExpression
+            { importedModulePath = ["Some", "Imported"],
+              importedModule = "Module",
+              importedModuleAlias = alias
+            }
+        ]
+    }
+
+sampleImportedModule :: Module
+sampleImportedModule =
+  Module
+    { moduleDefinition =
+        sampleModuleDefinition
+          { moduleDefinitionName = "Module",
+            moduleDefinitionPath = ["Some", "Imported"],
+            exportedDefinitions = ["UnionTest", "OpaqueTest", "A", "B", "C", "test", "test2"]
+          },
+      moduleImports = [],
+      typeDefinitions =
+        [ TypeUnionDefinition typeUnion0,
+          TypeOpaqueDefinition typeOpaque0
+        ],
+      topLevelDefinitions = sampleTopLevelDefinitions
     }
 
 sampleModuleDefinition :: ModuleDefinition
@@ -39,23 +71,25 @@ sampleTypeDefinitions0 =
     TypeUnionDefinition typeUnion0,
     TypeOpaqueDefinition typeOpaque0
   ]
-  where
-    typeUnion0 =
-      typeUnion
-        "UnionTest"
-        ["a", "b"]
-        [ ("A", [ConcreteType [] "Number" []]),
-          ("B", [ConcreteType [] "String" [], ConcreteType [] "Number" [], ParameterType "b"]),
-          ("C", [ConcreteType [] "OpaqueTest" [ParameterType "a", ParameterType "b"]])
-        ]
 
-    typeOpaque0 =
-      typeOpaque
-        "OpaqueTest"
-        ["a", "b"]
-        [ ("OA", [ParameterType "a"]),
-          ("OB", [ParameterType "b"])
-        ]
+typeUnion0 :: TypeUnion
+typeUnion0 =
+  typeUnion
+    "UnionTest"
+    ["a", "b"]
+    [ ("A", [ConcreteType [] "Number" []]),
+      ("B", [ConcreteType [] "String" [], ConcreteType [] "Number" [], ParameterType "b"]),
+      ("C", [ConcreteType [] "OpaqueTest" [ParameterType "a", ParameterType "b"]])
+    ]
+
+typeOpaque0 :: TypeOpaque
+typeOpaque0 =
+  typeOpaque
+    "OpaqueTest"
+    ["a", "b"]
+    [ ("OA", [ParameterType "a"]),
+      ("OB", [ParameterType "b"])
+    ]
 
 tCustom0 :: TypeChecker.Type
 tCustom0 =
@@ -75,6 +109,31 @@ tOpaque0 =
     [ ("OA", [TVar "a"]),
       ("OB", [TVar "b"])
     ]
+
+importedTOpaque0 :: Maybe ([Text], Text) -> TypeChecker.Type
+importedTOpaque0 alias =
+  TCustom
+    (prefixed "OpaqueTest")
+    [TVar "a", TVar "b"]
+    [ (prefixed "OA", [TVar "a"]),
+      (prefixed "OB", [TVar "b"])
+    ]
+  where
+    (prefixPath, prefixModule) = Maybe.fromMaybe (["Some", "Imported"], "Module") alias
+    prefixed x = T.unpack $ T.intercalate "." (prefixPath ++ [prefixModule, x])
+
+importedTCustom0 :: Maybe ([Text], Text) -> TypeChecker.Type
+importedTCustom0 alias =
+  TCustom
+    (prefixed "UnionTest")
+    [TVar "a", TVar "b"]
+    [ (prefixed "A", [TNum]),
+      (prefixed "B", [TStr, TNum, TVar "b"]),
+      (prefixed "C", [importedTOpaque0 alias])
+    ]
+  where
+    (prefixPath, prefixModule) = Maybe.fromMaybe (["Some", "Imported"], "Module") alias
+    prefixed x = T.unpack $ T.intercalate "." (prefixPath ++ [prefixModule, x])
 
 sampleTopLevelDefinitions :: [TopLevelDefinition]
 sampleTopLevelDefinitions =
@@ -139,7 +198,7 @@ addingTypeDefinitions :: Spec
 addingTypeDefinitions =
   describe "when adding type definitions" $ do
     it "should type check alias + union" $
-      ModTypeChecker.run (sampleModule {typeDefinitions = sampleTypeDefinitions0})
+      ModTypeChecker.run [] (sampleModule {typeDefinitions = sampleTypeDefinitions0})
         `shouldBe` Right
           ( Map.fromList
               [ ("Number", TNum),
@@ -157,6 +216,7 @@ addingTypeDefinitions =
 
     it "should recognize when a type doesn't exist" $
       ModTypeChecker.run
+        []
         ( sampleModule
             { typeDefinitions =
                 [ TypeAliasDefinition . typeAlias "AliasTest" [] $
@@ -168,6 +228,7 @@ addingTypeDefinitions =
 
     it "should recognize when a type isn't declaring all variables" $
       ModTypeChecker.run
+        []
         ( sampleModule
             { typeDefinitions =
                 [ TypeAliasDefinition . typeAlias "AliasTest" ["a"] $
@@ -184,6 +245,7 @@ addingTypeDefinitions =
 
     it "should replace variables with concrete values" $
       ModTypeChecker.run
+        []
         ( sampleModule
             { typeDefinitions =
                 [ TypeAliasDefinition . typeAlias "AliasTest" [] $
@@ -208,6 +270,7 @@ addingTypeDefinitions =
 
     it "should replace variables with other variables" $
       ModTypeChecker.run
+        []
         ( sampleModule
             { typeDefinitions =
                 [ TypeAliasDefinition . typeAlias "AliasTest" ["newName"] $
@@ -235,6 +298,7 @@ addingTopLevelDefinitions =
   describe "when adding top level definitions" $ do
     it "should get correct values" $
       ModTypeChecker.run
+        []
         ( sampleModule {topLevelDefinitions = sampleTopLevelDefinitions}
         )
         `shouldBe` Right
@@ -248,6 +312,7 @@ addingTopLevelDefinitions =
 
     it "should check that the type annotation is correct" $
       ModTypeChecker.run
+        []
         ( sampleModule
             { topLevelDefinitions =
                 [ topLevelDefinition
@@ -264,3 +329,36 @@ addingTopLevelDefinitions =
             }
         )
         `shouldBe` Left (ModTypeChecker.TopLevelDefinitionError "test" (NoMatch TNum TStr))
+
+usingImportedValues :: Spec
+usingImportedValues =
+  describe "when using imported values" $ do
+    it "should correctly import values and types" $
+      ModTypeChecker.run [sampleImportedModule] (sampleModuleWithImport Nothing)
+        `shouldBe` Right
+          ( Map.fromList
+              [ ( "Number",
+                  TNum
+                ),
+                ( "String",
+                  TStr
+                ),
+                ( "Some.Imported.Module.A",
+                  TFun TNum (importedTCustom0 Nothing)
+                ),
+                ( "Some.Imported.Module.B",
+                  TFun TStr (TFun TNum (TFun (TVar "b") (importedTCustom0 Nothing)))
+                ),
+                ( "Some.Imported.Module.C",
+                  TFun (importedTOpaque0 Nothing) (importedTCustom0 Nothing)
+                ),
+                ( "Some.Imported.Module.OpaqueTest",
+                  importedTOpaque0 Nothing
+                ),
+                ( "Some.Imported.Module.UnionTest",
+                  importedTCustom0 Nothing
+                ),
+                ("Some.Imported.Module.test", TNum),
+                ("Some.Imported.Module.test2", TStr)
+              ]
+          )

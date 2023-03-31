@@ -17,6 +17,7 @@ module Ipe.TypeChecker
     newTypeVar,
     instantiate,
     freeTypeVariables,
+    prefix,
   )
 where
 
@@ -27,9 +28,12 @@ import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Except (ExceptT, runExceptT, throwE)
 import Control.Monad.Trans.State (State, evalState, get, put)
 import qualified Data.Bifunctor
+import Data.Char as Char
 import qualified Data.List
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import Data.Text (Text)
+import qualified Data.Text as T
 import qualified Ipe.Grammar
 
 -- TYPES
@@ -116,6 +120,39 @@ data Error
 
 -- HELPER FUNCTIONS
 
+prefix :: [Text] -> Text -> Type -> Type
+prefix modulePath moduleName t =
+  case t of
+    TNum -> TNum
+    TStr -> TStr
+    TVar var -> TVar var
+    TFun input output -> TFun (prefix modulePath moduleName input) (prefix modulePath moduleName output)
+    TRec record -> TRec $ map (Data.Bifunctor.second (prefix modulePath moduleName)) record
+    TCustom name typeVars constructors ->
+      TCustom
+        (prefixNonImported name)
+        (map (prefix modulePath moduleName) typeVars)
+        ( map
+            ( Data.Bifunctor.bimap
+                prefixNonImported
+                (map (prefix modulePath moduleName))
+            )
+            constructors
+        )
+  where
+    prefixString :: String -> String
+    prefixString str = Data.List.intercalate "." (map T.unpack modulePath ++ [T.unpack moduleName, str])
+
+    prefixNonImported :: String -> String
+    prefixNonImported str =
+      if isImported str then str else prefixString str
+
+    isImported :: String -> Bool
+    isImported [] = False
+    isImported (first : rest)
+      | not (Char.isUpper first) = False
+      | otherwise = '.' `elem` rest
+
 compose :: Substitution -> Substitution -> Substitution
 compose subs1 subs2 = Map.map (apply subs1) subs2 `Map.union` subs1
 
@@ -128,10 +165,10 @@ generalize env t = Scheme vars t
     vars = Set.toList $ Set.difference (freeTypeVariables t) (freeTypeVariables env)
 
 newTypeVar :: String -> TypeInferenceMonad Type
-newTypeVar prefix = do
+newTypeVar namePrefix = do
   currentState <- lift get
   lift $ put $ currentState {lastVarIndex = lastVarIndex currentState + 1}
-  return $ TVar (prefix ++ show (lastVarIndex currentState))
+  return $ TVar (namePrefix ++ show (lastVarIndex currentState))
 
 instantiate :: Scheme -> TypeInferenceMonad Type
 instantiate (Scheme vars t) = do

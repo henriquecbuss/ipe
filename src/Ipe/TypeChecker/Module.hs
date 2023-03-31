@@ -1,13 +1,15 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 
 module Ipe.TypeChecker.Module (run, Error (..)) where
 
 import Control.Monad (mapAndUnzipM)
+import qualified Control.Monad
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Except (ExceptT, runExceptT, throwE)
-import Control.Monad.Trans.State (State, evalState, get, modify)
+import Control.Monad.Trans.State (State, evalState, get, modify, put)
 import qualified Data.Bifunctor
 import Data.Functor ((<&>))
 import qualified Data.List as List
@@ -19,8 +21,11 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Ipe.Grammar
   ( CustomTypeConstructor (..),
+    ImportExpression (..),
+    ImportList,
     IpeType (..),
     Module (..),
+    ModuleDefinition (..),
     TopLevelDefinition (..),
     TypeAlias (..),
     TypeAnnotation (..),
@@ -32,9 +37,9 @@ import Ipe.TypeChecker (Type (..), freeTypeVariables)
 import qualified Ipe.TypeChecker
 import qualified Ipe.TypeChecker.Expression
 
-run :: Module -> Either Error (Map.Map Text Type)
-run currModule =
-  evalState (runExceptT (runHelper currModule)) initialState
+run :: [Module] -> Module -> Either Error (Map.Map Text Type)
+run allModules currModule =
+  evalState (runExceptT (runHelper allModules currModule)) initialState
 
 initialState :: Map.Map Text Type
 initialState =
@@ -43,15 +48,52 @@ initialState =
       ("String", TStr)
     ]
 
-runHelper :: Module -> CollectionMonad (Map.Map Text Type)
-runHelper currModule@(Module {typeDefinitions, topLevelDefinitions}) = do
-  -- TODO - Gather imports
+runHelper :: [Module] -> Module -> CollectionMonad (Map.Map Text Type)
+runHelper allModules currModule@(Module {typeDefinitions, topLevelDefinitions, moduleImports}) = do
+  let importedModules =
+        Maybe.mapMaybe
+          ( \importedModule@(Module {moduleDefinition = (ModuleDefinition {moduleDefinitionPath, moduleDefinitionName, exportedDefinitions})}) ->
+              (,exportedDefinitions,importedModule)
+                <$> findModuleByPathAndName
+                  moduleDefinitionPath
+                  moduleDefinitionName
+                  moduleImports
+          )
+          allModules
+
+  importMap <-
+    Control.Monad.foldM
+      ( \acc (importExpression, exportedDefinitions, importedModule@(Module {moduleDefinition})) -> do
+          let (prefixPath, prefixName) =
+                Maybe.fromMaybe
+                  (moduleDefinitionPath moduleDefinition, moduleDefinitionName moduleDefinition)
+                  (importedModuleAlias importExpression)
+
+          moduleResult <-
+            Map.mapKeys (\k -> T.intercalate "." (prefixPath <> [prefixName, k]))
+              . Map.map (Ipe.TypeChecker.prefix prefixPath prefixName)
+              . Map.filterWithKey (\k _ -> k `elem` exportedDefinitions)
+              <$> runHelper allModules importedModule
+
+          return $ Map.union acc moduleResult
+      )
+      Map.empty
+      importedModules
+
+  lift $ put $ Map.union importMap initialState
 
   mapM_ (addTypeDefinition currModule) typeDefinitions
 
   mapM_ (addTopLevelDefinition currModule) topLevelDefinitions
 
   lift get
+
+findModuleByPathAndName :: [Text] -> Text -> ImportList -> Maybe ImportExpression
+findModuleByPathAndName path name =
+  List.find
+    ( \(ImportExpression {importedModulePath, importedModule}) ->
+        importedModulePath == path && importedModule == name
+    )
 
 data Error
   = NotAllVariablesDeclared [Text] [Text] -- required + given
