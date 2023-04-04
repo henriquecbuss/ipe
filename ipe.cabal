@@ -28,6 +28,7 @@ library
       Ipe
       Ipe.Emitter
       Ipe.Emitter.Expression
+      Ipe.Emitter.Module
       Ipe.Generator
       Ipe.Grammar
       Ipe.Parser
@@ -73,6 +74,7 @@ test-suite ipe-test
   main-is: Spec.hs
   other-modules:
       Ipe.Emitter.ExpressionSpec
+      Ipe.Emitter.ModuleSpec
       Ipe.Parser.ExpressionSpec
       Ipe.Parser.ImportSpec
       Ipe.Parser.ModuleDefinitionSpec

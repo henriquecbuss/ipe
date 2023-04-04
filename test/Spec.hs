@@ -1,4 +1,5 @@
 import qualified Ipe.Emitter.ExpressionSpec
+import Ipe.Emitter.ModuleSpec
 import qualified Ipe.Parser.ExpressionSpec
 import qualified Ipe.Parser.ImportSpec
 import qualified Ipe.Parser.ModuleDefinitionSpec
@@ -28,3 +29,4 @@ main =
     Ipe.TypeChecker.ModuleSpec.spec
 
     Ipe.Emitter.ExpressionSpec.spec
+    Ipe.Emitter.ModuleSpec.spec
