@@ -172,4 +172,39 @@ packages:
       size: 1853
   original:
     hackage: mtl-2.3.1@sha256:5377696d7315e2ef31a8d15d67b22d733c20cac2caf8b26756ff8524c8217e6d,1868
+- completed:
+    hackage: iris-0.1.0.0@sha256:dd6d664b87dc78b9a2f3b7316dedb5aacdaebb84083f97c50625c5d445edf288,3787
+    pantry-tree:
+      sha256: c4273cac72fa250b4e3dc25dbb408589b5c7a63e02d6eb18b80ce3ebf342b3c4
+      size: 1614
+  original:
+    hackage: iris-0.1.0.0@sha256:dd6d664b87dc78b9a2f3b7316dedb5aacdaebb84083f97c50625c5d445edf288,3787
+- completed:
+    hackage: optparse-applicative-0.17.0.0@sha256:0713e54cbb341e5cae979e2ac441eb3a5ff42e303001f432bd58c19e5638bdda,4967
+    pantry-tree:
+      sha256: 3b4398845ee6718fe2303870a5ab75bd190eb712fed2f22caaae30f790c490fd
+      size: 3124
+  original:
+    hackage: optparse-applicative-0.17.0.0@sha256:0713e54cbb341e5cae979e2ac441eb3a5ff42e303001f432bd58c19e5638bdda,4967
+- completed:
+    hackage: unliftio-core-0.2.1.0@sha256:9fc3506770b16cdc73114307f854d56ddb96c7b930e7a5ed9b48cd0a8f33fca6,1004
+    pantry-tree:
+      sha256: 32c04ca24f220513837e1eec39a30c06054e670126c136aed38c5b4aab4d357b
+      size: 328
+  original:
+    hackage: unliftio-core-0.2.1.0@sha256:9fc3506770b16cdc73114307f854d56ddb96c7b930e7a5ed9b48cd0a8f33fca6,1004
+- completed:
+    hackage: ansi-wl-pprint-0.6.9@sha256:212144ea0623b1170807a4162db05d87f26cf10b334aeadd0edb377aba06a1ce,2425
+    pantry-tree:
+      sha256: 0a2390ba39c3b84f68e382cb25b58cea66d61a89dab818bb5e2a6c12642e2e21
+      size: 472
+  original:
+    hackage: ansi-wl-pprint-0.6.9@sha256:212144ea0623b1170807a4162db05d87f26cf10b334aeadd0edb377aba06a1ce,2425
+- completed:
+    hackage: transformers-compat-0.7.2@sha256:044fb9955f63ee138fcebedfdcbe54afe741f2d5892a2d0bdf3a8052bd342643,5601
+    pantry-tree:
+      sha256: f49610c6a2faf82111e5d4222576f4afbcfa904bf56665232c5aa077dfc7578f
+      size: 1724
+  original:
+    hackage: transformers-compat-0.7.2@sha256:044fb9955f63ee138fcebedfdcbe54afe741f2d5892a2d0bdf3a8052bd342643,5601
 snapshots: []

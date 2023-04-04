@@ -53,6 +53,7 @@ executables:
       - -with-rtsopts=-N
     dependencies:
       - ipe
+      - iris >= 0.1.0.0 && < 0.2.0.0
 
 tests:
   ipe-test:
