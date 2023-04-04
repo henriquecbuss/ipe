@@ -1,10 +1,11 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Ipe.Emitter.Expression (emit, commaSeparatedList) where
+module Ipe.Emitter.Expression (emit) where
 
 import Data.Text (Text)
 import qualified Data.Text as T
+import Ipe.Emitter
 import Ipe.Grammar
 import Prettyprinter
 
@@ -163,10 +164,6 @@ functionArguments [] = "()" <+> "=>"
 functionArguments args =
   align $ group $ vsep (map (\arg -> pretty arg <+> "=>") args)
 
-commaSeparatedList :: [Doc ann] -> Doc ann
-commaSeparatedList =
-  align . concatWith (surround (comma <> space))
-
 attribution :: Text -> Expression -> Doc ann
 attribution name expression = "const" <+> pretty name <+> "=" <+> emit expression <> ";"
 
@@ -181,6 +178,3 @@ defaultNesting = 2
 
 defaultConstName :: Text
 defaultConstName = "__ipeConst"
-
-emitString :: Text -> Doc ann
-emitString str = squotes $ pretty $ T.replace "'" "\\'" str

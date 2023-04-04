@@ -26,6 +26,7 @@ source-repository head
 library
   exposed-modules:
       Ipe
+      Ipe.Emitter
       Ipe.Emitter.Expression
       Ipe.Generator
       Ipe.Grammar
