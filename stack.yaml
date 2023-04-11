@@ -72,6 +72,7 @@ extra-deps:
   - unliftio-core-0.2.1.0@sha256:9fc3506770b16cdc73114307f854d56ddb96c7b930e7a5ed9b48cd0a8f33fca6,1004
   - ansi-wl-pprint-0.6.9@sha256:212144ea0623b1170807a4162db05d87f26cf10b334aeadd0edb377aba06a1ce,2425
   - transformers-compat-0.7.2@sha256:044fb9955f63ee138fcebedfdcbe54afe741f2d5892a2d0bdf3a8052bd342643,5601
+  - pretty-terminal-0.1.0.0@sha256:e9135d86ebb2a8e3aaf5a79088de4628dbd49988388e0fbfc26c5ecb3c399ad9,1638
 # Override default flag values for local packages and extra-deps
 # flags: {}
 
