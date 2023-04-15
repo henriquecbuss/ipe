@@ -3,20 +3,18 @@ module Ipe.Settings (appSettings) where
 import Ipe.Cli (Options, optionsP)
 import qualified Iris
 import Paths_ipe as Autogen
+import qualified System.Console.Pretty as Pretty
 
 appSettings :: Iris.CliEnvSettings Options ()
 appSettings =
   Iris.defaultCliEnvSettings
-    { -- short description
-      Iris.cliEnvSettingsHeaderDesc = "Iris usage example",
-      -- longer description
-      Iris.cliEnvSettingsProgDesc = "A simple grep utility - tutorial example",
-      -- a function to display the tool version
+    { Iris.cliEnvSettingsHeaderDesc = Pretty.style Pretty.Bold $ Pretty.color Pretty.Green "Ipe",
+      Iris.cliEnvSettingsProgDesc = "A " <> Pretty.color Pretty.Cyan "functional" <> " programming language for backend apps",
+      Iris.cliEnvSettingsAppName = Just "Ipe",
       Iris.cliEnvSettingsVersionSettings =
         Just
           (Iris.defaultVersionSettings Autogen.version)
-            { Iris.versionSettingsMkDesc = ("Simple grep utility v" <>)
+            { Iris.versionSettingsMkDesc = ("Ipe v" <>)
             },
-      -- our 'Options' CLI parser
       Iris.cliEnvSettingsCmdParser = optionsP
     }
