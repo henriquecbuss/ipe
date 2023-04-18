@@ -1,34 +1,48 @@
 {-# LANGUAGE ApplicativeDo #-}
-{-# LANGUAGE RecordWildCards #-}
 
 module Ipe.Cli (Options (..), optionsP) where
 
-import Data.Text (Text)
 import qualified Options.Applicative as Opt
 
-data Options = Options
-  { optionsFile :: FilePath,
-    optionsSearch :: Text
+data Options = Build
+  { entrypoint :: FilePath,
+    outputDir :: Maybe FilePath
   }
 
 optionsP :: Opt.Parser Options
-optionsP = do
-  optionsFile <-
-    Opt.strOption $
-      mconcat
-        [ Opt.long "file",
-          Opt.short 'f',
-          Opt.metavar "FILE_PATH",
-          Opt.help "Path to the file"
-        ]
+optionsP = Opt.subparser buildCommand
 
-  optionsSearch <-
-    Opt.strOption $
-      mconcat
-        [ Opt.long "search",
-          Opt.short 's',
-          Opt.metavar "STRING",
-          Opt.help "Substring to find and highlight"
-        ]
+buildCommand :: Opt.Mod Opt.CommandFields Options
+buildCommand =
+  Opt.command
+    "build"
+    ( Opt.info
+        (Opt.helper <*> buildP)
+        ( Opt.fullDesc
+            <> Opt.progDesc "Build an Ipe project"
+        )
+    )
 
-  pure Options {..}
+buildP :: Opt.Parser Options
+buildP = do
+  rootFile <-
+    fileArgument
+      ( Opt.metavar "ROOT_FILE"
+          <> Opt.help "Path to the root file. Ex: `./src/root.ipe`"
+      )
+
+  outputDir <-
+    Opt.optional $
+      fileOption $
+        Opt.long "output-dir"
+          <> Opt.short 'o'
+          <> Opt.metavar "OUTPUT_DIR"
+          <> Opt.help "Path to the output directory. Ex: `./dist`"
+
+  return Build {entrypoint = rootFile, outputDir = outputDir}
+
+fileArgument :: Opt.Mod Opt.ArgumentFields FilePath -> Opt.Parser FilePath
+fileArgument = Opt.strArgument
+
+fileOption :: Opt.Mod Opt.OptionFields FilePath -> Opt.Parser FilePath
+fileOption = Opt.strOption
