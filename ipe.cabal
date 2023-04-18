@@ -28,7 +28,6 @@ library
       Ipe.Emitter
       Ipe.Emitter.Expression
       Ipe.Emitter.Module
-      Ipe.Generator
       Ipe.Grammar
       Ipe.Parser
       Ipe.Parser.Expression
@@ -69,11 +68,14 @@ executable ipe-exe
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , directory >=1.3.8.1 && <1.4.0.0
+    , filepath >=1.4.100.3 && <1.5.0.0
     , ipe
     , iris >=0.1.0.0 && <0.2.0.0
     , mtl >=2.3.1 && <2.4
     , optparse-applicative >=0.17.0.0 && <0.18.0.0
     , pretty-terminal >=0.1.0.0 && <0.2.0.0
+    , prettyprinter >=1.7.1 && <1.8.0
     , text >=2.0.1 && <3
   default-language: Haskell2010
 
