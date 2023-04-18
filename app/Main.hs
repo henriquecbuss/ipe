@@ -13,6 +13,8 @@ import qualified Data.Text.IO as Text
 import Ipe.Cli (Options (..))
 import qualified Ipe.Parser
 import Ipe.Settings (appSettings)
+import qualified Ipe.Transformer.Module
+import qualified Ipe.TypeChecker
 import qualified Iris
 import qualified System.Console.Pretty as Pretty
 
@@ -42,7 +44,11 @@ execBuild entrypoint outputDir = do
   case parsedModule of
     Left err -> liftIO $ putStr err
     Right parsedModule -> do
-      liftIO $ print parsedModule
+      case Ipe.TypeChecker.run [] $ Ipe.Transformer.Module.apply parsedModule of
+        Left err -> liftIO $ putStr err
+        Right typeChecked -> do
+          liftIO $ print parsedModule
+          liftIO $ print typeChecked
 
 main :: IO ()
 main = Iris.runCliApp appSettings $ unApp app
