@@ -7,8 +7,8 @@ import qualified Control.Monad.Combinators.Expr as Combinators.Expr
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Ipe.Grammar
-import Ipe.Parser (Parser)
-import qualified Ipe.Parser
+import Ipe.Parser.Utils (Parser)
+import qualified Ipe.Parser.Utils as Ipe.Parser
 import Text.Megaparsec ((<|>))
 import qualified Text.Megaparsec as Parsec.Common
 import qualified Text.Megaparsec.Char as Parsec.Char

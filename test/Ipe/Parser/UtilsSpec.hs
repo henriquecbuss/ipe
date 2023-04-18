@@ -1,9 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Ipe.ParserSpec (spec) where
+module Ipe.Parser.UtilsSpec (spec) where
 
 import qualified Data.Text as T
-import qualified Ipe.Parser
+import qualified Ipe.Parser.Utils as Ipe.Parser
 import Test.Hspec
 import Test.Hspec.Megaparsec (elabel, err, etoks, initialState, shouldFailWith, shouldParse, succeedsLeaving, utok, utoks)
 import Test.Hspec.QuickCheck

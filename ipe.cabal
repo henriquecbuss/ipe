@@ -34,6 +34,7 @@ library
       Ipe.Parser.ModuleDefinition
       Ipe.Parser.TopLevelDefinition
       Ipe.Parser.TypeDefinition
+      Ipe.Parser.Utils
       Ipe.Transformer.Module
       Ipe.TypeChecker
       Ipe.TypeChecker.Expression
@@ -82,7 +83,7 @@ test-suite ipe-test
       Ipe.Parser.ModuleSpec
       Ipe.Parser.TopLevelDefinitionSpec
       Ipe.Parser.TypeDefinitionSpec
-      Ipe.ParserSpec
+      Ipe.Parser.UtilsSpec
       Ipe.Transformer.ModuleSpec
       Ipe.TypeChecker.ExpressionSpec
       Ipe.TypeChecker.ModuleSpec
