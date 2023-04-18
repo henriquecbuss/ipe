@@ -3,13 +3,11 @@
 module Ipe.TypeChecker.ModuleSpec (spec) where
 
 import qualified Data.Map as Map
-import qualified Data.Maybe as Maybe
 import Data.Text (Text)
-import qualified Data.Text as T
 import Ipe.Grammar
-import Ipe.TypeChecker (Error (..), Type (..))
-import qualified Ipe.TypeChecker as TypeChecker
 import qualified Ipe.TypeChecker.Module as ModTypeChecker
+import Ipe.TypeChecker.Utils (Error (..), Type (..))
+import qualified Ipe.TypeChecker.Utils as TypeChecker
 import Test.Hspec
 
 spec :: Spec
@@ -110,31 +108,6 @@ tOpaque0 =
       ("OB", [TVar "b"])
     ]
 
-importedTOpaque0 :: Maybe ([Text], Text) -> TypeChecker.Type
-importedTOpaque0 alias =
-  TCustom
-    (prefixed "OpaqueTest")
-    [TVar "a", TVar "b"]
-    [ (prefixed "OA", [TVar "a"]),
-      (prefixed "OB", [TVar "b"])
-    ]
-  where
-    (prefixPath, prefixModule) = Maybe.fromMaybe (["Some", "Imported"], "Module") alias
-    prefixed x = T.unpack $ T.intercalate "." (prefixPath ++ [prefixModule, x])
-
-importedTCustom0 :: Maybe ([Text], Text) -> TypeChecker.Type
-importedTCustom0 alias =
-  TCustom
-    (prefixed "UnionTest")
-    [TVar "a", TVar "b"]
-    [ (prefixed "A", [TNum]),
-      (prefixed "B", [TStr, TNum, TVar "b"]),
-      (prefixed "C", [importedTOpaque0 alias])
-    ]
-  where
-    (prefixPath, prefixModule) = Maybe.fromMaybe (["Some", "Imported"], "Module") alias
-    prefixed x = T.unpack $ T.intercalate "." (prefixPath ++ [prefixModule, x])
-
 sampleTopLevelDefinitions :: [TopLevelDefinition]
 sampleTopLevelDefinitions =
   [ topLevelDefinition
@@ -198,19 +171,24 @@ addingTypeDefinitions :: Spec
 addingTypeDefinitions =
   describe "when adding type definitions" $ do
     it "should type check alias + union" $
-      ModTypeChecker.run [] (sampleModule {typeDefinitions = sampleTypeDefinitions0})
+      ModTypeChecker.run
+        []
+        ( sampleModule
+            { typeDefinitions = sampleTypeDefinitions0,
+              moduleDefinition =
+                sampleModuleDefinition
+                  { exportedDefinitions = ["AliasTest", "UnionTest", "OpaqueTest"]
+                  }
+            }
+        )
         `shouldBe` Right
           ( Map.fromList
-              [ ("Number", TNum),
-                ("String", TStr),
-                ("AliasTest", tCustom0),
+              [ ("AliasTest", tCustom0),
                 ("UnionTest", tCustom0),
                 ("OpaqueTest", tOpaque0),
                 ("A", TFun TNum tCustom0),
                 ("B", TFun TStr (TFun TNum (TFun (TVar "b") tCustom0))),
-                ("C", TFun tOpaque0 tCustom0),
-                ("OA", TFun (TVar "a") tOpaque0),
-                ("OB", TFun (TVar "b") tOpaque0)
+                ("C", TFun tOpaque0 tCustom0)
               ]
           )
 
@@ -255,14 +233,16 @@ addingTypeDefinitions =
                       "UnionTest"
                       ["a"]
                       [("A", [ParameterType "a"])]
-                ]
+                ],
+              moduleDefinition =
+                sampleModuleDefinition
+                  { exportedDefinitions = ["AliasTest", "UnionTest"]
+                  }
             }
         )
         `shouldBe` Right
           ( Map.fromList
-              [ ("Number", TNum),
-                ("String", TStr),
-                ("AliasTest", TCustom "UnionTest" [TNum] [("A", [TNum])]),
+              [ ("AliasTest", TCustom "UnionTest" [TNum] [("A", [TNum])]),
                 ("UnionTest", TCustom "UnionTest" [TVar "a"] [("A", [TVar "a"])]),
                 ("A", TFun (TVar "a") (TCustom "UnionTest" [TVar "a"] [("A", [TVar "a"])]))
               ]
@@ -280,14 +260,17 @@ addingTypeDefinitions =
                       "UnionTest"
                       ["a"]
                       [("A", [ParameterType "a"])]
-                ]
+                ],
+              moduleDefinition =
+                sampleModuleDefinition
+                  { exportedDefinitions =
+                      ["AliasTest", "UnionTest"]
+                  }
             }
         )
         `shouldBe` Right
           ( Map.fromList
-              [ ("Number", TNum),
-                ("String", TStr),
-                ("AliasTest", TCustom "UnionTest" [TVar "newName"] [("A", [TVar "newName"])]),
+              [ ("AliasTest", TCustom "UnionTest" [TVar "newName"] [("A", [TVar "newName"])]),
                 ("UnionTest", TCustom "UnionTest" [TVar "a"] [("A", [TVar "a"])]),
                 ("A", TFun (TVar "a") (TCustom "UnionTest" [TVar "a"] [("A", [TVar "a"])]))
               ]
@@ -299,14 +282,15 @@ addingTopLevelDefinitions =
     it "should get correct values" $
       ModTypeChecker.run
         []
-        ( sampleModule {topLevelDefinitions = sampleTopLevelDefinitions}
+        ( sampleModule
+            { topLevelDefinitions = sampleTopLevelDefinitions,
+              moduleDefinition = sampleModuleDefinition {exportedDefinitions = ["test", "test2"]}
+            }
         )
         `shouldBe` Right
           ( Map.fromList
               [ ("test", TNum),
-                ("test2", TStr),
-                ("Number", TNum),
-                ("String", TStr)
+                ("test2", TStr)
               ]
           )
 
@@ -335,30 +319,4 @@ usingImportedValues =
   describe "when using imported values" $ do
     it "should correctly import values and types" $
       ModTypeChecker.run [sampleImportedModule] (sampleModuleWithImport Nothing)
-        `shouldBe` Right
-          ( Map.fromList
-              [ ( "Number",
-                  TNum
-                ),
-                ( "String",
-                  TStr
-                ),
-                ( "Some.Imported.Module.A",
-                  TFun TNum (importedTCustom0 Nothing)
-                ),
-                ( "Some.Imported.Module.B",
-                  TFun TStr (TFun TNum (TFun (TVar "b") (importedTCustom0 Nothing)))
-                ),
-                ( "Some.Imported.Module.C",
-                  TFun (importedTOpaque0 Nothing) (importedTCustom0 Nothing)
-                ),
-                ( "Some.Imported.Module.OpaqueTest",
-                  importedTOpaque0 Nothing
-                ),
-                ( "Some.Imported.Module.UnionTest",
-                  importedTCustom0 Nothing
-                ),
-                ("Some.Imported.Module.test", TNum),
-                ("Some.Imported.Module.test2", TStr)
-              ]
-          )
+        `shouldBe` Right Map.empty

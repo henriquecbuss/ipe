@@ -33,9 +33,9 @@ import Ipe.Grammar
     TypeOpaque (..),
     TypeUnion (..),
   )
-import Ipe.TypeChecker (Type (..), freeTypeVariables)
-import qualified Ipe.TypeChecker
 import qualified Ipe.TypeChecker.Expression
+import Ipe.TypeChecker.Utils (Type (..), freeTypeVariables)
+import qualified Ipe.TypeChecker.Utils as Ipe.TypeChecker
 
 run :: [Module] -> Module -> Either Error (Map.Map Text Type)
 run allModules currModule =
@@ -86,7 +86,27 @@ runHelper allModules currModule@(Module {typeDefinitions, topLevelDefinitions, m
 
   mapM_ (addTopLevelDefinition currModule) topLevelDefinitions
 
-  lift get
+  currState <- lift get
+  let allExportedDefinitions = exportedDefinitions $ moduleDefinition currModule
+  let allCustomTypeConstructors =
+        concat $
+          Maybe.mapMaybe
+            ( \case
+                TypeUnionDefinition (TypeUnion {typeUnionDefinitionName, typeUnionDefinitionConstructors}) ->
+                  if typeUnionDefinitionName `elem` allExportedDefinitions
+                    then Just $ map customTypeConstructorName typeUnionDefinitionConstructors
+                    else Nothing
+                TypeAliasDefinition _ -> Nothing
+                TypeOpaqueDefinition _ -> Nothing
+            )
+            typeDefinitions
+
+  let allDefinitionsThatShouldBeExported = allExportedDefinitions ++ allCustomTypeConstructors
+
+  if allDefinitionsThatShouldBeExported `List.intersect` Map.keys currState == allDefinitionsThatShouldBeExported
+    then do
+      return $ Map.filterWithKey (\k _ -> k `elem` allDefinitionsThatShouldBeExported) currState
+    else throwE $ NotAllVariablesDeclared allExportedDefinitions (Map.keys currState)
 
 findModuleByPathAndName :: [Text] -> Text -> ImportList -> Maybe ImportExpression
 findModuleByPathAndName path name =

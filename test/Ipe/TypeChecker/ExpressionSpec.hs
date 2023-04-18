@@ -5,8 +5,8 @@ module Ipe.TypeChecker.ExpressionSpec (spec) where
 import qualified Data.Map as Map
 import qualified Data.Text as T
 import Ipe.Grammar
-import Ipe.TypeChecker (Error (..))
 import qualified Ipe.TypeChecker.Expression as ExprTypeChecker
+import Ipe.TypeChecker.Utils (Error (..))
 import Test.Hspec
 import Test.Hspec.QuickCheck
 

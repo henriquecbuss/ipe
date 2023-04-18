@@ -9,7 +9,7 @@ import qualified Data.Map as Map
 import Data.Text (Text)
 import qualified Data.Text as T
 import Ipe.Grammar (Expression (..), FunctionCallOrValue (..), IpeBinaryOperator (..), IpeFunctionBody (..), IpeMatchPattern (..))
-import Ipe.TypeChecker
+import Ipe.TypeChecker.Utils
   ( Error (..),
     Scheme (..),
     Substitution,
