@@ -10,8 +10,6 @@ import Control.Monad.Reader (MonadReader)
 import Data.Map (Map)
 import qualified Data.Map as Map
 import qualified Data.Maybe as Maybe
-import Data.Set (Set)
-import qualified Data.Set as Set
 import Data.Text (Text)
 import qualified Data.Text as T
 import Ipe.Cli (Options (..))
@@ -21,7 +19,6 @@ import qualified Ipe.Parser
 import Ipe.Settings (appSettings)
 import qualified Ipe.Transformer.Module
 import qualified Ipe.TypeChecker
-import qualified Ipe.TypeChecker.Utils
 import qualified Iris
 import Prettyprinter (Doc)
 import Prettyprinter.Render.Text (hPutDoc)
