@@ -14,7 +14,6 @@ spec :: Spec
 spec = describe "the module type checker" $ do
   addingTypeDefinitions
   addingTopLevelDefinitions
-  usingImportedValues
 
 sampleModule :: Module
 sampleModule =
@@ -23,35 +22,6 @@ sampleModule =
       moduleImports = [],
       typeDefinitions = [],
       topLevelDefinitions = []
-    }
-
-sampleModuleWithImport :: Maybe ([Text], Text) -> Module
-sampleModuleWithImport alias =
-  sampleModule
-    { moduleImports =
-        [ ImportExpression
-            { importedModulePath = ["Some", "Imported"],
-              importedModule = "Module",
-              importedModuleAlias = alias
-            }
-        ]
-    }
-
-sampleImportedModule :: Module
-sampleImportedModule =
-  Module
-    { moduleDefinition =
-        sampleModuleDefinition
-          { moduleDefinitionName = "Module",
-            moduleDefinitionPath = ["Some", "Imported"],
-            exportedDefinitions = ["UnionTest", "OpaqueTest", "A", "B", "C", "test", "test2"]
-          },
-      moduleImports = [],
-      typeDefinitions =
-        [ TypeUnionDefinition typeUnion0,
-          TypeOpaqueDefinition typeOpaque0
-        ],
-      topLevelDefinitions = sampleTopLevelDefinitions
     }
 
 sampleModuleDefinition :: ModuleDefinition
@@ -172,7 +142,7 @@ addingTypeDefinitions =
   describe "when adding type definitions" $ do
     it "should type check alias + union" $
       ModTypeChecker.run
-        []
+        Map.empty
         ( sampleModule
             { typeDefinitions = sampleTypeDefinitions0,
               moduleDefinition =
@@ -183,18 +153,30 @@ addingTypeDefinitions =
         )
         `shouldBe` Right
           ( Map.fromList
-              [ ("AliasTest", tCustom0),
-                ("UnionTest", tCustom0),
-                ("OpaqueTest", tOpaque0),
-                ("A", TFun TNum tCustom0),
-                ("B", TFun TStr (TFun TNum (TFun (TVar "b") tCustom0))),
-                ("C", TFun tOpaque0 tCustom0)
+              [ ( ([], "Test"),
+                  ( sampleModule
+                      { typeDefinitions = sampleTypeDefinitions0,
+                        moduleDefinition =
+                          sampleModuleDefinition
+                            { exportedDefinitions = ["AliasTest", "UnionTest", "OpaqueTest"]
+                            }
+                      },
+                    Map.fromList
+                      [ ("AliasTest", tCustom0),
+                        ("UnionTest", tCustom0),
+                        ("OpaqueTest", tOpaque0),
+                        ("A", TFun TNum tCustom0),
+                        ("B", TFun TStr (TFun TNum (TFun (TVar "b") tCustom0))),
+                        ("C", TFun tOpaque0 tCustom0)
+                      ]
+                  )
+                )
               ]
           )
 
     it "should recognize when a type doesn't exist" $
       ModTypeChecker.run
-        []
+        Map.empty
         ( sampleModule
             { typeDefinitions =
                 [ TypeAliasDefinition . typeAlias "AliasTest" [] $
@@ -206,7 +188,7 @@ addingTypeDefinitions =
 
     it "should recognize when a type isn't declaring all variables" $
       ModTypeChecker.run
-        []
+        Map.empty
         ( sampleModule
             { typeDefinitions =
                 [ TypeAliasDefinition . typeAlias "AliasTest" ["a"] $
@@ -223,7 +205,7 @@ addingTypeDefinitions =
 
     it "should replace variables with concrete values" $
       ModTypeChecker.run
-        []
+        Map.empty
         ( sampleModule
             { typeDefinitions =
                 [ TypeAliasDefinition . typeAlias "AliasTest" [] $
@@ -242,15 +224,35 @@ addingTypeDefinitions =
         )
         `shouldBe` Right
           ( Map.fromList
-              [ ("AliasTest", TCustom "UnionTest" [TNum] [("A", [TNum])]),
-                ("UnionTest", TCustom "UnionTest" [TVar "a"] [("A", [TVar "a"])]),
-                ("A", TFun (TVar "a") (TCustom "UnionTest" [TVar "a"] [("A", [TVar "a"])]))
+              [ ( ([], "Test"),
+                  ( sampleModule
+                      { typeDefinitions =
+                          [ TypeAliasDefinition . typeAlias "AliasTest" [] $
+                              ConcreteType [] "UnionTest" [ConcreteType [] "Number" []],
+                            TypeUnionDefinition $
+                              typeUnion
+                                "UnionTest"
+                                ["a"]
+                                [("A", [ParameterType "a"])]
+                          ],
+                        moduleDefinition =
+                          sampleModuleDefinition
+                            { exportedDefinitions = ["AliasTest", "UnionTest"]
+                            }
+                      },
+                    Map.fromList
+                      [ ("AliasTest", TCustom "UnionTest" [TNum] [("A", [TNum])]),
+                        ("UnionTest", TCustom "UnionTest" [TVar "a"] [("A", [TVar "a"])]),
+                        ("A", TFun (TVar "a") (TCustom "UnionTest" [TVar "a"] [("A", [TVar "a"])]))
+                      ]
+                  )
+                )
               ]
           )
 
     it "should replace variables with other variables" $
       ModTypeChecker.run
-        []
+        Map.empty
         ( sampleModule
             { typeDefinitions =
                 [ TypeAliasDefinition . typeAlias "AliasTest" ["newName"] $
@@ -270,9 +272,30 @@ addingTypeDefinitions =
         )
         `shouldBe` Right
           ( Map.fromList
-              [ ("AliasTest", TCustom "UnionTest" [TVar "newName"] [("A", [TVar "newName"])]),
-                ("UnionTest", TCustom "UnionTest" [TVar "a"] [("A", [TVar "a"])]),
-                ("A", TFun (TVar "a") (TCustom "UnionTest" [TVar "a"] [("A", [TVar "a"])]))
+              [ ( ([], "Test"),
+                  ( sampleModule
+                      { typeDefinitions =
+                          [ TypeAliasDefinition . typeAlias "AliasTest" ["newName"] $
+                              ConcreteType [] "UnionTest" [ParameterType "newName"],
+                            TypeUnionDefinition $
+                              typeUnion
+                                "UnionTest"
+                                ["a"]
+                                [("A", [ParameterType "a"])]
+                          ],
+                        moduleDefinition =
+                          sampleModuleDefinition
+                            { exportedDefinitions =
+                                ["AliasTest", "UnionTest"]
+                            }
+                      },
+                    Map.fromList
+                      [ ("AliasTest", TCustom "UnionTest" [TVar "newName"] [("A", [TVar "newName"])]),
+                        ("UnionTest", TCustom "UnionTest" [TVar "a"] [("A", [TVar "a"])]),
+                        ("A", TFun (TVar "a") (TCustom "UnionTest" [TVar "a"] [("A", [TVar "a"])]))
+                      ]
+                  )
+                )
               ]
           )
 
@@ -281,7 +304,7 @@ addingTopLevelDefinitions =
   describe "when adding top level definitions" $ do
     it "should get correct values" $
       ModTypeChecker.run
-        []
+        Map.empty
         ( sampleModule
             { topLevelDefinitions = sampleTopLevelDefinitions,
               moduleDefinition = sampleModuleDefinition {exportedDefinitions = ["test", "test2"]}
@@ -289,14 +312,23 @@ addingTopLevelDefinitions =
         )
         `shouldBe` Right
           ( Map.fromList
-              [ ("test", TNum),
-                ("test2", TStr)
+              [ ( ([], "Test"),
+                  ( sampleModule
+                      { topLevelDefinitions = sampleTopLevelDefinitions,
+                        moduleDefinition = sampleModuleDefinition {exportedDefinitions = ["test", "test2"]}
+                      },
+                    Map.fromList
+                      [ ("test", TNum),
+                        ("test2", TStr)
+                      ]
+                  )
+                )
               ]
           )
 
     it "should check that the type annotation is correct" $
       ModTypeChecker.run
-        []
+        Map.empty
         ( sampleModule
             { topLevelDefinitions =
                 [ topLevelDefinition
@@ -313,10 +345,3 @@ addingTopLevelDefinitions =
             }
         )
         `shouldBe` Left (ModTypeChecker.TopLevelDefinitionError "test" (NoMatch TNum TStr))
-
-usingImportedValues :: Spec
-usingImportedValues =
-  describe "when using imported values" $ do
-    it "should correctly import values and types" $
-      ModTypeChecker.run [sampleImportedModule] (sampleModuleWithImport Nothing)
-        `shouldBe` Right Map.empty
