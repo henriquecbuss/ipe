@@ -6,8 +6,23 @@ import qualified Ipe.Grammar
 import qualified Ipe.TypeChecker.Module
 import qualified Ipe.TypeChecker.Utils
 
-run :: [Ipe.Grammar.Module] -> Ipe.Grammar.Module -> Either String (Map.Map Text Ipe.TypeChecker.Utils.Type)
+run ::
+  [Ipe.Grammar.Module] ->
+  Ipe.Grammar.Module ->
+  Either String (Map.Map ([Text], Text) (Ipe.Grammar.Module, Map.Map Text Ipe.TypeChecker.Utils.Type))
 run otherModules currModule =
-  case Ipe.TypeChecker.Module.run otherModules currModule of
+  case Ipe.TypeChecker.Module.run
+    ( Map.fromList $
+        map
+          ( \m ->
+              ( ( Ipe.Grammar.moduleDefinitionPath $ Ipe.Grammar.moduleDefinition m,
+                  Ipe.Grammar.moduleDefinitionName $ Ipe.Grammar.moduleDefinition m
+                ),
+                (m, Map.empty)
+              )
+          )
+          otherModules
+    )
+    currModule of
     Left err -> Left $ show err
     Right ok -> Right ok

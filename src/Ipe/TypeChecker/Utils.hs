@@ -115,6 +115,7 @@ data Error
   | UnboundVariable String
   | MissingRecordField [(String, Type)] String
   | TooManyArguments Type Type
+  | ModuleDoesNotExist ([Text], Text)
   | NoArguments
   deriving (Show, Eq)
 

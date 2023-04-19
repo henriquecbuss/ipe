@@ -1,14 +1,13 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TupleSections #-}
 
 module Ipe.TypeChecker.Module (run, Error (..)) where
 
 import Control.Monad (mapAndUnzipM)
 import qualified Control.Monad
 import Control.Monad.Trans.Class (lift)
-import Control.Monad.Trans.Except (ExceptT, runExceptT, throwE)
+import Control.Monad.Trans.Except (ExceptT, except, runExceptT, throwE)
 import Control.Monad.Trans.State (State, evalState, get, modify, put)
 import qualified Data.Bifunctor
 import Data.Functor ((<&>))
@@ -22,7 +21,6 @@ import qualified Data.Text as T
 import Ipe.Grammar
   ( CustomTypeConstructor (..),
     ImportExpression (..),
-    ImportList,
     IpeType (..),
     Module (..),
     ModuleDefinition (..),
@@ -37,58 +35,69 @@ import qualified Ipe.TypeChecker.Expression
 import Ipe.TypeChecker.Utils (Type (..), freeTypeVariables)
 import qualified Ipe.TypeChecker.Utils as Ipe.TypeChecker
 
-run :: [Module] -> Module -> Either Error (Map.Map Text Type)
+run ::
+  Map.Map ([Text], Text) (Module, Map.Map Text Type) ->
+  Module ->
+  Either Error (Map.Map ([Text], Text) (Module, Map.Map Text Type))
 run allModules currModule =
-  evalState (runExceptT (runHelper allModules currModule)) initialState
+  evalState (runExceptT (runHelper allModules currModule)) defaultInitialState
 
-initialState :: Map.Map Text Type
-initialState =
-  Map.fromList
-    [ ("Number", TNum),
-      ("String", TStr)
-    ]
+runHelper ::
+  Map.Map ([Text], Text) (Module, Map.Map Text Type) ->
+  Module ->
+  CollectionMonad (Map.Map ([Text], Text) (Module, Map.Map Text Type))
+runHelper allModules currModule@(Module {moduleImports, typeDefinitions, topLevelDefinitions}) = do
+  let allImportedModules = moduleImports
 
-runHelper :: [Module] -> Module -> CollectionMonad (Map.Map Text Type)
-runHelper allModules currModule@(Module {typeDefinitions, topLevelDefinitions, moduleImports}) = do
-  let importedModules =
-        Maybe.mapMaybe
-          ( \importedModule@(Module {moduleDefinition = (ModuleDefinition {moduleDefinitionPath, moduleDefinitionName, exportedDefinitions})}) ->
-              (,exportedDefinitions,importedModule)
-                <$> findModuleByPathAndName
-                  moduleDefinitionPath
-                  moduleDefinitionName
-                  moduleImports
-          )
-          allModules
-
-  importMap <-
+  contextWithImports <-
     Control.Monad.foldM
-      ( \acc (importExpression, exportedDefinitions, importedModule@(Module {moduleDefinition})) -> do
-          let (prefixPath, prefixName) =
-                Maybe.fromMaybe
-                  (moduleDefinitionPath moduleDefinition, moduleDefinitionName moduleDefinition)
-                  (importedModuleAlias importExpression)
-
-          moduleResult <-
-            Map.mapKeys (\k -> T.intercalate "." (prefixPath <> [prefixName, k]))
-              . Map.map (Ipe.TypeChecker.prefix prefixPath prefixName)
-              . Map.filterWithKey (\k _ -> k `elem` exportedDefinitions)
-              <$> runHelper allModules importedModule
-
-          return $ Map.union acc moduleResult
+      ( \acc importExpr ->
+          case Map.lookup (importedModulePath importExpr, importedModule importExpr) allModules of
+            Nothing -> throwE $ ModuleDoesNotExist (importedModulePath importExpr, importedModule importExpr)
+            Just (importedModule, importedMap) ->
+              if not (null importedMap)
+                then return acc
+                else do except $ run allModules importedModule
       )
-      Map.empty
-      importedModules
+      allModules
+      allImportedModules
 
-  lift $ put $ Map.union importMap initialState
+  initState <- lift get
+
+  let importAliases =
+        Map.fromList $
+          List.map
+            ( \(ImportExpression {importedModulePath, importedModule, importedModuleAlias}) ->
+                ( ( importedModulePath,
+                    importedModule
+                  ),
+                  (\(p, m) -> T.intercalate "." (p <> [m])) $
+                    Maybe.fromMaybe
+                      (importedModulePath, importedModule)
+                      importedModuleAlias
+                )
+            )
+            moduleImports
+
+  let importsOnThisModule =
+        Map.foldlWithKey
+          ( \currentState pathAndName (_, types) ->
+              case Map.lookup pathAndName importAliases of
+                Nothing -> currentState
+                Just validAlias -> Map.union currentState $ Map.mapKeys (\k -> validAlias <> "." <> k) types
+          )
+          initState
+          contextWithImports
+
+  lift $ put importsOnThisModule
 
   mapM_ (addTypeDefinition currModule) typeDefinitions
 
   mapM_ (addTopLevelDefinition currModule) topLevelDefinitions
 
-  currState <- lift get
+  stateAfterAddingEverything <- lift get
   let allExportedDefinitions = exportedDefinitions $ moduleDefinition currModule
-  let allCustomTypeConstructors =
+  let exportedCustomTypeConstructors =
         concat $
           Maybe.mapMaybe
             ( \case
@@ -101,25 +110,35 @@ runHelper allModules currModule@(Module {typeDefinitions, topLevelDefinitions, m
             )
             typeDefinitions
 
-  let allDefinitionsThatShouldBeExported = allExportedDefinitions ++ allCustomTypeConstructors
+  let allDefinitionsThatShouldBeExported = allExportedDefinitions ++ exportedCustomTypeConstructors
 
-  if allDefinitionsThatShouldBeExported `List.intersect` Map.keys currState == allDefinitionsThatShouldBeExported
-    then do
-      return $ Map.filterWithKey (\k _ -> k `elem` allDefinitionsThatShouldBeExported) currState
-    else throwE $ NotAllVariablesDeclared allExportedDefinitions (Map.keys currState)
+  exportedTypes <-
+    if allDefinitionsThatShouldBeExported `List.intersect` Map.keys stateAfterAddingEverything == allDefinitionsThatShouldBeExported
+      then do
+        return $ Map.filterWithKey (\k _ -> k `elem` allDefinitionsThatShouldBeExported) stateAfterAddingEverything
+      else throwE $ NotAllVariablesDeclared allExportedDefinitions (Map.keys stateAfterAddingEverything)
 
-findModuleByPathAndName :: [Text] -> Text -> ImportList -> Maybe ImportExpression
-findModuleByPathAndName path name =
-  List.find
-    ( \(ImportExpression {importedModulePath, importedModule}) ->
-        importedModulePath == path && importedModule == name
-    )
+  return $
+    Map.insert
+      ( moduleDefinitionPath $ moduleDefinition currModule,
+        moduleDefinitionName $ moduleDefinition currModule
+      )
+      (currModule, exportedTypes)
+      contextWithImports
+
+defaultInitialState :: Map.Map Text Type
+defaultInitialState =
+  Map.fromList
+    [ ("Number", TNum),
+      ("String", TStr)
+    ]
 
 data Error
   = NotAllVariablesDeclared [Text] [Text] -- required + given
   | UnknownType Text
   | TopLevelDefinitionError Text Ipe.TypeChecker.Error
   | AnnotationNameMismatch Text Text -- expected + actual
+  | ModuleDoesNotExist ([Text], Text)
   deriving (Eq)
 
 instance Show Error where
@@ -137,6 +156,8 @@ instance Show Error where
     "Error in top level definition " <> show tldName <> ":\n\n\t" <> show err
   show (AnnotationNameMismatch expected actual) =
     "The type annotation for this definition doesn't match the name of the definition! Expected: " <> show expected <> ", but got: " <> show actual
+  show (ModuleDoesNotExist (path, name)) =
+    "The module " <> show (T.intercalate "." (path <> [name])) <> " does not exist!"
 
 type CollectionMonad a = ExceptT Error (State (Map.Map Text Type)) a
 
