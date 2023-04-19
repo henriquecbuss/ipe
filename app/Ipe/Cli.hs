@@ -31,7 +31,7 @@ buildP = do
           <> Opt.help "Path to the root file. Ex: `./src/root.ipe`"
       )
 
-  outputDir <-
+  output <-
     Opt.optional $
       fileOption $
         Opt.long "output-dir"
@@ -39,7 +39,7 @@ buildP = do
           <> Opt.metavar "OUTPUT_DIR"
           <> Opt.help "Path to the output directory. Ex: `./dist`"
 
-  return Build {entrypoint = rootFile, outputDir = outputDir}
+  return Build {entrypoint = rootFile, outputDir = output}
 
 fileArgument :: Opt.Mod Opt.ArgumentFields FilePath -> Opt.Parser FilePath
 fileArgument = Opt.strArgument
