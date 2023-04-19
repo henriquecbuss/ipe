@@ -5,8 +5,8 @@ module Ipe.TypeChecker.ExpressionSpec (spec) where
 import qualified Data.Map as Map
 import qualified Data.Text as T
 import Ipe.Grammar
-import Ipe.TypeChecker (Error (..))
 import qualified Ipe.TypeChecker.Expression as ExprTypeChecker
+import Ipe.TypeChecker.Utils (Error (..))
 import Test.Hspec
 import Test.Hspec.QuickCheck
 
@@ -60,6 +60,16 @@ binaryOperationSpec =
         ExprTypeChecker.run (IpeBinaryOperation Add (IpeNumber x) (IpeNumber y))
           `shouldBe` Right ExprTypeChecker.TNum
 
+    prop "should type check adding two variables" $
+      \x y ->
+        let initialState =
+              Map.fromList
+                [ (x, ExprTypeChecker.TVar "a0"),
+                  (y, ExprTypeChecker.TVar "a1")
+                ]
+         in ExprTypeChecker.runWith initialState (IpeBinaryOperation Add (simpleVariable $ T.pack x) (simpleVariable $ T.pack y))
+              `shouldBe` Right ExprTypeChecker.TNum
+
     prop "should not type check adding a number and something else" $
       \x y ->
         ExprTypeChecker.run (IpeBinaryOperation Add (IpeNumber x) (IpeString $ T.pack y))
@@ -69,6 +79,16 @@ binaryOperationSpec =
       \x y ->
         ExprTypeChecker.run (IpeBinaryOperation Subtract (IpeNumber x) (IpeNumber y))
           `shouldBe` Right ExprTypeChecker.TNum
+
+    prop "should type check subtracting two variables" $
+      \x y ->
+        let initialState =
+              Map.fromList
+                [ (x, ExprTypeChecker.TVar "a0"),
+                  (y, ExprTypeChecker.TVar "a1")
+                ]
+         in ExprTypeChecker.runWith initialState (IpeBinaryOperation Subtract (simpleVariable $ T.pack x) (simpleVariable $ T.pack y))
+              `shouldBe` Right ExprTypeChecker.TNum
 
     prop "should not type check subtracting a number and something else" $
       \x y ->
@@ -80,6 +100,16 @@ binaryOperationSpec =
         ExprTypeChecker.run (IpeBinaryOperation Divide (IpeNumber x) (IpeNumber y))
           `shouldBe` Right ExprTypeChecker.TNum
 
+    prop "should type check dividing two variables" $
+      \x y ->
+        let initialState =
+              Map.fromList
+                [ (x, ExprTypeChecker.TVar "a0"),
+                  (y, ExprTypeChecker.TVar "a1")
+                ]
+         in ExprTypeChecker.runWith initialState (IpeBinaryOperation Divide (simpleVariable $ T.pack x) (simpleVariable $ T.pack y))
+              `shouldBe` Right ExprTypeChecker.TNum
+
     prop "should not type check dividing a number and something else" $
       \x y ->
         ExprTypeChecker.run (IpeBinaryOperation Divide (IpeString $ T.pack x) (IpeNumber y))
@@ -90,6 +120,16 @@ binaryOperationSpec =
         ExprTypeChecker.run (IpeBinaryOperation Multiply (IpeNumber x) (IpeNumber y))
           `shouldBe` Right ExprTypeChecker.TNum
 
+    prop "should type check multiplying two variables" $
+      \x y ->
+        let initialState =
+              Map.fromList
+                [ (x, ExprTypeChecker.TVar "a0"),
+                  (y, ExprTypeChecker.TVar "a1")
+                ]
+         in ExprTypeChecker.runWith initialState (IpeBinaryOperation Multiply (simpleVariable $ T.pack x) (simpleVariable $ T.pack y))
+              `shouldBe` Right ExprTypeChecker.TNum
+
     prop "should not type check multiplying a number and something else" $
       \x y ->
         ExprTypeChecker.run (IpeBinaryOperation Multiply (IpeString $ T.pack x) (IpeNumber y))
@@ -99,6 +139,16 @@ binaryOperationSpec =
       \x y ->
         ExprTypeChecker.run (IpeBinaryOperation Exponentiation (IpeNumber x) (IpeNumber y))
           `shouldBe` Right ExprTypeChecker.TNum
+
+    prop "should type check exponentiation with two variables" $
+      \x y ->
+        let initialState =
+              Map.fromList
+                [ (x, ExprTypeChecker.TVar "a0"),
+                  (y, ExprTypeChecker.TVar "a1")
+                ]
+         in ExprTypeChecker.runWith initialState (IpeBinaryOperation Exponentiation (simpleVariable $ T.pack x) (simpleVariable $ T.pack y))
+              `shouldBe` Right ExprTypeChecker.TNum
 
     prop "should type check exponentiation with a number and something else" $
       \x y ->
@@ -117,6 +167,16 @@ binaryOperationSpec =
               )
               `shouldBe` Right ExprTypeChecker.TNum
 
+    prop "should type check pipe right with two variables" $
+      \x y ->
+        let initialState =
+              Map.fromList
+                [ (x, ExprTypeChecker.TVar "a"),
+                  (y, ExprTypeChecker.TVar "b")
+                ]
+         in ExprTypeChecker.runWith initialState (IpeBinaryOperation PipeRight (simpleVariable $ T.pack x) (simpleVariable $ T.pack y))
+              `shouldBe` Right (ExprTypeChecker.TVar "a2")
+
     prop "should type check basic pipe left" $
       \x ->
         let initialState = Map.singleton "pipeLeftFn" (ExprTypeChecker.TFun ExprTypeChecker.TNum ExprTypeChecker.TNum)
@@ -128,6 +188,16 @@ binaryOperationSpec =
                   (IpeNumber x)
               )
               `shouldBe` Right ExprTypeChecker.TNum
+
+    prop "should type check pipe left with two variables" $
+      \x y ->
+        let initialState =
+              Map.fromList
+                [ (x, ExprTypeChecker.TVar "a"),
+                  (y, ExprTypeChecker.TVar "b")
+                ]
+         in ExprTypeChecker.runWith initialState (IpeBinaryOperation PipeLeft (simpleVariable $ T.pack x) (simpleVariable $ T.pack y))
+              `shouldBe` Right (ExprTypeChecker.TVar "a2")
 
     prop "should not type check basic pipe right with invalid argument type" $
       \x ->

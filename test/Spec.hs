@@ -6,7 +6,7 @@ import qualified Ipe.Parser.ModuleDefinitionSpec
 import qualified Ipe.Parser.ModuleSpec
 import qualified Ipe.Parser.TopLevelDefinitionSpec
 import qualified Ipe.Parser.TypeDefinitionSpec
-import qualified Ipe.ParserSpec
+import qualified Ipe.Parser.UtilsSpec
 import qualified Ipe.Transformer.ModuleSpec
 import qualified Ipe.TypeChecker.ExpressionSpec
 import qualified Ipe.TypeChecker.ModuleSpec
@@ -15,7 +15,7 @@ import qualified Test.Hspec
 main :: IO ()
 main =
   Test.Hspec.hspec $ do
-    Ipe.ParserSpec.spec
+    Ipe.Parser.UtilsSpec.spec
     Ipe.Parser.ModuleDefinitionSpec.spec
     Ipe.Parser.ImportSpec.spec
     Ipe.Parser.TypeDefinitionSpec.spec

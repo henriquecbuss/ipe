@@ -2,12 +2,12 @@ module Ipe.Parser.Module (parser) where
 
 import qualified Control.Monad
 import qualified Ipe.Grammar
-import Ipe.Parser (Parser)
-import qualified Ipe.Parser
 import qualified Ipe.Parser.Import
 import qualified Ipe.Parser.ModuleDefinition
 import qualified Ipe.Parser.TopLevelDefinition
 import qualified Ipe.Parser.TypeDefinition
+import Ipe.Parser.Utils (Parser)
+import qualified Ipe.Parser.Utils as Ipe.Parser
 import qualified Text.Megaparsec as Parsec.Common
 import qualified Text.Megaparsec.Char.Lexer as Parsec.Lexer
 

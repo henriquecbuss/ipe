@@ -9,7 +9,7 @@ import qualified Data.Map as Map
 import Data.Text (Text)
 import qualified Data.Text as T
 import Ipe.Grammar (Expression (..), FunctionCallOrValue (..), IpeBinaryOperator (..), IpeFunctionBody (..), IpeMatchPattern (..))
-import Ipe.TypeChecker
+import Ipe.TypeChecker.Utils
   ( Error (..),
     Scheme (..),
     Substitution,
@@ -47,6 +47,11 @@ inferHelper env (IpeBinaryOperation operator exp1 exp2) = do
     (Add, _, TNum) -> do
       sub3 <- mostGeneralUnifier (apply sub2 type2) (apply sub2 type1)
       return (sub3 `compose` sub2, apply (sub3 `compose` sub2) type1)
+    (Add, TVar _, TVar _) -> do
+      sub3 <- mostGeneralUnifier TNum (apply sub2 type2)
+      sub4 <- mostGeneralUnifier TNum (apply sub3 type1)
+      let composed = sub4 `compose` sub3 `compose` sub2
+      return (composed, TNum)
     (Add, _, _) -> throwE $ InvalidOperation Add type1 type2
     (Subtract, TNum, _) -> do
       sub3 <- mostGeneralUnifier (apply sub2 type1) (apply sub2 type2)
@@ -54,6 +59,11 @@ inferHelper env (IpeBinaryOperation operator exp1 exp2) = do
     (Subtract, _, TNum) -> do
       sub3 <- mostGeneralUnifier (apply sub2 type2) (apply sub2 type1)
       return (sub3 `compose` sub2, apply (sub3 `compose` sub2) type1)
+    (Subtract, TVar _, TVar _) -> do
+      sub3 <- mostGeneralUnifier TNum (apply sub2 type2)
+      sub4 <- mostGeneralUnifier TNum (apply sub3 type1)
+      let composed = sub4 `compose` sub3 `compose` sub2
+      return (composed, TNum)
     (Subtract, _, _) -> throwE $ InvalidOperation Subtract type1 type2
     (Divide, TNum, _) -> do
       sub3 <- mostGeneralUnifier (apply sub2 type1) (apply sub2 type2)
@@ -61,6 +71,11 @@ inferHelper env (IpeBinaryOperation operator exp1 exp2) = do
     (Divide, _, TNum) -> do
       sub3 <- mostGeneralUnifier (apply sub2 type2) (apply sub2 type1)
       return (sub3 `compose` sub2, apply (sub3 `compose` sub2) type1)
+    (Divide, TVar _, TVar _) -> do
+      sub3 <- mostGeneralUnifier TNum (apply sub2 type2)
+      sub4 <- mostGeneralUnifier TNum (apply sub3 type1)
+      let composed = sub4 `compose` sub3 `compose` sub2
+      return (composed, TNum)
     (Divide, _, _) -> throwE $ InvalidOperation Divide type1 type2
     (Multiply, TNum, _) -> do
       sub3 <- mostGeneralUnifier (apply sub2 type1) (apply sub2 type2)
@@ -68,6 +83,11 @@ inferHelper env (IpeBinaryOperation operator exp1 exp2) = do
     (Multiply, _, TNum) -> do
       sub3 <- mostGeneralUnifier (apply sub2 type2) (apply sub2 type1)
       return (sub3 `compose` sub2, apply (sub3 `compose` sub2) type1)
+    (Multiply, TVar _, TVar _) -> do
+      sub3 <- mostGeneralUnifier TNum (apply sub2 type2)
+      sub4 <- mostGeneralUnifier TNum (apply sub3 type1)
+      let composed = sub4 `compose` sub3 `compose` sub2
+      return (composed, TNum)
     (Multiply, _, _) -> throwE $ InvalidOperation Multiply type1 type2
     (Exponentiation, TNum, _) -> do
       sub3 <- mostGeneralUnifier (apply sub2 type1) (apply sub2 type2)
@@ -75,14 +95,27 @@ inferHelper env (IpeBinaryOperation operator exp1 exp2) = do
     (Exponentiation, _, TNum) -> do
       sub3 <- mostGeneralUnifier (apply sub2 type2) (apply sub2 type1)
       return (sub3 `compose` sub2, apply (sub3 `compose` sub2) type1)
+    (Exponentiation, TVar _, TVar _) -> do
+      sub3 <- mostGeneralUnifier TNum (apply sub2 type2)
+      sub4 <- mostGeneralUnifier TNum (apply sub3 type1)
+      let composed = sub4 `compose` sub3 `compose` sub2
+      return (composed, TNum)
     (Exponentiation, _, _) -> throwE $ InvalidOperation Exponentiation type1 type2
     (PipeRight, pipeInput, TFun fnInput fnOutput) -> do
       sub <- mostGeneralUnifier pipeInput fnInput
       return (sub `compose` sub2 `compose` sub1, fnOutput)
+    (PipeRight, pipeInput, TVar pipeVar) -> do
+      output <- newTypeVar "a"
+      let sub = Map.singleton pipeVar (TFun pipeInput output)
+      return (sub `compose` sub2 `compose` sub1, output)
     (PipeRight, _, _) -> throwE $ InvalidOperation PipeRight type1 type2
     (PipeLeft, TFun fnInput fnOutput, pipeInput) -> do
       sub <- mostGeneralUnifier pipeInput fnInput
       return (sub `compose` sub2 `compose` sub1, fnOutput)
+    (PipeLeft, TVar pipeVar, pipeInput) -> do
+      output <- newTypeVar "a"
+      let sub = Map.singleton pipeVar (TFun pipeInput output)
+      return (sub `compose` sub2 `compose` sub1, output)
     (PipeLeft, _, _) -> throwE $ InvalidOperation PipeLeft type1 type2
 inferHelper _ (IpeNumber _) = return (Map.empty, TNum)
 inferHelper env (IpeMatch matchExpr branches) = do

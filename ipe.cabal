@@ -25,11 +25,9 @@ source-repository head
 
 library
   exposed-modules:
-      Ipe
       Ipe.Emitter
       Ipe.Emitter.Expression
       Ipe.Emitter.Module
-      Ipe.Generator
       Ipe.Grammar
       Ipe.Parser
       Ipe.Parser.Expression
@@ -38,10 +36,12 @@ library
       Ipe.Parser.ModuleDefinition
       Ipe.Parser.TopLevelDefinition
       Ipe.Parser.TypeDefinition
+      Ipe.Parser.Utils
       Ipe.Transformer.Module
       Ipe.TypeChecker
       Ipe.TypeChecker.Expression
       Ipe.TypeChecker.Module
+      Ipe.TypeChecker.Utils
   other-modules:
       Paths_ipe
   hs-source-dirs:
@@ -60,13 +60,24 @@ library
 executable ipe-exe
   main-is: Main.hs
   other-modules:
+      Ipe.Cli
+      Ipe.Settings
       Paths_ipe
   hs-source-dirs:
       app
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , containers >=0.6.6 && <1
+    , directory >=1.3.7.0 && <1.3.8.0
+    , filepath >=1.4.100.3 && <1.5.0.0
     , ipe
+    , iris >=0.1.0.0 && <0.2.0.0
+    , mtl >=2.3.1 && <2.4
+    , optparse-applicative >=0.17.0.0 && <0.18.0.0
+    , pretty-terminal >=0.1.0.0 && <0.2.0.0
+    , prettyprinter >=1.7.1 && <1.8.0
+    , text >=2.0.1 && <3
   default-language: Haskell2010
 
 test-suite ipe-test
@@ -81,7 +92,7 @@ test-suite ipe-test
       Ipe.Parser.ModuleSpec
       Ipe.Parser.TopLevelDefinitionSpec
       Ipe.Parser.TypeDefinitionSpec
-      Ipe.ParserSpec
+      Ipe.Parser.UtilsSpec
       Ipe.Transformer.ModuleSpec
       Ipe.TypeChecker.ExpressionSpec
       Ipe.TypeChecker.ModuleSpec

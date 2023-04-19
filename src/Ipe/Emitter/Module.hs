@@ -33,7 +33,7 @@ emitImport currPath (ImportExpression {importedModulePath, importedModule, impor
   "import"
     <+> pretty name
     <+> "from"
-    <+> emitString (T.intercalate "/" (importPathPrefix ++ importedModulePath ++ [importedModule]))
+    <+> emitString (T.intercalate "/" (importPathPrefix ++ importedModulePath ++ [importedModule <> ".ipe"]))
   where
     name :: Text
     name = case importedModuleAlias of
