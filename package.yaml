@@ -61,6 +61,7 @@ executables:
       - prettyprinter >= 1.7.1 && < 1.8.0
       - filepath >= 1.4.100.3 && < 1.5.0.0
       - directory >= 1.3.8.1 && < 1.4.0.0
+      - containers >= 0.6.6 && < 1
 
 tests:
   ipe-test:

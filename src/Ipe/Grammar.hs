@@ -31,6 +31,9 @@ data Module = Module
   }
   deriving (Eq, Show)
 
+instance Ord Module where
+  compare m1 m2 = compare (moduleDefinition m1) (moduleDefinition m2)
+
 -- | A module definition, with an export list
 data ModuleDefinition = ModuleDefinition
   { moduleDefinitionPath :: [Text],
@@ -39,6 +42,12 @@ data ModuleDefinition = ModuleDefinition
     moduleDocComment :: Maybe Text
   }
   deriving (Eq, Show)
+
+instance Ord ModuleDefinition where
+  compare md1 md2 =
+    compare
+      (moduleDefinitionPath md1 ++ [moduleDefinitionName md1])
+      (moduleDefinitionPath md2 ++ [moduleDefinitionName md2])
 
 -- | A collection of import expressions
 type ImportList = [ImportExpression]

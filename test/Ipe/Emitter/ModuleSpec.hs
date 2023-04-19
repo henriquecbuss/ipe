@@ -47,7 +47,7 @@ spec = describe "the module emitter" $ do
               topLevelDefinitions = []
             }
     show (emit module')
-      `shouldBe` "import Foo from './Foo'\n\
+      `shouldBe` "import Foo from './Foo.ipe'\n\
                  \\n\
                  \export default {}\n\
                  \"
@@ -73,7 +73,7 @@ spec = describe "the module emitter" $ do
               topLevelDefinitions = []
             }
     show (emit module')
-      `shouldBe` "import Bar from './Foo'\n\
+      `shouldBe` "import Bar from './Foo.ipe'\n\
                  \\n\
                  \export default {}\n\
                  \"
@@ -99,7 +99,7 @@ spec = describe "the module emitter" $ do
               topLevelDefinitions = []
             }
     show (emit module')
-      `shouldBe` "import Foo_Bar_Baz from './Foo/Bar/Baz'\n\
+      `shouldBe` "import Foo_Bar_Baz from './Foo/Bar/Baz.ipe'\n\
                  \\n\
                  \export default {}\n\
                  \"
@@ -125,7 +125,7 @@ spec = describe "the module emitter" $ do
               topLevelDefinitions = []
             }
     show (emit module')
-      `shouldBe` "import Qux from './Foo/Bar/Baz'\n\
+      `shouldBe` "import Qux from './Foo/Bar/Baz.ipe'\n\
                  \\n\
                  \export default {}\n\
                  \"
@@ -193,7 +193,7 @@ spec = describe "the module emitter" $ do
                 ]
             }
      in show (emit module')
-          `shouldBe` "import Bar from '../Bar'\n\
+          `shouldBe` "import Bar from '../Bar.ipe'\n\
                      \\n\
                      \const foo = Bar.bar;\n\
                      \\n\
