@@ -51,6 +51,7 @@ emit
           <> align (concatWith (<>) $ map (parens . emit) functionCallOrValueArguments)
 emit (IpeFunction args body) = functionArguments args <+> functionBody body
 emit (IpeRecord fields) = braces (commaSeparatedList (map (uncurry recordField) fields))
+emit (IpeList items) = brackets (commaSeparatedList (map emit items))
 
 patternMatchBranch :: (IpeMatchPattern, [(Text, Expression)], Expression) -> Doc ann
 patternMatchBranch (matchPattern, attributions, returnExpression) =

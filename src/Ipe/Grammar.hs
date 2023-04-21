@@ -155,6 +155,7 @@ data Expression
   | IpeFunctionCallOrValue FunctionCallOrValue
   | IpeFunction [Text] IpeFunctionBody
   | IpeRecord [(Text, Expression)]
+  | IpeList [Expression]
   deriving (Eq, Show)
 
 data FunctionCallOrValue = FunctionCallOrValue
@@ -181,4 +182,5 @@ data IpeMatchPattern
   | IpeCustomTypePattern [Text] Text [Text] -- path + constructor name + arguments
   | IpeLiteralNumberPattern Float
   | IpeLiteralStringPattern Text
+  | IpeLiteralListPattern [IpeMatchPattern]
   deriving (Eq, Show)

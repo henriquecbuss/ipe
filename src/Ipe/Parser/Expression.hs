@@ -73,6 +73,7 @@ term acceptArgs =
       Ipe.Parser.lexeme function,
       Ipe.Parser.lexeme matchExpression,
       Ipe.Parser.lexeme record,
+      Ipe.Parser.lexeme listP,
       functionCallOrValue acceptArgs
     ]
     <* Parsec.Common.notFollowedBy
@@ -177,11 +178,17 @@ matchPattern acceptArgs =
   Parsec.Common.choice
     [ Parsec.Common.between (Ipe.Parser.symbol "(") (Ipe.Parser.symbol ")") (matchPattern True),
       customTypePattern acceptArgs,
+      literalListPattern,
       Ipe.Grammar.IpeLiteralNumberPattern <$> literalNumber,
       Ipe.Grammar.IpeLiteralStringPattern <$> literalString,
       Ipe.Grammar.IpeVariablePattern <$> Ipe.Parser.lowercaseIdentifier,
       Ipe.Grammar.IpeWildCardPattern <$ Parsec.Char.char '_'
     ]
+
+literalListPattern :: Parser Ipe.Grammar.IpeMatchPattern
+literalListPattern =
+  Parsec.Common.between (Ipe.Parser.symbol "[") (Ipe.Parser.symbol "]") $
+    Ipe.Grammar.IpeLiteralListPattern <$> Parsec.Common.sepBy (matchPattern True) (Ipe.Parser.symbol ",")
 
 customTypePattern :: Bool -> Parser Ipe.Grammar.IpeMatchPattern
 customTypePattern acceptArgs = do
@@ -213,6 +220,11 @@ record =
       expr <- Ipe.Parser.lexeme parser
 
       return (name, expr)
+
+listP :: Parser Ipe.Grammar.Expression
+listP =
+  Parsec.Common.between (Ipe.Parser.symbol "[") (Ipe.Parser.symbol "]") $
+    Ipe.Grammar.IpeList <$> Parsec.Common.sepBy parser (Ipe.Parser.symbol ",")
 
 forbiddenSymbols :: [Text]
 forbiddenSymbols = [":"]

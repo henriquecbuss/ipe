@@ -18,6 +18,7 @@ spec =
     lambdaFunctionSpec
     patternMatchSpec
     recordSpec
+    listSpec
 
 numberSpec :: Spec
 numberSpec = do
@@ -1168,6 +1169,39 @@ patternMatchSpec = do
             )
           ]
 
+    it "should parse a list pattern" $
+      Parsec.Common.parse
+        Ipe.Parser.Expression.parser
+        ""
+        "match x with\n\
+        \  | ['blog', 'edit', blogId] ->\n\
+        \     0\n\
+        \  | [] ->\n\
+        \     0"
+        `shouldParse` Ipe.Grammar.IpeMatch
+          ( Ipe.Grammar.IpeFunctionCallOrValue
+              ( Ipe.Grammar.FunctionCallOrValue
+                  { Ipe.Grammar.functionCallOrValuePath = [],
+                    Ipe.Grammar.functionCallOrValueName = "x",
+                    Ipe.Grammar.functionCallOrValueRecordAccessors = [],
+                    Ipe.Grammar.functionCallOrValueArguments = []
+                  }
+              )
+          )
+          [ ( Ipe.Grammar.IpeLiteralListPattern
+                [ Ipe.Grammar.IpeLiteralStringPattern "blog",
+                  Ipe.Grammar.IpeLiteralStringPattern "edit",
+                  Ipe.Grammar.IpeVariablePattern "blogId"
+                ],
+              [],
+              Ipe.Grammar.IpeNumber 0
+            ),
+            ( Ipe.Grammar.IpeLiteralListPattern [],
+              [],
+              Ipe.Grammar.IpeNumber 0
+            )
+          ]
+
 recordSpec :: Spec
 recordSpec =
   context "when parsing records" $ do
@@ -1211,4 +1245,43 @@ recordSpec =
             ),
             ("h", Ipe.Grammar.IpeString "abc"),
             ("k", Ipe.Grammar.IpeRecord [("l", Ipe.Grammar.IpeNumber 1)])
+          ]
+
+listSpec :: Spec
+listSpec =
+  context "when parsing lists" $ do
+    it "should parse an empty list" $
+      Parsec.Common.parse
+        Ipe.Parser.Expression.parser
+        ""
+        "[]"
+        `shouldParse` Ipe.Grammar.IpeList []
+
+    it "should parse a simple list" $
+      Parsec.Common.parse
+        Ipe.Parser.Expression.parser
+        ""
+        "[1, a, 1 + b]"
+        `shouldParse` Ipe.Grammar.IpeList
+          [ Ipe.Grammar.IpeNumber 1,
+            Ipe.Grammar.IpeFunctionCallOrValue $ Ipe.Grammar.FunctionCallOrValue [] "a" [] [],
+            Ipe.Grammar.IpeBinaryOperation
+              Ipe.Grammar.Add
+              (Ipe.Grammar.IpeNumber 1)
+              (Ipe.Grammar.IpeFunctionCallOrValue $ Ipe.Grammar.FunctionCallOrValue [] "b" [] [])
+          ]
+
+    it "should parse a complex nested list" $
+      Parsec.Common.parse
+        Ipe.Parser.Expression.parser
+        ""
+        "[1, [], 2, [3, 4]]"
+        `shouldParse` Ipe.Grammar.IpeList
+          [ Ipe.Grammar.IpeNumber 1,
+            Ipe.Grammar.IpeList [],
+            Ipe.Grammar.IpeNumber 2,
+            Ipe.Grammar.IpeList
+              [ Ipe.Grammar.IpeNumber 3,
+                Ipe.Grammar.IpeNumber 4
+              ]
           ]

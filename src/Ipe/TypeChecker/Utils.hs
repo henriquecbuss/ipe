@@ -52,6 +52,7 @@ data Type
   | TStr
   | TFun Type Type
   | TRec [(String, Type)]
+  | TList Type
   | TCustom String [Type] [(String, [Type])] -- name + type variables + constructors
   deriving (Eq)
 
@@ -62,6 +63,7 @@ instance Show Type where
   show (TFun input output) = "(" ++ show input ++ " -> " ++ show output ++ ")"
   show (TRec []) = "{}"
   show (TRec fields) = "{ " ++ Data.List.intercalate ", " (map (\(name, t) -> name ++ ": " ++ show t) fields) ++ " }"
+  show (TList t) = "List " <> show t
   show (TCustom name [] _) = name
   show (TCustom name typeVars _) = "(" ++ name ++ (" " ++ unwords (map show typeVars)) ++ ")"
 
@@ -71,6 +73,7 @@ instance Types Type where
   freeTypeVariables TStr = Set.empty
   freeTypeVariables (TFun input output) = Set.union (freeTypeVariables input) (freeTypeVariables output)
   freeTypeVariables (TRec fields) = Set.unions (map (freeTypeVariables . snd) fields)
+  freeTypeVariables (TList inner) = freeTypeVariables inner
   freeTypeVariables (TCustom _ typeVars _) = Set.unions (map freeTypeVariables typeVars)
 
   apply subs (TVar var) = case Map.lookup var subs of
@@ -80,6 +83,7 @@ instance Types Type where
   apply _ TNum = TNum
   apply _ TStr = TStr
   apply subs (TRec fields) = TRec (map (Data.Bifunctor.second (apply subs)) fields)
+  apply subs (TList inner) = TList (apply subs inner)
   apply subs (TCustom name typeVars constructors) = TCustom name (map (apply subs) typeVars) constructors
 
 data Scheme = Scheme [String] Type
@@ -129,6 +133,7 @@ prefix modulePath moduleName t =
     TVar var -> TVar var
     TFun input output -> TFun (prefix modulePath moduleName input) (prefix modulePath moduleName output)
     TRec record -> TRec $ map (Data.Bifunctor.second (prefix modulePath moduleName)) record
+    TList inner -> TList $ prefix modulePath moduleName inner
     TCustom name typeVars constructors ->
       TCustom
         (prefixNonImported name)
@@ -196,6 +201,7 @@ mostGeneralUnifier t1@(TRec fields1) t2@(TRec fields2)
           return $ foldr compose Map.empty subs
         else throwE $ NoMatch t1 t2
   | otherwise = throwE $ NoMatch t1 t2
+mostGeneralUnifier (TList t1) (TList t2) = mostGeneralUnifier t1 t2
 mostGeneralUnifier t1@(TCustom name1 typeVars1 _) t2@(TCustom name2 typeVars2 _)
   | name1 /= name2 = throwE $ NoMatch t1 t2
   | length typeVars1 /= length typeVars2 = throwE $ NoMatch t1 t2

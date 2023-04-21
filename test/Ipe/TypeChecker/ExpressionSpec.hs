@@ -662,3 +662,64 @@ matchSpec =
                 ]
             )
             `shouldBe` Right ExprTypeChecker.TNum
+
+    context "when pattern matching lists" $ do
+      it "should know that an empty list isn't enough cases" $
+        let initialState =
+              Map.fromList
+                [ ("x", ExprTypeChecker.TList ExprTypeChecker.TNum)
+                ]
+         in ExprTypeChecker.runWith
+              initialState
+              ( IpeMatch
+                  (simpleVariable "x")
+                  [ (IpeLiteralListPattern [], [], IpeNumber 5)
+                  ]
+              )
+              `shouldBe` Left MissingPatternMatchCases
+
+      it "should know that two equal cases are duplicate" $
+        let initialState =
+              Map.fromList
+                [ ("x", ExprTypeChecker.TList ExprTypeChecker.TNum)
+                ]
+         in ExprTypeChecker.runWith
+              initialState
+              ( IpeMatch
+                  (simpleVariable "x")
+                  [ (IpeLiteralListPattern [IpeLiteralNumberPattern 1, IpeLiteralNumberPattern 2], [], IpeNumber 5),
+                    (IpeLiteralListPattern [IpeLiteralNumberPattern 1, IpeLiteralNumberPattern 2], [], IpeNumber 2)
+                  ]
+              )
+              `shouldBe` Left DuplicatePatternMatch
+
+      it "should know that the third case is already matched" $
+        let initialState =
+              Map.fromList
+                [ ("x", ExprTypeChecker.TList ExprTypeChecker.TNum)
+                ]
+         in ExprTypeChecker.runWith
+              initialState
+              ( IpeMatch
+                  (simpleVariable "x")
+                  [ (IpeLiteralListPattern [IpeLiteralNumberPattern 1, IpeLiteralNumberPattern 2], [], IpeNumber 5),
+                    (IpeLiteralListPattern [IpeWildCardPattern, IpeWildCardPattern], [], IpeNumber 2),
+                    (IpeLiteralListPattern [IpeLiteralNumberPattern 3, IpeLiteralNumberPattern 4], [], IpeNumber 2)
+                  ]
+              )
+              `shouldBe` Left DuplicatePatternMatch
+
+      it "should add variable pattern into context" $
+        let initialState =
+              Map.fromList
+                [ ("x", ExprTypeChecker.TList ExprTypeChecker.TNum)
+                ]
+         in ExprTypeChecker.runWith
+              initialState
+              ( IpeMatch
+                  (simpleVariable "x")
+                  [ (IpeLiteralListPattern [IpeLiteralNumberPattern 1, IpeVariablePattern "a"], [], IpeBinaryOperation Add (IpeNumber 1) (simpleVariable "a")),
+                    (IpeLiteralListPattern [IpeLiteralNumberPattern 1, IpeLiteralNumberPattern 2], [], IpeNumber 2)
+                  ]
+              )
+              `shouldBe` Left DuplicatePatternMatch
