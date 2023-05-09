@@ -178,7 +178,7 @@ inferHelper env (IpeMatch matchExpr branches) = do
                               case (curr, innerType) of
                                 (IpeWildCardPattern, _) -> return acc
                                 (IpeVariablePattern varName, _) -> do
-                                  let TypeEnv env' = currEnv
+                                  let TypeEnv env' = acc
                                   let envWithVarName = TypeEnv $ Map.insert (T.unpack varName) (Scheme [T.unpack varName] innerType) env'
 
                                   return envWithVarName
@@ -191,13 +191,7 @@ inferHelper env (IpeMatch matchExpr branches) = do
                           env
                           pat
 
-                      handleAttributions
-                        sub1
-                        finalEnv
-                        branchAttributions
-                        branchExpr
-                        returnType
-                        (FiniteCases (pat : cases))
+                      handleAttributions sub1 finalEnv branchAttributions branchExpr returnType (FiniteCases (pat : cases))
                 IpeLiteralNumberPattern _ ->
                   throwE InvalidTypeForPatternMatch
           )
