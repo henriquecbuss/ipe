@@ -3,15 +3,20 @@
 
 module Ipe.Emitter.Module (emit) where
 
+import Control.Monad.Trans.State (evalState)
+import qualified Data.Char as Char
 import Data.Text (Text)
 import qualified Data.Text as T
-import Ipe.Emitter
 import qualified Ipe.Emitter.Expression
+import Ipe.Emitter.Utils
 import Ipe.Grammar
-import Prettyprinter
+import Prettyprinter (Doc)
 
-emit :: Module -> Doc ann
-emit (Module {moduleDefinition, moduleImports, topLevelDefinitions}) =
+emit :: Module -> Doc a
+emit m = evalState (emitHelper m) initialState
+
+emitHelper :: Module -> EmitterMonad a
+emitHelper (Module {moduleDefinition, moduleImports, topLevelDefinitions}) =
   ( if null moduleImports
       then emptyDoc
       else
@@ -28,7 +33,7 @@ emit (Module {moduleDefinition, moduleImports, topLevelDefinitions}) =
     <> emitModuleExports (exportedDefinitions moduleDefinition)
     <> line
 
-emitImport :: [Text] -> ImportExpression -> Doc ann
+emitImport :: [Text] -> ImportExpression -> EmitterMonad a
 emitImport currPath (ImportExpression {importedModulePath, importedModule, importedModuleAlias}) =
   "import"
     <+> pretty name
@@ -46,12 +51,20 @@ emitImport currPath (ImportExpression {importedModulePath, importedModule, impor
         then ["."]
         else replicate (length currPath) ".."
 
-emitTopLevelDefinition :: TopLevelDefinition -> Doc ann
+emitTopLevelDefinition :: TopLevelDefinition -> EmitterMonad a
 emitTopLevelDefinition (TopLevelDefinition {topLevelDefinitionName, topLevelDefinitionValue}) =
-  "const" <+> pretty topLevelDefinitionName <+> "=" <+> Ipe.Emitter.Expression.emit topLevelDefinitionValue <> ";"
+  "const" <+> pretty topLevelDefinitionName <+> "=" <+> Ipe.Emitter.Expression.emitWithState topLevelDefinitionValue <> ";"
 
-emitModuleExports :: [Text] -> Doc ann
+emitModuleExports :: [Text] -> EmitterMonad a
 emitModuleExports exports =
   "export"
     <+> "default"
-    <+> braces (commaSeparatedList (map pretty exports))
+    <+> braces
+      ( commaSeparatedList
+          ( map pretty $
+              -- Remove type definitions
+              filter
+                (not . Char.isUpper . T.head)
+                exports
+          )
+      )

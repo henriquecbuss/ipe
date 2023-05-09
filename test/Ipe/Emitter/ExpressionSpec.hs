@@ -107,11 +107,11 @@ ipeMatch = do
                 ]
             )
         )
-        `shouldBe` "() => {\n\
-                   \  const __ipeConst = foo;\n\
+        `shouldBe` "(() => {\n\
+                   \  const var0 = foo;\n\
                    \  return foo\n\
                    \}\n\
-                   \()"
+                   \)()"
 
     it "should emit a pattern match with a wildcard pattern with some attributions" $
       show
@@ -128,14 +128,14 @@ ipeMatch = do
                 ]
             )
         )
-        `shouldBe` "() => {\n\
-                   \  const __ipeConst = foo;\n\
+        `shouldBe` "(() => {\n\
+                   \  const var0 = foo;\n\
                    \  const a = 1.0;\n\
                    \  const b = 2.0;\n\
                    \  const c = 3.0;\n\
                    \  return foo\n\
                    \}\n\
-                   \()"
+                   \)()"
 
     it "should emit a pattern match with a variable pattern" $
       show
@@ -146,12 +146,12 @@ ipeMatch = do
                 ]
             )
         )
-        `shouldBe` "() => {\n\
-                   \  const __ipeConst = foo;\n\
-                   \  const variable = __ipeConst;\n\
+        `shouldBe` "(() => {\n\
+                   \  const var0 = foo;\n\
+                   \  const variable = var0;\n\
                    \  return variable\n\
                    \}\n\
-                   \()"
+                   \)()"
 
     it "should emit a pattern match with a variable pattern with some attributions" $
       show
@@ -168,15 +168,15 @@ ipeMatch = do
                 ]
             )
         )
-        `shouldBe` "() => {\n\
-                   \  const __ipeConst = foo;\n\
-                   \  const variable = __ipeConst;\n\
+        `shouldBe` "(() => {\n\
+                   \  const var0 = foo;\n\
+                   \  const variable = var0;\n\
                    \  const a = 1.0;\n\
                    \  const b = 2.0;\n\
                    \  const c = 3.0;\n\
                    \  return variable\n\
                    \}\n\
-                   \()"
+                   \)()"
 
     it "should emit a pattern match with a number pattern" $
       show
@@ -187,13 +187,13 @@ ipeMatch = do
                 ]
             )
         )
-        `shouldBe` "() => {\n\
-                   \  const __ipeConst = foo;\n\
-                   \  if (__ipeConst === 1.0) {\n\
+        `shouldBe` "(() => {\n\
+                   \  const var0 = foo;\n\
+                   \  if (var0 === 1.0) {\n\
                    \    return foo\n\
                    \  }\n\
                    \}\n\
-                   \()"
+                   \)()"
 
     it "should emit a pattern match with a number pattern with some attributions" $
       show
@@ -210,16 +210,16 @@ ipeMatch = do
                 ]
             )
         )
-        `shouldBe` "() => {\n\
-                   \  const __ipeConst = foo;\n\
-                   \  if (__ipeConst === 1.0) {\n\
+        `shouldBe` "(() => {\n\
+                   \  const var0 = foo;\n\
+                   \  if (var0 === 1.0) {\n\
                    \    const a = 1.0;\n\
                    \    const b = 2.0;\n\
                    \    const c = 3.0;\n\
                    \    return variable\n\
                    \  }\n\
                    \}\n\
-                   \()"
+                   \)()"
 
     it "should emit a pattern match with a string pattern" $
       show
@@ -230,13 +230,13 @@ ipeMatch = do
                 ]
             )
         )
-        `shouldBe` "() => {\n\
-                   \  const __ipeConst = foo;\n\
-                   \  if (__ipeConst === 'a') {\n\
+        `shouldBe` "(() => {\n\
+                   \  const var0 = foo;\n\
+                   \  if (var0 === 'a') {\n\
                    \    return foo\n\
                    \  }\n\
                    \}\n\
-                   \()"
+                   \)()"
 
     it "should emit a pattern match with a string pattern with some attributions" $
       show
@@ -253,16 +253,16 @@ ipeMatch = do
                 ]
             )
         )
-        `shouldBe` "() => {\n\
-                   \  const __ipeConst = foo;\n\
-                   \  if (__ipeConst === 'a') {\n\
+        `shouldBe` "(() => {\n\
+                   \  const var0 = foo;\n\
+                   \  if (var0 === 'a') {\n\
                    \    const a = 1.0;\n\
                    \    const b = 2.0;\n\
                    \    const c = 3.0;\n\
                    \    return variable\n\
                    \  }\n\
                    \}\n\
-                   \()"
+                   \)()"
 
     it "should emit multiple branches when pattern matching on a number" $
       show
@@ -277,27 +277,27 @@ ipeMatch = do
                 ]
             )
         )
-        `shouldBe` "() => {\n\
-                   \  const __ipeConst = foo;\n\
-                   \  if (__ipeConst === 1.0) {\n\
-                   \    return One\n\
+        `shouldBe` "(() => {\n\
+                   \  const var0 = foo;\n\
+                   \  if (var0 === 1.0) {\n\
+                   \    return ['One']\n\
                    \  }\n\
                    \\n\
-                   \  if (__ipeConst === 2.0) {\n\
-                   \    return Two\n\
+                   \  if (var0 === 2.0) {\n\
+                   \    return ['Two']\n\
                    \  }\n\
                    \\n\
-                   \  if (__ipeConst === 3.0) {\n\
-                   \    return Three\n\
+                   \  if (var0 === 3.0) {\n\
+                   \    return ['Three']\n\
                    \  }\n\
                    \\n\
-                   \  if (__ipeConst === 4.0) {\n\
-                   \    return Four\n\
+                   \  if (var0 === 4.0) {\n\
+                   \    return ['Four']\n\
                    \  }\n\
                    \\n\
-                   \  return Other\n\
+                   \  return ['Other']\n\
                    \}\n\
-                   \()"
+                   \)()"
 
     it "should emit a pattern match with a custom type pattern" $
       show
@@ -308,13 +308,13 @@ ipeMatch = do
                 ]
             )
         )
-        `shouldBe` "() => {\n\
-                   \  const __ipeConst = foo;\n\
-                   \  if (__ipeConst[0] === 'One') {\n\
+        `shouldBe` "(() => {\n\
+                   \  const var0 = foo;\n\
+                   \  if (var0[0] === 'One') {\n\
                    \    return 1.0\n\
                    \  }\n\
                    \}\n\
-                   \()"
+                   \)()"
 
     it "should emit a pattern match with a custom type pattern with args" $
       show
@@ -325,14 +325,50 @@ ipeMatch = do
                 ]
             )
         )
-        `shouldBe` "() => {\n\
-                   \  const __ipeConst = foo;\n\
-                   \  if (__ipeConst[0] === 'One') {\n\
-                   \    const [_, a, b, c] = __ipeConst;\n\
+        `shouldBe` "(() => {\n\
+                   \  const var0 = foo;\n\
+                   \  if (var0[0] === 'One') {\n\
+                   \    const [_, a, b, c] = var0;\n\
                    \    return 1.0\n\
                    \  }\n\
                    \}\n\
-                   \()"
+                   \)()"
+
+    it "should emit a pattern match with a list" $
+      show
+        ( emit
+            ( IpeMatch
+                (IpeList [IpeNumber 1, IpeNumber 2, IpeNumber 3])
+                [ (IpeLiteralListPattern [IpeLiteralNumberPattern 1, IpeVariablePattern "secondItem", IpeLiteralNumberPattern 4], [], IpeNumber 1),
+                  (IpeLiteralListPattern [IpeWildCardPattern, IpeWildCardPattern, IpeWildCardPattern], [], IpeNumber 1),
+                  (IpeLiteralListPattern [IpeWildCardPattern, IpeWildCardPattern], [], IpeNumber 2),
+                  (IpeLiteralListPattern [IpeWildCardPattern], [], IpeNumber 3),
+                  (IpeWildCardPattern, [], IpeNumber 4)
+                ]
+            )
+        )
+        `shouldBe` "(() => {\n\
+                   \  const var0 = [1.0, 2.0, 3.0];\n\
+                   \  if (var0.length === 3 && var0[0] === 1.0 && true && var0[2] === 4.0) {\n\
+                   \    const secondItem = var0[1];\n\
+                   \    return 1.0\n\
+                   \  }\n\
+                   \\n\
+                   \  if (var0.length === 3 && true && true && true) {\n\
+                   \    return 1.0\n\
+                   \  }\n\
+                   \\n\
+                   \  if (var0.length === 2 && true && true) {\n\
+                   \    return 2.0\n\
+                   \  }\n\
+                   \\n\
+                   \  if (var0.length === 1 && true) {\n\
+                   \    return 3.0\n\
+                   \  }\n\
+                   \\n\
+                   \  return 4.0\n\
+                   \}\n\
+                   \)()"
 
 ipeFunctionCallOrValue :: Spec
 ipeFunctionCallOrValue = do

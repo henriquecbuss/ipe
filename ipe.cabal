@@ -28,6 +28,7 @@ library
       Ipe.Emitter
       Ipe.Emitter.Expression
       Ipe.Emitter.Module
+      Ipe.Emitter.Utils
       Ipe.Grammar
       Ipe.Parser
       Ipe.Parser.Expression
