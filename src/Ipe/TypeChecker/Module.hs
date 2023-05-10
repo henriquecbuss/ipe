@@ -31,6 +31,7 @@ import Ipe.Grammar
     TypeOpaque (..),
     TypeUnion (..),
   )
+import qualified Ipe.Prelude.Prelude
 import qualified Ipe.TypeChecker.Expression
 import Ipe.TypeChecker.Utils (Type (..), freeTypeVariables)
 import qualified Ipe.TypeChecker.Utils as Ipe.TypeChecker
@@ -128,10 +129,13 @@ runHelper allModules currModule@(Module {moduleImports, typeDefinitions, topLeve
 
 defaultInitialState :: Map.Map Text Type
 defaultInitialState =
-  Map.fromList
-    [ ("Number", TNum),
-      ("String", TStr)
-    ]
+  Map.union
+    ( Map.fromList
+        [ ("Number", TNum),
+          ("String", TStr)
+        ]
+    )
+    Ipe.Prelude.Prelude.registerAllModules
 
 data Error
   = NotAllVariablesDeclared [Text] [Text] -- required + given

@@ -117,7 +117,6 @@ buildModule rootDir allTransformedModules builtModules currentModulePathAndName@
           Right _ -> do
             let newMap = Map.insert currentModulePathAndName (Ipe.Emitter.Module.emit transformedModule) builtModules
 
-            -- Control.Monad.foldM
             foldl
               ( \eitherResult currImport ->
                   case eitherResult of
