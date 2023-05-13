@@ -1,0 +1,26 @@
+module Root exports [main, x, y, z, X]
+
+import Prelude
+
+main = Dict.empty
+
+x : X
+x = A 'abcde'
+
+y : Number
+y = match [1,2,3] with
+    | [] -> 2
+    | [1, 2, 3] -> 3
+    | [a, b, c] -> Prelude.add a b
+    | _ -> 1
+
+z : String
+z = match A 'abc' with
+    | A n -> n
+    | B -> 'B'
+    | C -> 'C'
+
+type union X = 
+  | A String
+  | B
+  | C 

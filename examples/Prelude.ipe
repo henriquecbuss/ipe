@@ -1,0 +1,5 @@
+module Prelude exports [add]
+
+add : Number -> Number -> Number
+add =
+    \x y -> x + y
