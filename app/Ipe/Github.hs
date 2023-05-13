@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
@@ -59,17 +60,18 @@ instance Aeson.FromJSON URI where
       Left err -> fail $ show err
       Right uri -> return uri
 
-preludeBranch :: Maybe Text
-preludeBranch = Just "feature/web-server"
-
-fetchPrelude :: IO [([Text], Text, ByteString)]
-fetchPrelude =
+fetchPrelude :: Maybe Text -> IO [([Text], Text, ByteString)]
+fetchPrelude preludeBranch =
   fetchDir
     []
     (Req.https "api.github.com" /: "repos" /: "henriquecbuss" /: "ipe" /: "contents" /: "src" /: "Ipe" /: "Prelude")
+    ( case preludeBranch of
+        Nothing -> mempty
+        Just branch -> "ref" =: branch
+    )
 
-fetchDir :: [Text] -> Req.Url scheme -> IO [([Text], Text, ByteString)]
-fetchDir currentPath uri = do
+fetchDir :: [Text] -> Req.Url Req.Https -> Req.Option Req.Https -> IO [([Text], Text, ByteString)]
+fetchDir currentPath uri options = do
   root <-
     Req.runReq Req.defaultHttpConfig $
       Req.req
@@ -77,10 +79,7 @@ fetchDir currentPath uri = do
         uri
         Req.NoReqBody
         Req.jsonResponse
-        ( ( case preludeBranch of
-              Nothing -> mempty
-              Just branch -> "ref" =: branch
-          )
+        ( options
             <> Req.header "User-Agent" "Ipe-Compiler"
         )
 
@@ -100,7 +99,7 @@ fetchDir currentPath uri = do
           case maybeUri of
             Nothing -> System.Exit.exitFailure
             Just (dirUri, _) -> do
-              contents <- fetchDir (currentPath ++ [dirName dir]) dirUri
+              contents <- fetchDir (currentPath ++ [dirName dir]) dirUri options
               return (contents ++ acc)
     )
     []

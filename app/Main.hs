@@ -45,11 +45,11 @@ app = do
   options <- Iris.asksCliEnv Iris.cliEnvCmd
 
   case options of
-    Build {entrypoint, outputDir} ->
-      execBuild entrypoint outputDir
+    Build {entrypoint, outputDir, preludeBranch} ->
+      execBuild entrypoint outputDir preludeBranch
 
-execBuild :: FilePath -> Maybe FilePath -> App ()
-execBuild entrypoint outputDir = do
+execBuild :: FilePath -> Maybe FilePath -> Maybe Text -> App ()
+execBuild entrypoint outputDir preludeBranch = do
   rootDir <- liftIO $ System.Directory.makeAbsolute $ System.FilePath.takeDirectory entrypoint
 
   possiblyAllImportedModules <-
@@ -94,7 +94,7 @@ execBuild entrypoint outputDir = do
             )
             (Map.toList builtModules)
 
-          preludeFiles <- liftIO Ipe.Github.fetchPrelude
+          preludeFiles <- liftIO $ Ipe.Github.fetchPrelude preludeBranch
           mapM_
             ( \(path, name, content) -> do
                 let dir =
