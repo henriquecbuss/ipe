@@ -1,12 +1,14 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Main (main) where
 
 import qualified Control.Monad
 import Control.Monad.IO.Class (MonadIO (..))
 import Control.Monad.Reader (MonadReader)
+import qualified Data.ByteString as ByteString
 import Data.Map (Map)
 import qualified Data.Map as Map
 import qualified Data.Maybe as Maybe
@@ -14,6 +16,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Ipe.Cli (Options (..))
 import qualified Ipe.Emitter.Module
+import qualified Ipe.Github
 import qualified Ipe.Grammar
 import qualified Ipe.Parser
 import Ipe.Settings (appSettings)
@@ -56,6 +59,7 @@ execBuild entrypoint outputDir = do
         rootDir
         []
         (T.pack $ System.FilePath.dropExtension $ System.FilePath.takeFileName entrypoint)
+
   case possiblyAllImportedModules of
     Left err -> liftIO $ putStr err
     Right allImportedAndTransformedModules -> do
@@ -85,10 +89,29 @@ execBuild entrypoint outputDir = do
                   $ withFile
                     (System.FilePath.joinPath [dir, T.unpack name ++ ".ipe.js"])
                     WriteMode
-                  $ \h -> do
+                  $ \h ->
                     hPutDoc h doc
             )
             (Map.toList builtModules)
+
+          preludeFiles <- liftIO Ipe.Github.fetchPrelude
+          mapM_
+            ( \(path, name, content) -> do
+                let dir =
+                      System.FilePath.joinPath
+                        [ Maybe.fromMaybe currentDirectory outputDir,
+                          System.FilePath.joinPath (map T.unpack path)
+                        ]
+
+                liftIO $ System.Directory.createDirectoryIfMissing True dir
+
+                liftIO
+                  $ withFile
+                    (System.FilePath.joinPath [dir, T.unpack name])
+                    WriteMode
+                  $ \h -> ByteString.hPut h content
+            )
+            preludeFiles
 
           liftIO $ putStrLn "✅ Finished building project!"
 
