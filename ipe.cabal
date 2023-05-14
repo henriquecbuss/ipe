@@ -39,6 +39,8 @@ library
       Ipe.Parser.TypeDefinition
       Ipe.Parser.Utils
       Ipe.Prelude.Dict
+      Ipe.Prelude.Json
+      Ipe.Prelude.Json.Encode
       Ipe.Prelude.Prelude
       Ipe.Transformer.Module
       Ipe.TypeChecker

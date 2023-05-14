@@ -5,27 +5,27 @@
 /**
  *
  * @param {string} input The string to encode
- * @returns {string} The encoded string
+ * @returns {JsonValue} The encoded string
  */
 const string = (input) => input;
 
 /**
  *
  * @param {boolean} input The boolean to encode
- * @returns {boolean} The encoded boolean
+ * @returns {JsonValue} The encoded boolean
  */
 const bool = (input) => input;
 
 /**
  *
  * @param {number} input The number to encode
- * @returns {number} The encoded number
+ * @returns {JsonValue} The encoded number
  */
 const number = (input) => input;
 
 /**
  *
- * @returns {null} The encoded null
+ * @returns {JsonValue} The encoded null
  */
 const nothing = () => null;
 
