@@ -32,10 +32,9 @@ const nothing = () => null;
 /**
  * @template T
  * @param {(input: T) => JsonValue} encodeItem
- * @param {T[]} arr
- * @returns {JsonValue}
+ * @returns {(arr: T[]) => JsonValue}
  */
-const list = (encodeItem, arr) => arr.map(encodeItem);
+const list = (encodeItem) => (arr) => arr.map(encodeItem);
 
 /**
  * @param {Map<string, JsonValue>} input
