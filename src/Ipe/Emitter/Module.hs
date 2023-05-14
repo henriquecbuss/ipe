@@ -10,7 +10,6 @@ import qualified Data.Text as T
 import qualified Ipe.Emitter.Expression
 import Ipe.Emitter.Utils
 import Ipe.Grammar
-import qualified Ipe.Prelude.Prelude
 import Prettyprinter (Doc)
 
 emit :: Module -> Doc a
@@ -22,12 +21,6 @@ emitHelper (Module {moduleDefinition, moduleImports, topLevelDefinitions}) =
       then emptyDoc
       else
         vsep (map (emitImport (moduleDefinitionPath moduleDefinition)) moduleImports)
-          <> line
-          <> vsep
-            ( map
-                (emitPreludeImport (moduleDefinitionPath moduleDefinition))
-                Ipe.Prelude.Prelude.allModuleNames
-            )
           <> line
           <> line
   )
@@ -52,19 +45,6 @@ emitImport currPath (ImportExpression {importedModulePath, importedModule, impor
       Nothing -> T.intercalate "_" (importedModulePath ++ [importedModule])
       Just (path, n) -> T.intercalate "_" (path ++ [n])
 
-    importPathPrefix :: [Text]
-    importPathPrefix =
-      if null currPath
-        then ["."]
-        else replicate (length currPath) ".."
-
-emitPreludeImport :: [Text] -> Text -> EmitterMonad a
-emitPreludeImport currPath moduleName =
-  "import"
-    <+> pretty moduleName
-    <+> "from"
-    <+> emitString (T.intercalate "/" (importPathPrefix ++ [moduleName <> ".ipe"]))
-  where
     importPathPrefix :: [Text]
     importPathPrefix =
       if null currPath

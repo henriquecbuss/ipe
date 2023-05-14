@@ -53,12 +53,14 @@ runHelper allModules currModule@(Module {moduleImports, typeDefinitions, topLeve
   contextWithImports <-
     Control.Monad.foldM
       ( \acc importExpr ->
-          case Map.lookup (importedModulePath importExpr, importedModule importExpr) allModules of
-            Nothing -> throwE $ ModuleDoesNotExist (importedModulePath importExpr, importedModule importExpr)
-            Just (importedModule, importedMap) ->
-              if not (null importedMap)
-                then return acc
-                else do except $ run allModules importedModule
+          if importedModule importExpr `elem` Ipe.Prelude.Prelude.allModuleNames
+            then return acc
+            else case Map.lookup (importedModulePath importExpr, importedModule importExpr) allModules of
+              Nothing -> throwE $ ModuleDoesNotExist (importedModulePath importExpr, importedModule importExpr)
+              Just (importedModule, importedMap) ->
+                if not (null importedMap)
+                  then return acc
+                  else do except $ run allModules importedModule
       )
       allModules
       allImportedModules

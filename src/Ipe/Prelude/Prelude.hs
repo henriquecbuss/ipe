@@ -14,7 +14,8 @@ registerAllModules =
   Map.unions $
     map
       ( \(moduleName, moduleTypes) ->
-          Map.mapKeys (\name -> moduleName <> "." <> name) moduleTypes
+          Map.map (Ipe.TypeChecker.Utils.prefix [] moduleName) $
+            Map.mapKeys (\name -> moduleName <> "." <> name) moduleTypes
       )
       [ ("Dict", Ipe.Prelude.Dict.moduleTypes),
         ("Json", Ipe.Prelude.Json.moduleTypes),
@@ -22,4 +23,4 @@ registerAllModules =
       ]
 
 allModuleNames :: [Text]
-allModuleNames = ["Dict"]
+allModuleNames = ["Dict", "Json", "Json.Encode"]
