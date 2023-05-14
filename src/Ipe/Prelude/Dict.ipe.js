@@ -1,9 +1,10 @@
 /**
  * @template Key
  * @template Value
+ * @argument {Record<never, never>} _
  * @returns {Map<Key, Value>}
  */
-const empty = () => {
+const empty = (_) => {
   return new Map();
 };
 

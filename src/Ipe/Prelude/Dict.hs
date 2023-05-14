@@ -10,7 +10,7 @@ moduleTypes :: Map.Map Text Type
 moduleTypes =
   Map.fromList
     [ ("Dict", typeDef),
-      ("empty", typeDef),
+      ("empty", TFun (TRec []) typeDef),
       ("insert", TFun (TVar "key") (TFun (TVar "value") (TFun typeDef typeDef))),
       ("remove", TFun (TVar "key") (TFun typeDef typeDef))
     ]

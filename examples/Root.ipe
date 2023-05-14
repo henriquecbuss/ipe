@@ -1,8 +1,18 @@
 module Root exports [main, x, y, z, X]
 
 import Prelude
+import Dict
+import Json
 
-main = Dict.empty
+encodeTest : Json.Value
+encodeTest =
+    Dict.empty {}
+    |> Dict.insert 'a' (Json.Encode.string 'b')
+    |> Dict.insert 'c' (Json.Encode.number 1)
+    |> Json.Encode.object
+
+main : Dict.Dict k v
+main = Dict.empty {}
 
 x : X
 x = A 'abcde'
