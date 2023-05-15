@@ -41,7 +41,7 @@ run ::
   Module ->
   Either Error (Map.Map ([Text], Text) (Module, Map.Map Text Type))
 run allModules currModule =
-  evalState (runExceptT (runHelper allModules currModule)) defaultInitialState
+  evalState (runExceptT (runHelper allModules currModule)) (defaultInitialState currModule)
 
 runHelper ::
   Map.Map ([Text], Text) (Module, Map.Map Text Type) ->
@@ -53,7 +53,7 @@ runHelper allModules currModule@(Module {moduleImports, typeDefinitions, topLeve
   contextWithImports <-
     Control.Monad.foldM
       ( \acc importExpr ->
-          if importedModule importExpr `elem` Ipe.Prelude.Prelude.allModuleNames
+          if T.intercalate "." (importedModulePath importExpr ++ [importedModule importExpr]) `elem` Ipe.Prelude.Prelude.allModuleNames
             then return acc
             else case Map.lookup (importedModulePath importExpr, importedModule importExpr) allModules of
               Nothing -> throwE $ ModuleDoesNotExist (importedModulePath importExpr, importedModule importExpr)
@@ -129,15 +129,26 @@ runHelper allModules currModule@(Module {moduleImports, typeDefinitions, topLeve
       (currModule, exportedTypes)
       contextWithImports
 
-defaultInitialState :: Map.Map Text Type
-defaultInitialState =
+defaultInitialState :: Module -> Map.Map Text Type
+defaultInitialState currModule =
   Map.union
     ( Map.fromList
         [ ("Number", TNum),
           ("String", TStr)
         ]
     )
-    Ipe.Prelude.Prelude.registerAllModules
+    ( Map.unions . Map.elems $
+        Map.filterWithKey
+          (\k _ -> k `elem` importedPaths)
+          Ipe.Prelude.Prelude.registerAllModules
+    )
+  where
+    importedPaths =
+      map
+        ( \importExpr ->
+            T.intercalate "." (importedModulePath importExpr <> [importedModule importExpr])
+        )
+        (moduleImports currModule)
 
 data Error
   = NotAllVariablesDeclared [Text] [Text] -- required + given

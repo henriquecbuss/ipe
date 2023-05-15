@@ -9,13 +9,15 @@ import qualified Ipe.Prelude.Json
 import qualified Ipe.Prelude.Json.Encode
 import qualified Ipe.TypeChecker.Utils
 
-registerAllModules :: Map.Map Text Ipe.TypeChecker.Utils.Type
+registerAllModules :: Map.Map Text (Map.Map Text Ipe.TypeChecker.Utils.Type)
 registerAllModules =
-  Map.unions $
+  Map.fromList $
     map
       ( \(moduleName, moduleTypes) ->
-          Map.map (Ipe.TypeChecker.Utils.prefix [] moduleName) $
-            Map.mapKeys (\name -> moduleName <> "." <> name) moduleTypes
+          ( moduleName,
+            Map.map (Ipe.TypeChecker.Utils.prefix [] moduleName) $
+              Map.mapKeys (\name -> moduleName <> "." <> name) moduleTypes
+          )
       )
       [ ("Dict", Ipe.Prelude.Dict.moduleTypes),
         ("Json", Ipe.Prelude.Json.moduleTypes),
@@ -23,4 +25,4 @@ registerAllModules =
       ]
 
 allModuleNames :: [Text]
-allModuleNames = ["Dict", "Json", "Json.Encode"]
+allModuleNames = Map.keys registerAllModules

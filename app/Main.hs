@@ -125,7 +125,7 @@ buildModule ::
   ([Text], Text) ->
   Either String (Map.Map ([Text], Text) (Doc ()))
 buildModule rootDir allTransformedModules builtModules currentModulePathAndName@(currentModulePath, currentModuleName) =
-  if currentModuleName `elem` Ipe.Prelude.allModuleNames
+  if T.intercalate "." (currentModulePath ++ [currentModuleName]) `elem` Ipe.Prelude.allModuleNames
     then Right builtModules
     else case Map.lookup currentModulePathAndName builtModules of
       Just _ -> Right builtModules
@@ -178,7 +178,7 @@ fetchAllImportedAndTransformedModules processedModules rootDir currentModulePath
                 T.unpack currentModuleName ++ ".ipe"
               ]
 
-      if currentModuleName `elem` Ipe.Prelude.allModuleNames
+      if T.intercalate "." (currentModulePath ++ [currentModuleName]) `elem` Ipe.Prelude.allModuleNames
         then return $ Right processedModules
         else do
           possiblyParsedModule <- liftIO $ Ipe.Parser.parseFile currPath

@@ -3,6 +3,7 @@ module Root exports [main, x, y, z, X]
 import Prelude
 import Dict
 import Json
+import Json.Encode
 
 encodeTest : Json.Value
 encodeTest =
