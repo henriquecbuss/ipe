@@ -1,5 +1,5 @@
 /**
- * @typedef {import("../Json").JsonValue} JsonValue
+ * @typedef {import("../Json.ipe").JsonValue} JsonValue
  */
 
 /**
