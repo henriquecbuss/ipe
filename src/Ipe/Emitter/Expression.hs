@@ -57,7 +57,15 @@ emitWithState
           }
         )
     ) = do
-    let nameParts = map pretty $ functionCallOrValuePath ++ [functionCallOrValueName] ++ functionCallOrValueRecordAccessors
+    let path = T.intercalate "_" functionCallOrValuePath
+    let nameParts =
+          Maybe.mapMaybe
+            ( \x ->
+                if x == ""
+                  then Nothing
+                  else Just $ pretty x
+            )
+            $ path : functionCallOrValueName : functionCallOrValueRecordAccessors
     let name = concatWith (surround (align ".")) nameParts
 
     -- If is a type constructor
