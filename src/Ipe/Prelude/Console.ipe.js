@@ -28,3 +28,5 @@ const andLogValue = (toString, value) => {
   console.log(toString(value));
   return value;
 };
+
+export default { log, andLog, andLogValue };
