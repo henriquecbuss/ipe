@@ -8,6 +8,7 @@ import qualified Ipe.Prelude.Console
 import qualified Ipe.Prelude.Dict
 import qualified Ipe.Prelude.Json
 import qualified Ipe.Prelude.Json.Encode
+import qualified Ipe.Prelude.Promise
 import qualified Ipe.TypeChecker.Utils
 
 registerAllModules :: Map.Map Text (Map.Map Text Ipe.TypeChecker.Utils.Type)
@@ -23,7 +24,8 @@ registerAllModules =
       [ ("Dict", Ipe.Prelude.Dict.moduleTypes),
         ("Json", Ipe.Prelude.Json.moduleTypes),
         ("Json.Encode", Ipe.Prelude.Json.Encode.moduleTypes),
-        ("Console", Ipe.Prelude.Console.moduleTypes)
+        ("Console", Ipe.Prelude.Console.moduleTypes),
+        ("Promise", Ipe.Prelude.Promise.moduleTypes)
       ]
 
 allModuleNames :: [Text]
