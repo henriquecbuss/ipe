@@ -4,6 +4,7 @@ module Ipe.Prelude.Prelude (registerAllModules, allModuleNames) where
 
 import qualified Data.Map as Map
 import Data.Text (Text)
+import qualified Ipe.Prelude.Console
 import qualified Ipe.Prelude.Dict
 import qualified Ipe.Prelude.Json
 import qualified Ipe.Prelude.Json.Encode
@@ -21,7 +22,8 @@ registerAllModules =
       )
       [ ("Dict", Ipe.Prelude.Dict.moduleTypes),
         ("Json", Ipe.Prelude.Json.moduleTypes),
-        ("Json.Encode", Ipe.Prelude.Json.Encode.moduleTypes)
+        ("Json.Encode", Ipe.Prelude.Json.Encode.moduleTypes),
+        ("Console", Ipe.Prelude.Console.moduleTypes)
       ]
 
 allModuleNames :: [Text]
