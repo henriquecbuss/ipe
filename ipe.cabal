@@ -37,6 +37,7 @@ library
       Ipe.Parser.TopLevelDefinition
       Ipe.Parser.TypeDefinition
       Ipe.Parser.Utils
+      Ipe.Prelude.Console
       Ipe.Prelude.Dict
       Ipe.Prelude.Json
       Ipe.Prelude.Json.Encode
