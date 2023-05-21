@@ -12,8 +12,8 @@ encodeTest =
     |> Dict.insert 'c' (Json.Encode.number 1)
     |> Json.Encode.object
 
-main : Dict.Dict k v
-main = Dict.empty {}
+main : {} -> Dict.Dict k v
+main = \a -> Dict.empty {}
 
 x : X
 x = A 'abcde'

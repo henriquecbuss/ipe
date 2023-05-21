@@ -28,7 +28,7 @@ import Prettyprinter (Doc)
 import Prettyprinter.Render.Text (hPutDoc)
 import qualified System.Directory
 import qualified System.FilePath
-import System.IO (IOMode (WriteMode), withFile)
+import System.IO (IOMode (AppendMode, WriteMode), withFile)
 
 newtype App a = App
   { unApp :: Iris.CliApp Options () a
@@ -44,8 +44,6 @@ newtype App a = App
 app :: App ()
 app = do
   options <- Iris.asksCliEnv Iris.cliEnvCmd
-
-  liftIO $ print Ipe.Prelude.registerAllModules
 
   case options of
     Build {entrypoint, outputDir, preludeBranch} ->
@@ -115,6 +113,9 @@ execBuild entrypoint outputDir preludeBranch = do
                   $ \h -> ByteString.hPut h content
             )
             preludeFiles
+
+          let entrypointOutputPath = System.FilePath.joinPath [Maybe.fromMaybe currentDirectory outputDir, System.FilePath.takeFileName entrypoint ++ ".js"]
+          liftIO $ withFile entrypointOutputPath AppendMode $ \h -> hPutDoc h "\nmain();\n"
 
           liftIO $ putStrLn "✅ Finished building project!"
 
