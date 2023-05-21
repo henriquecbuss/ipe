@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Ipe.Prelude.Promise (moduleTypes) where
+module Ipe.Prelude.Promise (moduleTypes, typeDef) where
 
 import qualified Data.Map as Map
 import Data.Text (Text)

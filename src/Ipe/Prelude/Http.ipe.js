@@ -26,7 +26,8 @@ const createApp = async ({ port, createContext, handleRequest }) => {
         .split("/")
         .filter((segment) => segment.length > 0);
 
-      const searchParams = Object.fromEntries(url.searchParams.entries());
+      /** @type {Map<string, string>} */
+      const searchParams = new Map(url.searchParams);
 
       /** @type {Method} */
       const method = request.method;
@@ -34,14 +35,15 @@ const createApp = async ({ port, createContext, handleRequest }) => {
       /** @type {JsonValue} */
       const body = await request.json();
 
-      const headers = Object.fromEntries(request.headers.entries());
+      /** @type {Map<string, string>} */
+      const headers = new Map(request.headers);
 
-      const [response, newContext] = await handleRequest(context, {
+      const { response, newContext } = await handleRequest(context)({
         endpoint,
         searchParams,
         body,
         headers,
-        method,
+        method: [capitalize(method)],
       });
 
       try {
@@ -53,4 +55,29 @@ const createApp = async ({ port, createContext, handleRequest }) => {
   });
 };
 
-export default { createApp };
+/**
+ *
+ * @param {JsonValue} value
+ * @returns {Response}
+ */
+const jsonResponse = (value) => new Response(JSON.stringify(value));
+
+/**
+ *
+ * @param {number} status
+ * @returns {(response: Response) => Response}
+ */
+const withStatus = (status) => (response) => {
+  response.status = status;
+  return response;
+};
+
+/**
+ *
+ * @param {string} name
+ * @returns {string}
+ */
+const capitalize = (name) =>
+  name[0].toUpperCase() + name.slice(1).toLowerCase();
+
+export default { createApp, jsonResponse, withStatus };

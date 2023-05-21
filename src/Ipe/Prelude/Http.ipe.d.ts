@@ -4,16 +4,17 @@ export type CreateAppOptions<TContext> = {
   port: number;
   createContext: (_: Record<never, never>) => Promise<TContext>;
   handleRequest: (
-    context: TContext,
+    context: TContext
+  ) => (
     request: IpeRequest
-  ) => Promise<[Response, TContext]>;
+  ) => Promise<{ response: Response; newContext: TContext }>;
 };
 
 export type IpeRequest = {
-  endpoint: string;
-  searchParams: Record<string, string>;
+  endpoint: string[];
+  searchParams: Map<string, string>;
   body: JsonValue;
-  headers: Record<string, string>;
+  headers: Map<string, string>;
   method: Method;
 };
 
