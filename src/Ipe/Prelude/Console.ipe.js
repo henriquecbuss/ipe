@@ -10,10 +10,9 @@ const log = (message) => {
 /**
  * @template T
  * @param {string} message
- * @param {T} value
- * @returns {T} the original value
+ * @returns {(value: T) => T}
  */
-const andLog = (message, value) => {
+const andLog = (message) => (value) => {
   console.log(message);
   return value;
 };
@@ -21,10 +20,9 @@ const andLog = (message, value) => {
 /**
  * @template T
  * @param {(value: T) => string} toString
- * @param {T} value
- * @returns {T} the original value
+ * @returns {(value: T) => T}
  */
-const andLogValue = (toString, value) => {
+const andLogValue = (toString) => (value) => {
   console.log(toString(value));
   return value;
 };
