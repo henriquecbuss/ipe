@@ -4,6 +4,7 @@ import Prelude
 import Dict
 import Json
 import Json.Encode
+import Console
 
 encodeTest : Json.Value
 encodeTest =
@@ -12,8 +13,14 @@ encodeTest =
     |> Dict.insert 'c' (Json.Encode.number 1)
     |> Json.Encode.object
 
-main : {} -> Dict.Dict k v
-main = \a -> Dict.empty {}
+main : {} -> Dict.Dict String String
+main = \a -> 'abc'
+    |> Console.andLog '123'
+    |> dictSingleton 'a'
+
+dictSingleton : String -> a -> Dict.Dict String a
+dictSingleton = \key value -> Dict.empty {}
+    |> Dict.insert key value
 
 x : X
 x = A 'abcde'
