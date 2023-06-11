@@ -34,6 +34,7 @@ data TVarCases
   | FiniteTVarStrCases [Text]
   | FiniteTVarNumCases [Float]
   | FiniteTVarCustomCases String [String]
+  | FiniteTVarListCases [TVarCases]
   | NoTVarCases
 
 inferHelper :: TypeEnv -> Expression -> TypeInferenceMonad (Substitution, Type)
@@ -465,6 +466,8 @@ handleTVarPatternBranch branchType initialSub (currEnv, returnType, handledCases
           handleAttributions initialSub currEnv branchAttributions branchExpr returnType InfiniteTVarCases
         FiniteTVarCustomCases _ _ ->
           handleAttributions initialSub currEnv branchAttributions branchExpr returnType InfiniteTVarCases
+        FiniteTVarListCases _ ->
+          handleAttributions initialSub currEnv branchAttributions branchExpr returnType InfiniteTVarCases
         NoTVarCases ->
           handleAttributions initialSub currEnv branchAttributions branchExpr returnType InfiniteTVarCases
     IpeVariablePattern varName -> do
@@ -480,6 +483,8 @@ handleTVarPatternBranch branchType initialSub (currEnv, returnType, handledCases
         FiniteTVarCustomCases _ _ ->
           handleAttributions initialSub currEnv branchAttributions branchExpr returnType InfiniteTVarCases
         FiniteTVarNumCases _ ->
+          handleAttributions initialSub envWithVarName branchAttributions branchExpr returnType InfiniteTVarCases
+        FiniteTVarListCases _ ->
           handleAttributions initialSub envWithVarName branchAttributions branchExpr returnType InfiniteTVarCases
     IpeCustomTypePattern path name args -> do
       let constructorName = T.unpack $ T.intercalate "." (path ++ [name])
@@ -515,6 +520,7 @@ handleTVarPatternBranch branchType initialSub (currEnv, returnType, handledCases
                   | constructorName `elem` matchedConstructors -> throwE DuplicatePatternMatch
                   | length matchedConstructors == length requiredConstructors - 1 -> handleAttributions newSub (apply newSub newEnv) branchAttributions branchExpr (apply newSub returnType) InfiniteTVarCases
                   | otherwise -> handleAttributions newSub (apply newSub newEnv) branchAttributions branchExpr (apply newSub returnType) (FiniteTVarCustomCases parentName (constructorName : matchedConstructors))
+                FiniteTVarListCases _ -> throwE InvalidTypeForPatternMatch
                 NoTVarCases ->
                   handleAttributions newSub (apply newSub newEnv) branchAttributions branchExpr (apply newSub returnType) (FiniteTVarCustomCases parentName [constructorName])
     IpeLiteralStringPattern pat ->
@@ -534,6 +540,7 @@ handleTVarPatternBranch branchType initialSub (currEnv, returnType, handledCases
           handleAttributions newSub (apply newSub currEnv) branchAttributions branchExpr (apply newSub returnType) (FiniteTVarStrCases [pat])
         FiniteTVarNumCases _ -> throwE InvalidTypeForPatternMatch
         FiniteTVarCustomCases _ _ -> throwE InvalidTypeForPatternMatch
+        FiniteTVarListCases _ -> throwE InvalidTypeForPatternMatch
         InfiniteTVarCases -> throwE PatternMatchOnHandledPatternMatch
     IpeLiteralNumberPattern pat ->
       case handledCases of
@@ -550,12 +557,27 @@ handleTVarPatternBranch branchType initialSub (currEnv, returnType, handledCases
           let newSub = sub1 `compose` initialSub
 
           handleAttributions newSub (apply newSub currEnv) branchAttributions branchExpr (apply newSub returnType) (FiniteTVarNumCases [pat])
-        FiniteTVarStrCases _ ->
-          throwE InvalidTypeForPatternMatch
-        FiniteTVarCustomCases _ _ ->
-          throwE InvalidTypeForPatternMatch
+        FiniteTVarStrCases _ -> throwE InvalidTypeForPatternMatch
+        FiniteTVarCustomCases _ _ -> throwE InvalidTypeForPatternMatch
+        FiniteTVarListCases _ -> throwE InvalidTypeForPatternMatch
         InfiniteTVarCases -> throwE PatternMatchOnHandledPatternMatch
-    IpeLiteralListPattern _ -> throwE InvalidTypeForPatternMatch
+    IpeLiteralListPattern _ -> case handledCases of
+      InfiniteTVarCases -> throwE PatternMatchOnHandledPatternMatch
+      FiniteTVarStrCases _ -> throwE InvalidTypeForPatternMatch
+      FiniteTVarNumCases _ -> throwE InvalidTypeForPatternMatch
+      FiniteTVarCustomCases _ _ -> throwE InvalidTypeForPatternMatch
+      FiniteTVarListCases _ -> do
+        listInnerType <- newTypeVar "a"
+        sub1 <- mostGeneralUnifier branchType (TList listInnerType)
+        let newSub = sub1 `compose` initialSub
+
+        handleAttributions newSub (apply newSub currEnv) branchAttributions branchExpr (apply newSub returnType) (FiniteTVarListCases [])
+      NoTVarCases -> do
+        listInnerType <- newTypeVar "a"
+        sub1 <- mostGeneralUnifier branchType (TList listInnerType)
+        let newSub = sub1 `compose` initialSub
+
+        handleAttributions newSub (apply newSub currEnv) branchAttributions branchExpr (apply newSub returnType) (FiniteTVarListCases [])
 
 inferAttribution :: Text -> Expression -> TypeEnv -> TypeInferenceMonad (Substitution, Type, TypeEnv)
 inferAttribution attributionName attributionExpr env = do
