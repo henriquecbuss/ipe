@@ -723,3 +723,18 @@ matchSpec =
                   ]
               )
               `shouldBe` Left DuplicatePatternMatch
+
+    it "should work with strings" $
+      let initialState =
+            Map.fromList
+              [ ("x", ExprTypeChecker.TList ExprTypeChecker.TStr)
+              ]
+       in ExprTypeChecker.runWith
+            initialState
+            ( IpeMatch
+                (simpleVariable "x")
+                [ (IpeLiteralListPattern [IpeLiteralStringPattern "users"], [], IpeString "a"),
+                  (IpeWildCardPattern, [], IpeString "wild")
+                ]
+            )
+            `shouldBe` Right ExprTypeChecker.TStr
