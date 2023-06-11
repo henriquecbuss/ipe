@@ -416,7 +416,7 @@ ipeFunctionCallOrValue = do
                 )
             )
         )
-        `shouldBe` "foo.bar.baz"
+        `shouldBe` "foo_bar.baz"
 
     it "should emit a function call with a record accessor" $
       show
@@ -446,7 +446,7 @@ ipeFunctionCallOrValue = do
                 )
             )
         )
-        `shouldBe` "foo.bar.baz.qux"
+        `shouldBe` "foo_bar.baz.qux"
 
 ipeFunction :: Spec
 ipeFunction = do

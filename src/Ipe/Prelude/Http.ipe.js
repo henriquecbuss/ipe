@@ -33,7 +33,10 @@ const createApp = async ({ port, createContext, handleRequest }) => {
       const method = request.method;
 
       /** @type {JsonValue} */
-      const body = await request.json();
+      let body = null;
+      try {
+        body = await request.json();
+      } catch {}
 
       /** @type {Map<string, string>} */
       const headers = new Map(request.headers);

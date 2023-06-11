@@ -5,6 +5,8 @@ import Dict
 import Json
 import Json.Encode
 import Console
+import Http
+import Promise
 
 encodeTest : Json.Value
 encodeTest =
@@ -13,10 +15,15 @@ encodeTest =
     |> Dict.insert 'c' (Json.Encode.number 1)
     |> Json.Encode.object
 
-main : {} -> Dict.Dict String String
-main = \a -> 'abc'
-    |> Console.andLog '123'
-    |> dictSingleton 'a'
+main : {} -> {}
+main = \a -> Http.createApp {
+    port = 3000,
+    createContext = \x -> Promise.succeed 'abc',
+    handleRequest = \context request -> Promise.succeed {
+        response = Http.jsonResponse (Json.Encode.string 'Hello World from Ipe!!@#!@'),
+        newContext = 'abcdef'
+    }
+}
 
 dictSingleton : String -> a -> Dict.Dict String a
 dictSingleton = \key value -> Dict.empty {}

@@ -4,9 +4,6 @@ module Ipe.Prelude.Http (moduleTypes) where
 
 import qualified Data.Map as Map
 import Data.Text (Text)
-import qualified Ipe.Prelude.Dict as IpeDict
-import qualified Ipe.Prelude.Json as IpeJson
-import qualified Ipe.Prelude.Promise as IpePromise
 import Ipe.TypeChecker.Utils (Type (..))
 
 moduleTypes :: Map.Map Text Type
@@ -19,19 +16,21 @@ moduleTypes =
                 ( "createContext",
                   TFun
                     (TRec [])
-                    (IpePromise.typeDef (TVar "context"))
+                    (TCustom "Promise.Promise" [TVar "context"] [])
                 ),
                 ( "handleRequest",
                   TFun
                     (TVar "context")
                     ( TFun
                         request
-                        ( IpePromise.typeDef
-                            ( TRec
+                        ( TCustom
+                            "Promise.Promise"
+                            [ TRec
                                 [ ("response", response),
                                   ("newContext", TVar "context")
                                 ]
-                            )
+                            ]
+                            []
                         )
                     )
                 )
@@ -39,7 +38,7 @@ moduleTypes =
           )
           (TRec [])
       ),
-      ("jsonResponse", TFun IpeJson.typeDef response),
+      ("jsonResponse", TFun (TCustom "Json.Value" [] []) response),
       ("withStatus", TFun TNum (TFun response response)),
       ("Request", request),
       ("Method", method),
@@ -50,9 +49,9 @@ request :: Type
 request =
   TRec
     [ ("endpoint", TCustom "List" [TStr] []),
-      ("searchParams", IpeDict.typeDef TStr TStr),
-      ("body", IpeJson.typeDef),
-      ("headers", IpeDict.typeDef TStr TStr),
+      ("searchParams", TCustom "Dict.Dict" [TStr, TStr] []),
+      ("body", TCustom "Json.Value" [] []),
+      ("headers", TCustom "Dict.Dict" [TStr, TStr] []),
       ("method", method)
     ]
 

@@ -354,8 +354,9 @@ inferHelper (TypeEnv env) (IpeFunctionCallOrValue (FunctionCallOrValue path name
     Just valType -> do
       t <- instantiate valType
       typeToUse <- findRecordEnd t recordPath
-      (finalSub, finalT) <- Control.Monad.foldM evalFunction (Map.empty, typeToUse) args
-      return (finalSub, finalT)
+      (_, finalT) <- Control.Monad.foldM evalFunction (Map.empty, typeToUse) args
+
+      return (Map.empty, finalT)
       where
         findRecordEnd :: Type -> [Text] -> TypeInferenceMonad Type
         findRecordEnd inputType [] = return inputType
