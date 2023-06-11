@@ -561,7 +561,7 @@ handleTVarPatternBranch branchType initialSub (currEnv, returnType, handledCases
         FiniteTVarCustomCases _ _ -> throwE InvalidTypeForPatternMatch
         FiniteTVarListCases _ -> throwE InvalidTypeForPatternMatch
         InfiniteTVarCases -> throwE PatternMatchOnHandledPatternMatch
-    IpeLiteralListPattern _ -> case handledCases of
+    IpeLiteralListPattern pats -> case handledCases of
       InfiniteTVarCases -> throwE PatternMatchOnHandledPatternMatch
       FiniteTVarStrCases _ -> throwE InvalidTypeForPatternMatch
       FiniteTVarNumCases _ -> throwE InvalidTypeForPatternMatch
@@ -571,7 +571,18 @@ handleTVarPatternBranch branchType initialSub (currEnv, returnType, handledCases
         sub1 <- mostGeneralUnifier branchType (TList listInnerType)
         let newSub = sub1 `compose` initialSub
 
-        handleAttributions newSub (apply newSub currEnv) branchAttributions branchExpr (apply newSub returnType) (FiniteTVarListCases [])
+        newEnv <-
+          Control.Monad.foldM
+            ( \(TypeEnv env) pat -> case pat of
+                IpeVariablePattern varName -> do
+                  let envWithVarName = TypeEnv $ Map.insert (T.unpack varName) (Scheme [T.unpack varName] listInnerType) env
+                  return envWithVarName
+                _ -> return (TypeEnv env)
+            )
+            currEnv
+            pats
+
+        handleAttributions newSub (apply newSub newEnv) branchAttributions branchExpr (apply newSub returnType) (FiniteTVarListCases [])
       NoTVarCases -> do
         listInnerType <- newTypeVar "a"
         sub1 <- mostGeneralUnifier branchType (TList listInnerType)
