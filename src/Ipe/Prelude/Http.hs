@@ -48,7 +48,7 @@ moduleTypes =
 request :: Type
 request =
   TRec
-    [ ("endpoint", TCustom "List" [TStr] []),
+    [ ("endpoint", TList TStr),
       ("searchParams", TCustom "Dict.Dict" [TStr, TStr] []),
       ("body", TCustom "Json.Value" [] []),
       ("headers", TCustom "Dict.Dict" [TStr, TStr] []),
