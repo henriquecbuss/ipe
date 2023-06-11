@@ -242,7 +242,7 @@ patternMatchBranch matchVariable (matchPattern, attributions, returnExpression) 
         checkElement variable (IpeCustomTypePattern path constructor _args) =
           pretty variable <> brackets "0" <+> "===" <+> emitString (T.intercalate "." (path ++ [constructor]))
         checkElement variable (IpeLiteralNumberPattern num) = pretty variable <+> "===" <+> pretty num
-        checkElement variable (IpeLiteralStringPattern str) = pretty variable <+> "===" <+> pretty str
+        checkElement variable (IpeLiteralStringPattern str) = pretty variable <+> "===" <+> emitString str
         checkElement variable (IpeLiteralListPattern patterns) = do
           conditions <-
             Control.Monad.zipWithM
