@@ -811,6 +811,37 @@ patternMatchSpec = do
           )
           [(Ipe.Grammar.IpeWildCardPattern, [], Ipe.Grammar.IpeNumber 1)]
 
+    it "should parse a nested pattern" $
+      Parsec.Common.parse
+        Ipe.Parser.Expression.parser
+        ""
+        "match x with\n\
+        \ | 5 -> \n\
+        \   match 5 with\n\
+        \     | 5 -> 1\n\
+        \     | _ -> 2\n\
+        \ | _ -> 3"
+        `shouldParse` Ipe.Grammar.IpeMatch
+          ( Ipe.Grammar.IpeFunctionCallOrValue
+              ( Ipe.Grammar.FunctionCallOrValue
+                  { Ipe.Grammar.functionCallOrValuePath = [],
+                    Ipe.Grammar.functionCallOrValueName = "x",
+                    Ipe.Grammar.functionCallOrValueRecordAccessors = [],
+                    Ipe.Grammar.functionCallOrValueArguments = []
+                  }
+              )
+          )
+          [ ( Ipe.Grammar.IpeLiteralNumberPattern 5,
+              [],
+              Ipe.Grammar.IpeMatch
+                (Ipe.Grammar.IpeNumber 5)
+                [ (Ipe.Grammar.IpeLiteralNumberPattern 5, [], Ipe.Grammar.IpeNumber 1),
+                  (Ipe.Grammar.IpeWildCardPattern, [], Ipe.Grammar.IpeNumber 2)
+                ]
+            ),
+            (Ipe.Grammar.IpeWildCardPattern, [], Ipe.Grammar.IpeNumber 3)
+          ]
+
     it "should parse a wildcard pattern with a single attribution" $
       Parsec.Common.parse
         Ipe.Parser.Expression.parser
