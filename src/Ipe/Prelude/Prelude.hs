@@ -8,6 +8,7 @@ import qualified Ipe.Prelude.Console
 import qualified Ipe.Prelude.Dict
 import qualified Ipe.Prelude.Http
 import qualified Ipe.Prelude.Json
+import qualified Ipe.Prelude.Json.Decode
 import qualified Ipe.Prelude.Json.Encode
 import qualified Ipe.Prelude.Promise
 import qualified Ipe.TypeChecker.Utils
@@ -25,6 +26,7 @@ registerAllModules =
       [ ("Dict", Ipe.Prelude.Dict.moduleTypes),
         ("Json", Ipe.Prelude.Json.moduleTypes),
         ("Json.Encode", Ipe.Prelude.Json.Encode.moduleTypes),
+        ("Json.Decode", Ipe.Prelude.Json.Decode.moduleTypes),
         ("Console", Ipe.Prelude.Console.moduleTypes),
         ("Promise", Ipe.Prelude.Promise.moduleTypes),
         ("Http", Ipe.Prelude.Http.moduleTypes)

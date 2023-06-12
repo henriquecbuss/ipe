@@ -41,6 +41,7 @@ library
       Ipe.Prelude.Dict
       Ipe.Prelude.Http
       Ipe.Prelude.Json
+      Ipe.Prelude.Json.Decode
       Ipe.Prelude.Json.Encode
       Ipe.Prelude.Prelude
       Ipe.Prelude.Promise
