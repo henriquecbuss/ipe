@@ -32,4 +32,33 @@ const remove = (key) => (dict) => {
   return dict;
 };
 
-export default { empty, insert, remove };
+/**
+ * @template Key
+ * @template Value
+ * @template Result
+ * @param {(key: Key) => (value: Value) => Result} transformer
+ * @returns {(inputDict: Map<Key, Value>) => Map<Key, Result>}
+ */
+const map = (transformer) => (inputDict) => {
+  const result = new Map();
+  for (const [key, value] of inputDict) {
+    result.set(key, transformer(key)(value));
+  }
+  return result;
+};
+
+/**
+ * @template Key
+ * @template Value
+ * @param {Map<Key, Value>} dict
+ * @returns {Array<{key: Key, value: Value}>}
+ */
+const toList = (dict) => {
+  const result = [];
+  for (const [key, value] of dict) {
+    result.push({ key, value });
+  }
+  return result;
+};
+
+export default { empty, insert, remove, map, toList };

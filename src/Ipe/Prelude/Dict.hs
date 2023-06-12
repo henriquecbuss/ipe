@@ -12,7 +12,24 @@ moduleTypes =
     [ ("Dict", genericTypeDef),
       ("empty", TFun (TRec []) genericTypeDef),
       ("insert", TFun (TVar "key") (TFun (TVar "value") (TFun genericTypeDef genericTypeDef))),
-      ("remove", TFun (TVar "key") (TFun genericTypeDef genericTypeDef))
+      ("remove", TFun (TVar "key") (TFun genericTypeDef genericTypeDef)),
+      ( "map",
+        TFun
+          ( TFun
+              (TVar "key")
+              ( TFun
+                  (TVar "value")
+                  (TVar "result")
+              )
+          )
+          ( TFun
+              genericTypeDef
+              (typeDef (TVar "key") (TVar "result"))
+          )
+      ),
+      ( "toList",
+        TFun genericTypeDef (TList (TRec [("key", TVar "key"), ("value", TVar "value")]))
+      )
     ]
 
 typeDef :: Type -> Type -> Type
