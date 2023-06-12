@@ -13,3 +13,5 @@ If you want to see all of the available options:
 ```bash
 stack run -- --help
 ```
+
+If you speak portuguese and want to know more about the language, [check out my dissertation on it](https://github.com/henriquecbuss/ipe-dissertation)
