@@ -46,7 +46,7 @@ const createApp = async ({ port, createContext, handleRequest }) => {
         searchParams,
         body,
         headers,
-        method: [capitalize(method)],
+        method: [`Http.${capitalize(method)}`],
       });
 
       try {
