@@ -149,18 +149,22 @@ functionAttribution = do
 
 matchExpression :: Parser Ipe.Grammar.Expression
 matchExpression = do
+  indentationLevel <- Parsec.Lexer.indentLevel
+
   Control.Monad.void $ Ipe.Parser.symbol "match"
 
   expression <- Ipe.Parser.Expression.parser
 
   Control.Monad.void $ Ipe.Parser.symbol "with"
 
-  matchCases <- Parsec.Common.some matchCase
+  matchCases <- Parsec.Common.some (matchCase indentationLevel)
 
   return $ Ipe.Grammar.IpeMatch expression matchCases
 
-matchCase :: Parser (Ipe.Grammar.IpeMatchPattern, [(Text, Ipe.Grammar.Expression)], Ipe.Grammar.Expression)
-matchCase = do
+matchCase :: Parsec.Common.Pos -> Parser (Ipe.Grammar.IpeMatchPattern, [(Text, Ipe.Grammar.Expression)], Ipe.Grammar.Expression)
+matchCase indentationLevel = do
+  _ <- Parsec.Lexer.indentGuard Ipe.Parser.space GT indentationLevel
+
   Control.Monad.void $ Ipe.Parser.symbol "|"
 
   pattern_ <- Ipe.Parser.lexeme $ matchPattern True
