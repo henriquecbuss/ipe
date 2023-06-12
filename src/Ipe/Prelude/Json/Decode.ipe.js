@@ -73,6 +73,31 @@ const map2 = (transformer) => (a) => (b) => {
 };
 
 /**
+ * @template A
+ * @param {string} fieldName
+ * @returns {(parser: Parser<A>) => Parser<A>}
+ */
+const field = (fieldName) => (parser) => {
+  return (input) => {
+    if (
+      typeof input !== "object" ||
+      input === null ||
+      Array.isArray(input) ||
+      input === undefined
+    ) {
+      return { ok: false, error: `Expected object, but got ${typeof input}` };
+    }
+
+    if (!(fieldName in input)) {
+      return { ok: false, error: `Expected field ${fieldName}` };
+    }
+
+    // @ts-expect-error
+    return parser(input[fieldName]);
+  };
+};
+
+/**
  * @type {Parser<string>}
  */
 const string = (input) => {
@@ -126,6 +151,7 @@ export default {
   parseString,
   succeed,
   map2,
+  field,
   string,
   number,
   list,

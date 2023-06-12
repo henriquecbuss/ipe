@@ -36,6 +36,7 @@ moduleTypes =
               )
           )
       ),
+      ("field", TFun TStr (TFun (decoderType (TVar "a")) (decoderType (TVar "a")))),
       ("string", decoderType TStr),
       ("number", decoderType TNum),
       ( "list",
