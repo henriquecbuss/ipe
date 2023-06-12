@@ -135,7 +135,8 @@ defaultInitialState currModule =
     ( Map.fromList
         [ ("Number", TNum),
           ("String", TStr),
-          ("List", TList (TVar "a"))
+          ("List", TList (TVar "a")),
+          ("Result", TCustom "Result" [TVar "err", TVar "ok"] [("Err", [TVar "err"]), ("Ok", [TVar "ok"])])
         ]
     )
     ( Map.unions . Map.elems $
