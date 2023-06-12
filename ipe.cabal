@@ -43,6 +43,7 @@ library
       Ipe.Prelude.Json
       Ipe.Prelude.Json.Decode
       Ipe.Prelude.Json.Encode
+      Ipe.Prelude.List
       Ipe.Prelude.Prelude
       Ipe.Prelude.Promise
       Ipe.Transformer.Module

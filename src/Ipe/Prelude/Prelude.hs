@@ -10,6 +10,7 @@ import qualified Ipe.Prelude.Http
 import qualified Ipe.Prelude.Json
 import qualified Ipe.Prelude.Json.Decode
 import qualified Ipe.Prelude.Json.Encode
+import qualified Ipe.Prelude.List
 import qualified Ipe.Prelude.Promise
 import qualified Ipe.TypeChecker.Utils
 
@@ -29,7 +30,8 @@ registerAllModules =
         ("Json.Decode", Ipe.Prelude.Json.Decode.moduleTypes),
         ("Console", Ipe.Prelude.Console.moduleTypes),
         ("Promise", Ipe.Prelude.Promise.moduleTypes),
-        ("Http", Ipe.Prelude.Http.moduleTypes)
+        ("Http", Ipe.Prelude.Http.moduleTypes),
+        ("List", Ipe.Prelude.List.moduleTypes)
       ]
 
 allModuleNames :: [Text]
