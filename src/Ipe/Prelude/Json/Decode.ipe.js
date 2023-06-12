@@ -6,7 +6,7 @@
 
 /**
  * @template T
- * @typedef {{ ok: true; parsed: T } | { ok: false; error: string }} ParseResult
+ * @typedef {["Ok", T] | ["Err", string] } ParseResult
  */
 
 /**
@@ -34,7 +34,7 @@ const parseString = (parser) => (input) => {
     const parsed = JSON.parse(input);
     return parseJson(parser)(parsed);
   } catch (error) {
-    return { ok: false, error: `Invalid JSON: ${error}` };
+    return ["Err", `Invalid JSON: ${error}`];
   }
 };
 
@@ -44,7 +44,7 @@ const parseString = (parser) => (input) => {
  * @returns {Parser<T>}
  */
 const succeed = (value) => {
-  return (_) => ({ ok: true, parsed: value });
+  return (_) => ["Ok", value];
 };
 
 /**
@@ -57,18 +57,18 @@ const succeed = (value) => {
 const map2 = (transformer) => (a) => (b) => {
   return (input) => {
     const aResult = a(input);
-    if (!aResult.ok) {
+    if (aResult[0] === "Err") {
       return aResult;
     }
 
     const bResult = b(input);
-    if (!bResult.ok) {
+    if (bResult[0] === "Err") {
       return bResult;
     }
 
-    const result = transformer(aResult.parsed)(bResult.parsed);
+    const result = transformer(aResult[1])(bResult[1]);
 
-    return { ok: true, parsed: result };
+    return ["Ok", result];
   };
 };
 
@@ -85,11 +85,11 @@ const field = (fieldName) => (parser) => {
       Array.isArray(input) ||
       input === undefined
     ) {
-      return { ok: false, error: `Expected object, but got ${typeof input}` };
+      return ["Err", `Expected object, but got ${typeof input}`];
     }
 
     if (!(fieldName in input)) {
-      return { ok: false, error: `Expected field ${fieldName}` };
+      return ["Err", `Expected field ${fieldName}`];
     }
 
     // @ts-expect-error
@@ -102,10 +102,10 @@ const field = (fieldName) => (parser) => {
  */
 const string = (input) => {
   if (typeof input === "string") {
-    return { ok: true, parsed: input };
+    return ["Ok", input];
   }
 
-  return { ok: false, error: `Expected string, but got ${typeof input}` };
+  return ["Err", `Expected string, but got ${typeof input}`];
 };
 
 /**
@@ -113,10 +113,10 @@ const string = (input) => {
  */
 const number = (input) => {
   if (typeof input === "number") {
-    return { ok: true, parsed: input };
+    return ["Ok", input];
   }
 
-  return { ok: false, error: `Expected number, but got ${typeof input}` };
+  return ["Err", `Expected number, but got ${typeof input}`];
 };
 
 /**
@@ -127,7 +127,7 @@ const number = (input) => {
 const list = (itemParser) => {
   return (input) => {
     if (!Array.isArray(input)) {
-      return { ok: false, error: `Expected list, but got ${typeof input}` };
+      return ["Err", `Expected list, but got ${typeof input}`];
     }
 
     /** @type {T[]} */
@@ -135,14 +135,14 @@ const list = (itemParser) => {
     for (const item of input) {
       const itemResult = itemParser(item);
 
-      if (!itemResult.ok) {
+      if (itemResult[0] === "Err") {
         return itemResult;
       }
 
-      result.push(itemResult.parsed);
+      result.push(itemResult[1]);
     }
 
-    return { ok: true, parsed: result };
+    return ["Ok", result];
   };
 };
 
