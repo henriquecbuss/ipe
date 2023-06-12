@@ -16,7 +16,10 @@ const empty = (_) => {
  * @param {Key} key
  * @returns {(value: Value) => (dict: Map<Key, Value>) => Map<Key, Value>}
  */
-const insert = (key) => (value) => (dict) => dict.set(key, value);
+const insert = (key) => (value) => (dict) => {
+  dict.set(key, value);
+  return dict;
+};
 
 /**
  * @template Key
