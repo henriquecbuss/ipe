@@ -1,3 +1,5 @@
+// @ts-check
+
 /**
  * @template Key
  * @template Value

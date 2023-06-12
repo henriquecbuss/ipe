@@ -1,3 +1,5 @@
+// @ts-check
+
 /**
  * @typedef {import("../Json.ipe").JsonValue} JsonValue
  */
@@ -43,6 +45,7 @@ const list = (encodeItem) => (arr) => arr.map(encodeItem);
 const object = (input) => {
   const result = {};
   for (const [key, value] of input) {
+    // @ts-expect-error
     result[key] = value;
   }
   return result;
