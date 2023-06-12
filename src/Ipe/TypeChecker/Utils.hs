@@ -86,7 +86,7 @@ instance Types Type where
   apply subs (TList inner) = TList (apply subs inner)
   apply subs (TCustom name typeVars constructors) = TCustom name (map (apply subs) typeVars) constructors
 
-data Scheme = Scheme [String] Type
+data Scheme = Scheme [String] Type deriving (Show)
 
 instance Types Scheme where
   freeTypeVariables (Scheme vars t) = Set.difference (freeTypeVariables t) (Set.fromList vars)
@@ -94,7 +94,7 @@ instance Types Scheme where
 
 type Substitution = Map.Map String Type
 
-newtype TypeEnv = TypeEnv (Map.Map String Scheme)
+newtype TypeEnv = TypeEnv (Map.Map String Scheme) deriving (Show)
 
 instance Types TypeEnv where
   freeTypeVariables (TypeEnv env) = freeTypeVariables (Map.elems env)
