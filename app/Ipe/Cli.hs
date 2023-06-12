@@ -2,11 +2,13 @@
 
 module Ipe.Cli (Options (..), optionsP) where
 
+import Data.Text (Text)
 import qualified Options.Applicative as Opt
 
 data Options = Build
   { entrypoint :: FilePath,
-    outputDir :: Maybe FilePath
+    outputDir :: Maybe FilePath,
+    preludeBranch :: Maybe Text
   }
 
 optionsP :: Opt.Parser Options
@@ -39,7 +41,14 @@ buildP = do
           <> Opt.metavar "OUTPUT_DIR"
           <> Opt.help "Path to the output directory. Ex: `./dist`"
 
-  return Build {entrypoint = rootFile, outputDir = output}
+  preludeBranchOpt <-
+    Opt.optional $
+      Opt.strOption $
+        Opt.long "prelude-branch"
+          <> Opt.metavar "PRELUDE_BRANCH"
+          <> Opt.help "(optional) Branch to fetch the prelude from"
+
+  return Build {entrypoint = rootFile, outputDir = output, preludeBranch = preludeBranchOpt}
 
 fileArgument :: Opt.Mod Opt.ArgumentFields FilePath -> Opt.Parser FilePath
 fileArgument = Opt.strArgument

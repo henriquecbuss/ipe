@@ -31,6 +31,7 @@ import Ipe.Grammar
     TypeOpaque (..),
     TypeUnion (..),
   )
+import qualified Ipe.Prelude.Prelude
 import qualified Ipe.TypeChecker.Expression
 import Ipe.TypeChecker.Utils (Type (..), freeTypeVariables)
 import qualified Ipe.TypeChecker.Utils as Ipe.TypeChecker
@@ -40,7 +41,7 @@ run ::
   Module ->
   Either Error (Map.Map ([Text], Text) (Module, Map.Map Text Type))
 run allModules currModule =
-  evalState (runExceptT (runHelper allModules currModule)) defaultInitialState
+  evalState (runExceptT (runHelper allModules currModule)) (defaultInitialState currModule)
 
 runHelper ::
   Map.Map ([Text], Text) (Module, Map.Map Text Type) ->
@@ -52,12 +53,14 @@ runHelper allModules currModule@(Module {moduleImports, typeDefinitions, topLeve
   contextWithImports <-
     Control.Monad.foldM
       ( \acc importExpr ->
-          case Map.lookup (importedModulePath importExpr, importedModule importExpr) allModules of
-            Nothing -> throwE $ ModuleDoesNotExist (importedModulePath importExpr, importedModule importExpr)
-            Just (importedModule, importedMap) ->
-              if not (null importedMap)
-                then return acc
-                else do except $ run allModules importedModule
+          if T.intercalate "." (importedModulePath importExpr ++ [importedModule importExpr]) `elem` Ipe.Prelude.Prelude.allModuleNames
+            then return acc
+            else case Map.lookup (importedModulePath importExpr, importedModule importExpr) allModules of
+              Nothing -> throwE $ ModuleDoesNotExist (importedModulePath importExpr, importedModule importExpr)
+              Just (importedModule, importedMap) ->
+                if not (null importedMap)
+                  then return acc
+                  else do except $ run allModules importedModule
       )
       allModules
       allImportedModules
@@ -126,12 +129,29 @@ runHelper allModules currModule@(Module {moduleImports, typeDefinitions, topLeve
       (currModule, exportedTypes)
       contextWithImports
 
-defaultInitialState :: Map.Map Text Type
-defaultInitialState =
-  Map.fromList
-    [ ("Number", TNum),
-      ("String", TStr)
-    ]
+defaultInitialState :: Module -> Map.Map Text Type
+defaultInitialState currModule =
+  Map.union
+    ( Map.fromList
+        [ ("Number", TNum),
+          ("String", TStr),
+          ("List", TList (TVar "a")),
+          ("Result", TCustom "Result" [TVar "err", TVar "ok"] [("Err", [TVar "err"]), ("Ok", [TVar "ok"])]),
+          ("Maybe", TCustom "Maybe" [TVar "a"] [("Nothing", []), ("Just", [TVar "a"])])
+        ]
+    )
+    ( Map.unions . Map.elems $
+        Map.filterWithKey
+          (\k _ -> k `elem` importedPaths)
+          Ipe.Prelude.Prelude.registerAllModules
+    )
+  where
+    importedPaths =
+      map
+        ( \importExpr ->
+            T.intercalate "." (importedModulePath importExpr <> [importedModule importExpr])
+        )
+        (moduleImports currModule)
 
 data Error
   = NotAllVariablesDeclared [Text] [Text] -- required + given

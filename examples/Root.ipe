@@ -1,0 +1,132 @@
+module Root exports [main]
+
+import Http
+import Promise
+import Json
+import Json.Encode
+import Json.Decode
+import Dict
+import List
+import Number
+
+type alias User =
+  { name : String
+  , age : Number
+  }
+
+type alias Context =
+  { lastId : Number
+  , users : Dict.Dict Number User
+  }
+
+userDecoder : Json.Decode.Decoder User
+userDecoder =
+  Json.Decode.map2 (\name age -> { age = age, name = name })
+    (Json.Decode.field 'name' Json.Decode.string )
+    (Json.Decode.field 'age' Json.Decode.number)
+
+encodeUser : { key: Number, value: User } -> Json.Value
+encodeUser = \input ->
+  Dict.empty {}
+  |> Dict.insert 'id' (Json.Encode.number input.key)
+  |> Dict.insert 'name' (Json.Encode.string input.value.name)
+  |> Dict.insert 'age' (Json.Encode.number input.value.age)
+  |> Json.Encode.object
+
+encodeUsers : Dict.Dict Number User -> Json.Value
+encodeUsers = \users ->
+  users
+  |> Dict.toList
+  |> Json.Encode.list encodeUser
+
+main : {} -> {}
+main = \a -> Http.createApp
+  { port = 3000
+  , createContext = \x -> Promise.succeed { lastId = 0, users = Dict.empty {} }
+  , handleRequest = \context request -> 
+    match request.endpoint with
+      | ['users'] -> 
+        match request.method with
+          | Http.Get ->
+            Promise.succeed
+              { response =
+                context.users
+                |> encodeUsers
+                |> Http.jsonResponse
+              , newContext = context
+              }
+          
+          | Http.Post ->
+            match Json.Decode.parseJson userDecoder request.body with
+              | Ok user ->
+                Promise.succeed
+                  { response = 
+                    Dict.empty {}
+                    |> Dict.insert 'id' (context.lastId + 1)
+                    |> Json.Encode.object
+                    |> Http.jsonResponse 
+                  , newContext =
+                    { lastId = context.lastId + 1
+                    , users = Dict.insert (context.lastId + 1) user context.users 
+                    }
+                  }
+              
+              | Err error ->
+                Promise.succeed
+                  { response = Http.jsonResponse (Json.Encode.string error)
+                  , newContext = context
+                  }
+
+          | _ -> Promise.succeed { response = Http.jsonResponse (Json.Encode.string '404'), newContext = context }
+      
+      | ['users', stringId] ->
+        match Number.fromString stringId with
+          | Nothing -> Promise.succeed { response = Http.jsonResponse (Json.Encode.string 'error: invalid ID'), newContext = context }
+          | Just id ->
+            match Dict.get id context.users with
+              | Nothing -> Promise.succeed { response = Http.jsonResponse (Json.Encode.string 'error: user not found'), newContext = context }
+              | Just user ->
+                match request.method with
+                  | Http.Get ->
+                    Promise.succeed
+                      { response =
+                        encodeUser { key = id, value = user }
+                        |> Http.jsonResponse
+                      , newContext = context
+                      }
+                  
+                  | Http.Put ->
+                    match Json.Decode.parseJson userDecoder request.body with
+                      | Ok user ->
+                        Promise.succeed
+                          { response = 
+                            Dict.empty {}
+                            |> Dict.insert 'id' id
+                            |> Json.Encode.object
+                            |> Http.jsonResponse 
+                          , newContext =
+                            { lastId = context.lastId
+                            , users = Dict.insert id user context.users 
+                            }
+                          }
+              
+                      | Err error ->
+                        Promise.succeed
+                          { response = Http.jsonResponse (Json.Encode.string error)
+                          , newContext = context
+                          }
+
+                  
+                  | Http.Delete ->
+                    Promise.succeed
+                      { response = Http.jsonResponse (Json.Encode.string id)
+                      , newContext =
+                        { lastId = context.lastId
+                        , users = Dict.remove id context.users
+                        }
+                      }
+                
+                  | _ -> Promise.succeed { response = Http.jsonResponse (Json.Encode.string id), newContext = context }
+
+      | _ -> Promise.succeed { response = Http.jsonResponse (Json.Encode.string '404'), newContext = context }
+  }

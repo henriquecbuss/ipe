@@ -34,6 +34,7 @@ data TVarCases
   | FiniteTVarStrCases [Text]
   | FiniteTVarNumCases [Float]
   | FiniteTVarCustomCases String [String]
+  | FiniteTVarListCases [TVarCases]
   | NoTVarCases
 
 inferHelper :: TypeEnv -> Expression -> TypeInferenceMonad (Substitution, Type)
@@ -124,6 +125,83 @@ inferHelper env (IpeMatch matchExpr branches) = do
   case type1 of
     TFun _ _ -> throwE PatternMatchOnFunction
     TRec _ -> throwE PatternMatchOnRecord
+    TList innerType -> do
+      returnT <- newTypeVar "a"
+
+      (_, returnType, handledCases) <-
+        Control.Monad.foldM
+          ( \(currEnv, returnType, handledCases) (branchPattern, branchAttributions, branchExpr) ->
+              case branchPattern of
+                IpeWildCardPattern -> do
+                  case handledCases of
+                    InfiniteCases -> throwE PatternMatchOnHandledPatternMatch
+                    FiniteCases _ -> do
+                      handleAttributions
+                        sub1
+                        currEnv
+                        branchAttributions
+                        branchExpr
+                        returnType
+                        InfiniteCases
+                IpeVariablePattern varName -> do
+                  case handledCases of
+                    InfiniteCases -> throwE PatternMatchOnHandledPatternMatch
+                    FiniteCases _ -> do
+                      let TypeEnv env' = currEnv
+                      let envWithVarName = TypeEnv $ Map.insert (T.unpack varName) (Scheme [T.unpack varName] TNum) env'
+                      handleAttributions
+                        sub1
+                        envWithVarName
+                        branchAttributions
+                        branchExpr
+                        returnType
+                        InfiniteCases
+                IpeCustomTypePattern {} -> throwE InvalidTypeForPatternMatch
+                IpeLiteralStringPattern _ -> throwE InvalidTypeForPatternMatch
+                IpeLiteralListPattern pat ->
+                  case handledCases of
+                    InfiniteCases -> throwE PatternMatchOnHandledPatternMatch
+                    FiniteCases cases -> do
+                      mapM_
+                        ( \matchedCase ->
+                            Control.Monad.when
+                              ( encompasses
+                                  (IpeLiteralListPattern matchedCase)
+                                  (IpeLiteralListPattern pat)
+                              )
+                              $ throwE DuplicatePatternMatch
+                        )
+                        cases
+
+                      finalEnv <-
+                        Control.Monad.foldM
+                          ( \acc curr ->
+                              case (curr, innerType) of
+                                (IpeWildCardPattern, _) -> return acc
+                                (IpeVariablePattern varName, _) -> do
+                                  let TypeEnv env' = acc
+                                  let envWithVarName = TypeEnv $ Map.insert (T.unpack varName) (Scheme [T.unpack varName] innerType) env'
+
+                                  return envWithVarName
+                                (IpeCustomTypePattern {}, _) -> throwE InvalidTypeForPatternMatch
+                                (IpeLiteralNumberPattern _, TNum) -> return acc
+                                (IpeLiteralStringPattern _, TStr) -> return acc
+                                (IpeLiteralListPattern _, TList _) -> throwE InvalidTypeForPatternMatch
+                                _ -> throwE InvalidTypeForPatternMatch
+                          )
+                          env
+                          pat
+
+                      handleAttributions sub1 finalEnv branchAttributions branchExpr returnType (FiniteCases (pat : cases))
+                IpeLiteralNumberPattern _ ->
+                  throwE InvalidTypeForPatternMatch
+          )
+          (apply sub1 env, returnT, FiniteCases [])
+          branches
+
+      case handledCases of
+        FiniteCases _ -> throwE MissingPatternMatchCases
+        InfiniteCases -> return (Map.empty, returnType)
     TVar tvar -> do
       returnT <- newTypeVar "a"
 
@@ -158,6 +236,7 @@ inferHelper env (IpeMatch matchExpr branches) = do
                       handleAttributions sub1 envWithVarName branchAttributions branchExpr returnType InfiniteCases
                 IpeCustomTypePattern {} -> throwE InvalidTypeForPatternMatch
                 IpeLiteralStringPattern _ -> throwE InvalidTypeForPatternMatch
+                IpeLiteralListPattern _ -> throwE InvalidTypeForPatternMatch
                 IpeLiteralNumberPattern pat ->
                   case handledCases of
                     InfiniteCases -> throwE PatternMatchOnHandledPatternMatch
@@ -199,6 +278,7 @@ inferHelper env (IpeMatch matchExpr branches) = do
                       if pat `elem` cases
                         then throwE DuplicatePatternMatch
                         else handleAttributions sub1 currEnv branchAttributions branchExpr returnType (FiniteCases $ pat : cases)
+                IpeLiteralListPattern _ -> throwE InvalidTypeForPatternMatch
                 IpeLiteralNumberPattern _ -> throwE InvalidTypeForPatternMatch
           )
           (apply sub1 env, returnT, FiniteCases [])
@@ -259,6 +339,7 @@ inferHelper env (IpeMatch matchExpr branches) = do
 
                               return (e, t, h)
                 IpeLiteralStringPattern _ -> throwE InvalidTypeForPatternMatch
+                IpeLiteralListPattern _ -> throwE InvalidTypeForPatternMatch
                 IpeLiteralNumberPattern _ -> throwE InvalidTypeForPatternMatch
           )
           (apply sub1 env, returnT, FiniteCases [])
@@ -274,8 +355,9 @@ inferHelper (TypeEnv env) (IpeFunctionCallOrValue (FunctionCallOrValue path name
     Just valType -> do
       t <- instantiate valType
       typeToUse <- findRecordEnd t recordPath
-      (finalSub, finalT) <- Control.Monad.foldM evalFunction (Map.empty, typeToUse) args
-      return (finalSub, finalT)
+      (_, finalT) <- Control.Monad.foldM evalFunction (Map.empty, typeToUse) args
+
+      return (Map.empty, finalT)
       where
         findRecordEnd :: Type -> [Text] -> TypeInferenceMonad Type
         findRecordEnd inputType [] = return inputType
@@ -343,6 +425,29 @@ inferHelper env (IpeRecord fields) = do
       (return ([], env))
       fields
   return (Map.empty, TRec finalFields)
+inferHelper env (IpeList exprs) = do
+  newVar <- newTypeVar "a"
+
+  (_, finalType) <-
+    foldr
+      ( \expr currMonad -> do
+          (oldSub, _) <- currMonad
+          (newSub, newType) <- inferHelper (apply oldSub env) expr
+          sub <- mostGeneralUnifier newVar newType
+          return (sub `compose` newSub, apply sub newVar)
+      )
+      (return (Map.empty, TList newVar))
+      exprs
+
+  return (Map.empty, TList finalType)
+
+encompasses :: IpeMatchPattern -> IpeMatchPattern -> Bool
+encompasses IpeWildCardPattern _ = True
+encompasses (IpeVariablePattern _) _ = True
+encompasses (IpeLiteralListPattern innerPatterns1) (IpeLiteralListPattern innerPatterns2) =
+  length innerPatterns1 == length innerPatterns2
+    && and (zipWith encompasses innerPatterns1 innerPatterns2)
+encompasses p1 p2 = p1 == p2
 
 handleTVarPatternBranch ::
   Type ->
@@ -361,6 +466,8 @@ handleTVarPatternBranch branchType initialSub (currEnv, returnType, handledCases
           handleAttributions initialSub currEnv branchAttributions branchExpr returnType InfiniteTVarCases
         FiniteTVarCustomCases _ _ ->
           handleAttributions initialSub currEnv branchAttributions branchExpr returnType InfiniteTVarCases
+        FiniteTVarListCases _ ->
+          handleAttributions initialSub currEnv branchAttributions branchExpr returnType InfiniteTVarCases
         NoTVarCases ->
           handleAttributions initialSub currEnv branchAttributions branchExpr returnType InfiniteTVarCases
     IpeVariablePattern varName -> do
@@ -376,6 +483,8 @@ handleTVarPatternBranch branchType initialSub (currEnv, returnType, handledCases
         FiniteTVarCustomCases _ _ ->
           handleAttributions initialSub currEnv branchAttributions branchExpr returnType InfiniteTVarCases
         FiniteTVarNumCases _ ->
+          handleAttributions initialSub envWithVarName branchAttributions branchExpr returnType InfiniteTVarCases
+        FiniteTVarListCases _ ->
           handleAttributions initialSub envWithVarName branchAttributions branchExpr returnType InfiniteTVarCases
     IpeCustomTypePattern path name args -> do
       let constructorName = T.unpack $ T.intercalate "." (path ++ [name])
@@ -411,6 +520,7 @@ handleTVarPatternBranch branchType initialSub (currEnv, returnType, handledCases
                   | constructorName `elem` matchedConstructors -> throwE DuplicatePatternMatch
                   | length matchedConstructors == length requiredConstructors - 1 -> handleAttributions newSub (apply newSub newEnv) branchAttributions branchExpr (apply newSub returnType) InfiniteTVarCases
                   | otherwise -> handleAttributions newSub (apply newSub newEnv) branchAttributions branchExpr (apply newSub returnType) (FiniteTVarCustomCases parentName (constructorName : matchedConstructors))
+                FiniteTVarListCases _ -> throwE InvalidTypeForPatternMatch
                 NoTVarCases ->
                   handleAttributions newSub (apply newSub newEnv) branchAttributions branchExpr (apply newSub returnType) (FiniteTVarCustomCases parentName [constructorName])
     IpeLiteralStringPattern pat ->
@@ -430,6 +540,7 @@ handleTVarPatternBranch branchType initialSub (currEnv, returnType, handledCases
           handleAttributions newSub (apply newSub currEnv) branchAttributions branchExpr (apply newSub returnType) (FiniteTVarStrCases [pat])
         FiniteTVarNumCases _ -> throwE InvalidTypeForPatternMatch
         FiniteTVarCustomCases _ _ -> throwE InvalidTypeForPatternMatch
+        FiniteTVarListCases _ -> throwE InvalidTypeForPatternMatch
         InfiniteTVarCases -> throwE PatternMatchOnHandledPatternMatch
     IpeLiteralNumberPattern pat ->
       case handledCases of
@@ -446,11 +557,38 @@ handleTVarPatternBranch branchType initialSub (currEnv, returnType, handledCases
           let newSub = sub1 `compose` initialSub
 
           handleAttributions newSub (apply newSub currEnv) branchAttributions branchExpr (apply newSub returnType) (FiniteTVarNumCases [pat])
-        FiniteTVarStrCases _ ->
-          throwE InvalidTypeForPatternMatch
-        FiniteTVarCustomCases _ _ ->
-          throwE InvalidTypeForPatternMatch
+        FiniteTVarStrCases _ -> throwE InvalidTypeForPatternMatch
+        FiniteTVarCustomCases _ _ -> throwE InvalidTypeForPatternMatch
+        FiniteTVarListCases _ -> throwE InvalidTypeForPatternMatch
         InfiniteTVarCases -> throwE PatternMatchOnHandledPatternMatch
+    IpeLiteralListPattern pats -> case handledCases of
+      InfiniteTVarCases -> throwE PatternMatchOnHandledPatternMatch
+      FiniteTVarStrCases _ -> throwE InvalidTypeForPatternMatch
+      FiniteTVarNumCases _ -> throwE InvalidTypeForPatternMatch
+      FiniteTVarCustomCases _ _ -> throwE InvalidTypeForPatternMatch
+      FiniteTVarListCases _ -> do
+        listInnerType <- newTypeVar "a"
+        sub1 <- mostGeneralUnifier branchType (TList listInnerType)
+        let newSub = sub1 `compose` initialSub
+
+        newEnv <-
+          Control.Monad.foldM
+            ( \(TypeEnv env) pat -> case pat of
+                IpeVariablePattern varName -> do
+                  let envWithVarName = TypeEnv $ Map.insert (T.unpack varName) (Scheme [T.unpack varName] listInnerType) env
+                  return envWithVarName
+                _ -> return (TypeEnv env)
+            )
+            currEnv
+            pats
+
+        handleAttributions newSub (apply newSub newEnv) branchAttributions branchExpr (apply newSub returnType) (FiniteTVarListCases [])
+      NoTVarCases -> do
+        listInnerType <- newTypeVar "a"
+        sub1 <- mostGeneralUnifier branchType (TList listInnerType)
+        let newSub = sub1 `compose` initialSub
+
+        handleAttributions newSub (apply newSub currEnv) branchAttributions branchExpr (apply newSub returnType) (FiniteTVarListCases [])
 
 inferAttribution :: Text -> Expression -> TypeEnv -> TypeInferenceMonad (Substitution, Type, TypeEnv)
 inferAttribution attributionName attributionExpr env = do

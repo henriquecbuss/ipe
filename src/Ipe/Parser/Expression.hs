@@ -73,6 +73,7 @@ term acceptArgs =
       Ipe.Parser.lexeme function,
       Ipe.Parser.lexeme matchExpression,
       Ipe.Parser.lexeme record,
+      Ipe.Parser.lexeme listP,
       functionCallOrValue acceptArgs
     ]
     <* Parsec.Common.notFollowedBy
@@ -148,18 +149,22 @@ functionAttribution = do
 
 matchExpression :: Parser Ipe.Grammar.Expression
 matchExpression = do
+  indentationLevel <- Parsec.Lexer.indentLevel
+
   Control.Monad.void $ Ipe.Parser.symbol "match"
 
   expression <- Ipe.Parser.Expression.parser
 
   Control.Monad.void $ Ipe.Parser.symbol "with"
 
-  matchCases <- Parsec.Common.some matchCase
+  matchCases <- Parsec.Common.some (matchCase indentationLevel)
 
   return $ Ipe.Grammar.IpeMatch expression matchCases
 
-matchCase :: Parser (Ipe.Grammar.IpeMatchPattern, [(Text, Ipe.Grammar.Expression)], Ipe.Grammar.Expression)
-matchCase = do
+matchCase :: Parsec.Common.Pos -> Parser (Ipe.Grammar.IpeMatchPattern, [(Text, Ipe.Grammar.Expression)], Ipe.Grammar.Expression)
+matchCase indentationLevel = do
+  _ <- Parsec.Lexer.indentGuard Ipe.Parser.space GT indentationLevel
+
   Control.Monad.void $ Ipe.Parser.symbol "|"
 
   pattern_ <- Ipe.Parser.lexeme $ matchPattern True
@@ -177,11 +182,17 @@ matchPattern acceptArgs =
   Parsec.Common.choice
     [ Parsec.Common.between (Ipe.Parser.symbol "(") (Ipe.Parser.symbol ")") (matchPattern True),
       customTypePattern acceptArgs,
+      literalListPattern,
       Ipe.Grammar.IpeLiteralNumberPattern <$> literalNumber,
       Ipe.Grammar.IpeLiteralStringPattern <$> literalString,
       Ipe.Grammar.IpeVariablePattern <$> Ipe.Parser.lowercaseIdentifier,
       Ipe.Grammar.IpeWildCardPattern <$ Parsec.Char.char '_'
     ]
+
+literalListPattern :: Parser Ipe.Grammar.IpeMatchPattern
+literalListPattern =
+  Parsec.Common.between (Ipe.Parser.symbol "[") (Ipe.Parser.symbol "]") $
+    Ipe.Grammar.IpeLiteralListPattern <$> Parsec.Common.sepBy (matchPattern True) (Ipe.Parser.symbol ",")
 
 customTypePattern :: Bool -> Parser Ipe.Grammar.IpeMatchPattern
 customTypePattern acceptArgs = do
@@ -213,6 +224,11 @@ record =
       expr <- Ipe.Parser.lexeme parser
 
       return (name, expr)
+
+listP :: Parser Ipe.Grammar.Expression
+listP =
+  Parsec.Common.between (Ipe.Parser.symbol "[") (Ipe.Parser.symbol "]") $
+    Ipe.Grammar.IpeList <$> Parsec.Common.sepBy parser (Ipe.Parser.symbol ",")
 
 forbiddenSymbols :: [Text]
 forbiddenSymbols = [":"]
