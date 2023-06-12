@@ -61,4 +61,19 @@ const toList = (dict) => {
   return result;
 };
 
-export default { empty, insert, remove, map, toList };
+/**
+ * @template Key
+ * @template Value
+ * @param {Key} key
+ * @returns {(dict: Map<Key, Value>) => ['Just', Value] | ['Nothing']}
+ */
+const get = (key) => (dict) => {
+  const item = dict.get(key);
+  if (item === undefined) {
+    return ["Nothing"];
+  }
+
+  return ["Just", item];
+};
+
+export default { empty, insert, remove, map, toList, get };

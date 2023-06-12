@@ -29,6 +29,14 @@ moduleTypes =
       ),
       ( "toList",
         TFun genericTypeDef (TList (TRec [("key", TVar "key"), ("value", TVar "value")]))
+      ),
+      ( "get",
+        TFun
+          (TVar "key")
+          ( TFun
+              genericTypeDef
+              (TCustom "Maybe" [TVar "value"] [])
+          )
       )
     ]
 

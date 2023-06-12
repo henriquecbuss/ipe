@@ -11,6 +11,7 @@ import qualified Ipe.Prelude.Json
 import qualified Ipe.Prelude.Json.Decode
 import qualified Ipe.Prelude.Json.Encode
 import qualified Ipe.Prelude.List
+import qualified Ipe.Prelude.Number
 import qualified Ipe.Prelude.Promise
 import qualified Ipe.TypeChecker.Utils
 
@@ -31,7 +32,8 @@ registerAllModules =
         ("Console", Ipe.Prelude.Console.moduleTypes),
         ("Promise", Ipe.Prelude.Promise.moduleTypes),
         ("Http", Ipe.Prelude.Http.moduleTypes),
-        ("List", Ipe.Prelude.List.moduleTypes)
+        ("List", Ipe.Prelude.List.moduleTypes),
+        ("Number", Ipe.Prelude.Number.moduleTypes)
       ]
 
 allModuleNames :: [Text]
